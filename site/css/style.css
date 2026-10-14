@@ -1101,9 +1101,6 @@ html[lang="fa"] .t-ar, html[lang="fa"] .course-title-ar { display: none; }
   color: #fff;
   box-shadow: 0 18px 38px -26px rgba(19, 41, 75, 0.8);
 }
-.q-lapis { background: linear-gradient(135deg, #1b3c70, #2b63a8); }
-.q-teal { background: linear-gradient(135deg, #0e7f7c, #2cc4be); }
-.q-gold { background: linear-gradient(135deg, #a8710f, #e0a73a); }
 .qcard-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .qcard-ico { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: rgba(255, 255, 255, 0.2); }
 .qcard-tag { padding: 2px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); font-size: 0.8rem; font-weight: 700; }
@@ -1157,3 +1154,29 @@ html[dir="rtl"] .qcard-btn span { display: inline-block; transform: scaleX(-1); 
   .notice { margin-inline-start: 0; }
   section[id], footer[id] { scroll-margin-top: 20px; }
 }
+
+/* ====== هوية كحلي وفيروزي وذهبي خافت ====== */
+:root { --gold-soft: #c9a24b; }
+.qcard {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.qcard:hover { border-color: var(--tq); transform: translateY(-2px); }
+.qcard-ico { background: rgba(44, 196, 190, 0.14); color: var(--tq); }
+.qcard-tag { background: transparent; border: 1px solid var(--gold-soft); color: var(--gold-soft); }
+.qcard p { color: var(--muted); }
+.qcard-btn { display: grid; place-items: center; background: var(--tq); color: #06242a; }
+.qcard-btn:hover { box-shadow: 0 10px 20px -12px var(--tq); }
+.qcard-btn.is-soon { background: transparent; border: 1px dashed var(--line); color: var(--muted); cursor: default; }
+.qcard-btn.is-soon:hover { transform: none; box-shadow: none; }
+.is-soon-card:hover { transform: none; border-color: var(--line); }
+.section-head h2::after, .quick + .figures::before { content: none; }
+.section-head h2 { position: relative; padding-bottom: 10px; }
+.section-head h2::after { content: ""; position: absolute; inset-inline-start: 0; bottom: 0; width: 44px; height: 3px; border-radius: 3px; background: var(--gold-soft); }
+.hero { background: linear-gradient(125deg, #0d1f3b 0%, #13294b 55%, #17606a 130%); border: 1px solid rgba(255, 255, 255, 0.08); }
+@media (min-width: 561px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .quick-grid { gap: 12px; } .qcard { padding: 16px; } .qcard-btn { min-height: 48px; } }
