@@ -1,0 +1,384 @@
+/* js/app.js — أدوات مشتركة بين الصفحات: التخزين، الأيقونات، المفضلة، التقدم، الإشعارات */
+(function () {
+  "use strict";
+
+  var MS = (window.MS = {});
+  var KEY = { fav: "ms.fav", read: "ms.read", last: "ms.last", exam: "ms.exam", theme: "ms.theme", review: "ms.review" };
+
+  MS.lang = (window.I18N && I18N.lang) || "ar";
+
+  /* المحتوى غير المنشور (draft: true) لا يظهر في القوائم والأرقام والبحث.
+     تنبيه: الموقع ثابت، فأي ملف داخل files/ يبقى متاحاً لمن يعرف رابطه. لا ترفع ملفاً غير جاهز. */
+  if (typeof COURSES !== "undefined") {
+    COURSES.forEach(function (c) {
+      c.lectures = (c.lectures || []).filter(function (l) { return !l.draft; }).map(function (l) {
+        var copy = {};
+        for (var k in l) copy[k] = l[k];
+        copy.files = (l.files || []).filter(function (f) { return !f.draft; });
+        return copy;
+      });
+    });
+  }
+
+  /* توحيد النص للبحث: الحروف العربية والفارسية، والهمزات، والتشكيل، و"ال" و"لل" في أول الكلمة */
+  MS.norm = function (s) {
+    return String(s || "").toLowerCase()
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+      .replace(/[يىی]/g, "ي").replace(/[كک]/g, "ك")
+      .replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
+      .replace(/(^|\s)(?:لل|ال)(?=\S{2,})/g, "$1")
+      .replace(/\s+/g, " ").trim();
+  };
+  /* حالة الخطأ: إن لم تُحمَّل البيانات تظهر رسالة بدل صفحة فارغة */
+  MS.dataError = function () {
+    if (typeof COURSES !== "undefined" && typeof SITE !== "undefined") return false;
+    var box = document.createElement("div");
+    box.className = "load-error";
+    box.setAttribute("role", "alert");
+    box.textContent = "تعذّر تحميل بيانات المواد. حدّث الصفحة، وإن استمر الخطأ فأبلغ مُعدّ الموقع.";
+    if (window.I18N) box.textContent = I18N.t(box.textContent);
+    document.body.insertBefore(box, document.body.firstChild);
+    return true;
+  };
+
+  MS.$ = function (id) { return document.getElementById(id); };
+
+  MS.el = function (tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+
+  /* ---------- تخزين محلي (يعمل حتى لو منعه المتصفح) ---------- */
+  var mem = {};
+  function load(k, d) {
+    if (k in mem) return mem[k];
+    try {
+      var v = localStorage.getItem(k);
+      return v ? JSON.parse(v) : d;
+    } catch (e) { return d; }
+  }
+  function save(k, v) {
+    mem[k] = v;
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* يبقى في الذاكرة */ }
+  }
+  MS.load = load;
+  MS.save = save;
+  MS.KEY = KEY;
+
+  /* ---------- الأيقونات ---------- */
+  var ICONS = {
+    lungs: '<path d="M12 4v7"/><path d="M12 8c-1.6 0-5 2-6 6-.7 2.6-.3 4.6 1.5 4.6 2 0 3-1.5 3.5-3 .3-1 .5-2 .5-3.4"/><path d="M12 8c1.6 0 5 2 6 6 .7 2.6.3 4.6-1.5 4.6-2 0-3-1.5-3.5-3-.3-1-.5-2-.5-3.4"/>',
+    kidney: '<path d="M14.5 4.5C11 3 7 5 6 9c-1 4 1 9 5 10 2.5.6 3.5-1.2 2-3-1.2-1.4-.8-3 .6-3.8 2.2-1.2 3.4-3.2 2.9-5.2-.3-1-.9-1.8-2-2.5z"/>',
+    flask: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/>',
+    hormone: '<path d="M12 3l7 4v8l-7 4-7-4V7z"/><circle cx="12" cy="11" r="2.2"/>',
+    shield: '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    leaf: '<path d="M12 7c-2-2-6-1.5-7 2-1 4 1 9 4 11 1 .6 2 .2 3 .2s2 .4 3-.2c3-2 5-7 4-11-1-3.5-5-4-7-2z"/><path d="M12 7c0-2 1-3.5 3-4"/>',
+    book: '<path d="M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/>',
+    quill: '<path d="M20 4c-6 0-12 4-13 11l-2 5 5-2c7-1 11-7 10-14z"/><path d="M9 15l6-6"/>',
+    dumbbell: '<path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12"/>',
+    heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    droplet: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+    chat: '<path d="M4 5h16v11H9l-4 4v-4H4z"/>',
+    crescent: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8-4.3-4.1 5.9-.9z"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+    share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
+    download: '<path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/>',
+    external: '<path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/>',
+    calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+    file: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>'
+  };
+
+  MS.icon = function (name, size) {
+    var span = document.createElement("span");
+    span.className = "ico";
+    span.innerHTML =
+      '<svg viewBox="0 0 24 24" width="' + (size || 22) + '" height="' + (size || 22) +
+      '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (ICONS[name] || ICONS.book) + "</svg>";
+    return span;
+  };
+
+  /* ---------- بيانات مساعدة ---------- */
+  MS.course = function (id) {
+    return COURSES.filter(function (c) { return c.id === id; })[0] || null;
+  };
+  MS.category = function (c) {
+    return CATEGORIES.filter(function (x) { return x.id === c.category; })[0];
+  };
+  MS.fileCount = function (c) {
+    return c.lectures.reduce(function (n, l) { return n + l.files.length; }, 0);
+  };
+  MS.orderedCourses = function () {
+    var out = [];
+    CATEGORIES.forEach(function (cat) {
+      COURSES.forEach(function (c) { if (c.category === cat.id) out.push(c); });
+    });
+    return out;
+  };
+
+  MS.subjectsLabel = function (n) {
+    if (n === 1) return "مادة واحدة";
+    if (n === 2) return "مادتان";
+    return n + (n <= 10 ? " مواد" : " مادة");
+  };
+  // gen = true بعد حرف الجر (من، في...): محاضرتين بدل محاضرتان
+  MS.lecturesLabel = function (n, gen) {
+    if (n === 1) return "محاضرة واحدة";
+    if (n === 2) return gen ? "محاضرتين" : "محاضرتان";
+    return n + (n <= 10 ? " محاضرات" : " محاضرة");
+  };
+  MS.filesLabel = function (n) {
+    if (n === 1) return "ملف واحد";
+    if (n === 2) return "ملفان";
+    return n + (n <= 10 ? " ملفات" : " ملفاً");
+  };
+
+  // الأساتذة بلا تكرار، ومعهم موادهم وأدوارهم (مثل histo)
+  MS.professors = function () {
+    var map = {}, out = [];
+    MS.orderedCourses().forEach(function (c) {
+      c.professors.forEach(function (p) {
+        var e = map[p.name];
+        if (!e) { e = map[p.name] = { name: p.name, roles: [], courses: [] }; out.push(e); }
+        if (p.role && e.roles.indexOf(p.role) === -1) e.roles.push(p.role);
+        if (e.courses.indexOf(c) === -1) e.courses.push(c);
+      });
+    });
+    out.sort(function (a, b) { return a.name.replace(/^(Dr|Mr|Mrs)\.\s*/, "").localeCompare(b.name.replace(/^(Dr|Mr|Mrs)\.\s*/, "")); });
+    return out;
+  };
+
+  /* ---------- المفضلة ---------- */
+  MS.favs = {
+    all: function () { return load(KEY.fav, []); },
+    has: function (id) { return MS.favs.all().indexOf(id) !== -1; },
+    toggle: function (id) {
+      var list = MS.favs.all().slice();
+      var i = list.indexOf(id);
+      if (i === -1) list.push(id); else list.splice(i, 1);
+      save(KEY.fav, list);
+      return i === -1;
+    }
+  };
+
+  /* ---------- التقدم (المحاضرات المقروءة) ---------- */
+  MS.progress = {
+    set: function (id) { return (load(KEY.read, {}) || {})[id] || []; },
+    isRead: function (id, n) { return MS.progress.set(id).indexOf(n) !== -1; },
+    toggle: function (id, n) {
+      var all = load(KEY.read, {}) || {};
+      var list = (all[id] || []).slice();
+      var i = list.indexOf(n);
+      if (i === -1) list.push(n); else list.splice(i, 1);
+      all[id] = list;
+      save(KEY.read, all);
+      return i === -1;
+    },
+    done: function (c) {
+      var set = MS.progress.set(c.id);
+      return c.lectures.filter(function (l) { return set.indexOf(l.number) !== -1; }).length;
+    }
+  };
+
+  MS.review = {
+    all: function () { return load(KEY.review, {}) || {}; },
+    has: function (id, n) { return (MS.review.all()[id] || []).indexOf(n) !== -1; },
+    toggle: function (id, n) {
+      var all = MS.review.all();
+      var list = (all[id] || []).slice();
+      var i = list.indexOf(n);
+      if (i === -1) list.push(n); else list.splice(i, 1);
+      all[id] = list;
+      save(KEY.review, all);
+      return i === -1;
+    }
+  };
+
+  MS.setLast = function (id) { save(KEY.last, id); };
+  MS.getLast = function () { return load(KEY.last, null); };
+
+  /* ---------- إشعار قصير بعد كل إجراء ---------- */
+  var toastTimer;
+  MS.toast = function (msg) {
+    var t = MS.$("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  };
+
+  /* ---------- عدّاد الأرقام ---------- */
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  MS.countUp = function (node, to, decimals) {
+    decimals = decimals || 0;
+    function write(v) { node.textContent = v.toFixed(decimals); }
+    if (reduced || !("IntersectionObserver" in window)) { write(to); return; }
+    write(0);
+    var io = new IntersectionObserver(function (entries) {
+      if (!entries[0].isIntersecting) return;
+      io.disconnect();
+      var start = null, dur = 1100;
+      function tick(ts) {
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        write(to * eased);
+        if (p < 1) requestAnimationFrame(tick); else write(to);
+      }
+      requestAnimationFrame(tick);
+    }, { threshold: 0.4 });
+    io.observe(node);
+  };
+
+  /* ---------- الرأس: القائمة، الوضع الليلي، تمييز القسم الحالي ---------- */
+  function effectiveTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    if (t) return t;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  MS.initHeader = function () {
+    var themeBtn = MS.$("themeBtn");
+    var menuBtn = MS.$("menuBtn");
+    var nav = MS.$("nav");
+
+    function paintTheme() {
+      var dark = effectiveTheme() === "dark";
+      themeBtn.textContent = "";
+      themeBtn.appendChild(MS.icon(dark ? "sun" : "moon", 20));
+      themeBtn.setAttribute("aria-label", dark ? "التبديل إلى الوضع النهاري" : "التبديل إلى الوضع الليلي");
+    }
+    paintTheme();
+    themeBtn.addEventListener("click", function () {
+      var next = effectiveTheme() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      save(KEY.theme, next);
+      paintTheme();
+    });
+
+    var langSel = MS.$("langSel");
+    if (langSel) {
+      langSel.value = MS.lang;
+      langSel.addEventListener("change", function () { I18N.set(langSel.value); });
+    }
+    var searchBtn = MS.$("searchBtn");
+    if (searchBtn) {
+      searchBtn.appendChild(MS.icon("search", 20));
+      searchBtn.addEventListener("click", function () {
+        var box = MS.$("search");
+        if (box) {
+          box.scrollIntoView({ block: "center" });
+          box.focus({ preventScroll: true });
+        } else {
+          location.href = "index.html#search";
+        }
+      });
+    }
+
+    menuBtn.appendChild(MS.icon("menu", 22));
+    menuBtn.addEventListener("click", function () {
+      var open = nav.classList.toggle("open");
+      menuBtn.setAttribute("aria-expanded", String(open));
+    });
+    nav.addEventListener("click", function (e) {
+      if (e.target.closest("a")) {
+        nav.classList.remove("open");
+        menuBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    // تمييز القسم الظاهر في القائمة (في الصفحة الرئيسية فقط)
+    var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+    if (!links.length || !("IntersectionObserver" in window)) return;
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        links.forEach(function (a) { a.classList.remove("is-active"); });
+        var a = map[en.target.id];
+        if (a) a.classList.add("is-active");
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    Object.keys(map).forEach(function (id) {
+      var s = document.getElementById(id);
+      if (s) io.observe(s);
+    });
+  };
+
+  /* ---------- نصوص مشتركة ---------- */
+  MS.initShared = function () {
+    MS.$("notice").textContent = SITE.disclaimer;
+    MS.$("footNotice").textContent = SITE.disclaimer;
+    [].forEach.call(document.querySelectorAll("[data-site-title]"), function (n) {
+      n.textContent = SITE.title;
+    });
+
+    // اسم الجامعة وصورتها (من SITE.university). الصورة لا تظهر إلا إذا وُجد الملف فعلاً
+    var U = SITE.university;
+    if (!U || !U.name) return;
+
+    var hu = MS.$("heroUni");
+    if (hu) {
+      hu.hidden = false;
+      if (MS.lang === "en") {
+        hu.appendChild(document.createTextNode("Unofficial site for international students of "));
+        hu.appendChild(MS.el("strong", "", U.nameEn || U.name));
+      } else if (MS.lang === "fa") {
+        hu.appendChild(document.createTextNode("سایت غیررسمی برای دانشجویان بین‌المللی "));
+        hu.appendChild(MS.el("strong", "", U.nameFa || U.name));
+        if (U.nameEn) hu.appendChild(MS.el("span", "en uni-en", U.nameEn));
+      } else {
+        hu.appendChild(document.createTextNode("موقع غير رسمي لطلاب "));
+        hu.appendChild(MS.el("strong", "", U.name));
+        hu.appendChild(document.createTextNode(" الدوليين"));
+        if (U.nameEn) hu.appendChild(MS.el("span", "en uni-en", U.nameEn));
+      }
+    }
+
+    var fu = MS.$("footUni");
+    if (fu) {
+      fu.hidden = false;
+      if (MS.lang === "en") {
+        fu.appendChild(document.createTextNode("For international students at "));
+        fu.appendChild(MS.el("strong", "", U.nameEn || U.name));
+      } else if (MS.lang === "fa") {
+        fu.appendChild(document.createTextNode("برای دانشجویان بین‌المللی "));
+        fu.appendChild(MS.el("strong", "", U.nameFa || U.name));
+        if (U.nameEn) fu.appendChild(MS.el("span", "en uni-en", U.nameEn));
+      } else {
+        fu.appendChild(document.createTextNode("للطلاب الدوليين في "));
+        fu.appendChild(MS.el("strong", "", U.name));
+        if (U.nameEn) fu.appendChild(MS.el("span", "en uni-en", U.nameEn));
+      }
+    }
+
+    // الصورة تُحجز مساحتها من البداية (width/height) فلا يتحرك المحتوى عند التحميل
+    var ph = MS.$("uniPhoto");
+    if (ph && U.image) {
+      var img = new Image();
+      img.alt = U.imageAlt || U.name;
+      if (U.imageWidth) { img.width = U.imageWidth; img.height = U.imageHeight; }
+      img.decoding = "async";
+      img.setAttribute("fetchpriority", "high");
+      img.onerror = function () { ph.hidden = true; };
+      img.src = U.image;
+      ph.textContent = "";
+      ph.appendChild(img);
+      var cap = MS.el("figcaption", "", MS.lang === "en" ? (U.nameEn || U.name) : MS.lang === "fa" ? (U.nameFa || U.name) : U.name);
+      if (U.nameEn && MS.lang !== "en") cap.appendChild(MS.el("span", "en", U.nameEn));
+      ph.appendChild(cap);
+      ph.hidden = false;
+    }
+  };
+})();
