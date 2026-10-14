@@ -216,35 +216,15 @@
     toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
   };
 
-  /* ---------- عدّاد الأرقام ---------- */
-  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
+  /* ---------- الأرقام: تُكتب مباشرة بلا حركة (نظام التصميم: لا مؤثرات غير ضرورية) ---------- */
   MS.countUp = function (node, to, decimals) {
-    decimals = decimals || 0;
-    function write(v) { node.textContent = v.toFixed(decimals); }
-    if (reduced || !("IntersectionObserver" in window)) { write(to); return; }
-    write(0);
-    var io = new IntersectionObserver(function (entries) {
-      if (!entries[0].isIntersecting) return;
-      io.disconnect();
-      var start = null, dur = 1100;
-      function tick(ts) {
-        if (start === null) start = ts;
-        var p = Math.min((ts - start) / dur, 1);
-        var eased = 1 - Math.pow(1 - p, 3);
-        write(to * eased);
-        if (p < 1) requestAnimationFrame(tick); else write(to);
-      }
-      requestAnimationFrame(tick);
-    }, { threshold: 0.4 });
-    io.observe(node);
+    node.textContent = Number(to).toFixed(decimals || 0);
   };
 
   /* ---------- الرأس: القائمة، الوضع الليلي، تمييز القسم الحالي ---------- */
   function effectiveTheme() {
-    var t = document.documentElement.getAttribute("data-theme");
-    if (t) return t;
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    // الوضع النهاري هو الأصل؛ الليلي فقط باختيار المستخدم
+    return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
   }
 
   MS.initHeader = function () {
@@ -281,6 +261,18 @@
           box.focus({ preventScroll: true });
         } else {
           location.href = "index.html#search";
+        }
+      });
+    }
+
+    var favLink = MS.$("favLink");
+    if (favLink) {
+      favLink.appendChild(MS.icon("star", 20));
+      favLink.addEventListener("click", function (e) {
+        // في الرئيسية: الضغط مرة ثانية على نفس الرابط يعيد تطبيق التصفية
+        if (favLink.getAttribute("href") === "#favorites" && location.hash === "#favorites") {
+          e.preventDefault();
+          window.dispatchEvent(new Event("hashchange"));
         }
       });
     }

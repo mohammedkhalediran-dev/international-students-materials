@@ -12,7 +12,7 @@ def page(b,lang,w=1280):
     c=b.new_context(viewport={'width':w,'height':900})
     c.add_init_script("try{localStorage.setItem('ms.lang',%s)}catch(e){}"%json.dumps(json.dumps(lang)))
     p=c.new_page(); p.errs=[]; p.on('pageerror',lambda e:p.errs.append(str(e))); return p
-def count(p): return p.locator('#groups .folder, #groups .row').count()
+def count(p): return p.locator('#groups .course-card').count()
 try:
   with sync_playwright() as pw:
     b=pw.chromium.launch(executable_path='/opt/pw-browsers/chromium')
