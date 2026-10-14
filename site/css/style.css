@@ -1177,6 +1177,6 @@ html[dir="rtl"] .qcard-btn span { display: inline-block; transform: scaleX(-1); 
 .section-head h2 { position: relative; padding-bottom: 10px; }
 .section-head h2::after { content: ""; position: absolute; inset-inline-start: 0; bottom: 0; width: 44px; height: 3px; border-radius: 3px; background: var(--gold-soft); }
 .hero { background: linear-gradient(125deg, #0d1f3b 0%, #13294b 55%, #17606a 130%); border: 1px solid rgba(255, 255, 255, 0.08); }
-@media (min-width: 901px) { .quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 900px) and (min-width: 561px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 561px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .quick-grid { gap: 12px; } .qcard { padding: 16px; } .qcard-btn { min-height: 48px; } }

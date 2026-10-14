@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p1-16">
+  <link rel="stylesheet" href="css/style.css?v=p1-17">
   <script>
     document.documentElement.setAttribute("data-theme", "dark");
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
@@ -101,6 +101,18 @@
         <h2>المواد الدراسية</h2>
         <p>تصفح مواد الكورس الثالث</p>
         <a class="qcard-btn" href="#subjects">عرض</a>
+      </article>
+      <article class="qcard">
+        <div class="qcard-top"><span class="qcard-ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.800 3h10.400a2 2 0 0 0 1.800-3l-5-9V3"/><path d="M7.500 15h9"/></svg></span></div>
+        <h2>العلوم الطبية الأساسية</h2>
+        <p>مواد العلوم الطبية الأساسية ومحاضراتها.</p>
+        <button type="button" class="qcard-btn" data-go="basic">عرض</button>
+      </article>
+      <article class="qcard">
+        <div class="qcard-top"><span class="qcard-ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.500 2.600 3.800 5.600 3.800 9s-1.300 6.400-3.800 9c-2.500-2.600-3.800-5.600-3.800-9S9.500 5.600 12 3z"/></svg></span></div>
+        <h2>المواد العامة</h2>
+        <p>المواد العامة في الكورس.</p>
+        <button type="button" class="qcard-btn" data-go="general">عرض</button>
       </article>
       <article class="qcard">
         <div class="qcard-top"><span class="qcard-ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span></div>
@@ -307,9 +319,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p1-16"></script>
-  <script src="js/i18n.js?v=p1-16"></script>
-  <script src="js/app.js?v=p1-16"></script>
+  <script src="data/courses.js?v=p1-17"></script>
+  <script src="js/i18n.js?v=p1-17"></script>
+  <script src="js/app.js?v=p1-17"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
