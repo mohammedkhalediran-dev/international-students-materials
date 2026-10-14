@@ -318,8 +318,12 @@
 
   /* ---------- نصوص مشتركة ---------- */
   MS.initShared = function () {
-    MS.$("notice").textContent = SITE.disclaimer;
-    MS.$("footNotice").textContent = SITE.disclaimer;
+    ["notice", "footNotice"].forEach(function (id) {
+      var n = MS.$(id);
+      if (!n) return;
+      n.textContent = SITE.disclaimer || "";
+      n.hidden = !SITE.disclaimer;
+    });
     [].forEach.call(document.querySelectorAll("[data-site-title]"), function (n) {
       n.textContent = SITE.title;
     });
@@ -332,14 +336,14 @@
     if (hu) {
       hu.hidden = false;
       if (MS.lang === "en") {
-        hu.appendChild(document.createTextNode("Unofficial site for international students of "));
+        hu.appendChild(document.createTextNode("Site for international students of "));
         hu.appendChild(MS.el("strong", "", U.nameEn || U.name));
       } else if (MS.lang === "fa") {
-        hu.appendChild(document.createTextNode("سایت غیررسمی برای دانشجویان بین‌المللی "));
+        hu.appendChild(document.createTextNode("سایت برای دانشجویان بین‌المللی "));
         hu.appendChild(MS.el("strong", "", U.nameFa || U.name));
         if (U.nameEn) hu.appendChild(MS.el("span", "en uni-en", U.nameEn));
       } else {
-        hu.appendChild(document.createTextNode("موقع غير رسمي لطلاب "));
+        hu.appendChild(document.createTextNode("موقع لطلاب "));
         hu.appendChild(MS.el("strong", "", U.name));
         hu.appendChild(document.createTextNode(" الدوليين"));
         if (U.nameEn) hu.appendChild(MS.el("span", "en uni-en", U.nameEn));

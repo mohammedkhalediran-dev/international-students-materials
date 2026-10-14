@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>مواد الطلاب الدوليين</title>
-  <meta name="description" content="ملفات الكورس الثالث في مكان واحد. موقع غير رسمي من إعداد طالب.">
+  <meta name="description" content="ملفات الكورس الثالث في مكان واحد.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p1-13b">
+  <link rel="stylesheet" href="css/style.css?v=p1-14">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -204,10 +204,6 @@
       </div>
       <div class="faq">
         <details>
-          <summary>هل هذا موقع رسمي من الجامعة؟</summary>
-          <p>لا. هو موقع غير رسمي أعدّه طالب لتجميع المواد في مكان واحد، وسيبقى التنويه في أعلى الصفحة حتى تؤكد الجامعة الموقع رسمياً.</p>
-        </details>
-        <details>
           <summary>من أين تأتي الملفات ومن يرفعها؟</summary>
           <p>تُجمع الملفات من قنوات تلغرام، ويرفعها مُعدّ الموقع ومساعدان من الجامعة.</p>
         </details>
@@ -271,9 +267,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p1-13b"></script>
-  <script src="js/i18n.js?v=p1-13b"></script>
-  <script src="js/app.js?v=p1-13b"></script>
+  <script src="data/courses.js?v=p1-14"></script>
+  <script src="js/i18n.js?v=p1-14"></script>
+  <script src="js/app.js?v=p1-14"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -751,7 +747,7 @@
         li.appendChild(a);
         fs.appendChild(li);
       });
-      $("footBottom").textContent = "© " + new Date().getFullYear() + " " + SITE.title + "، موقع غير رسمي من إعداد طالب.";
+      $("footBottom").textContent = "© " + new Date().getFullYear() + " " + SITE.title;
     })();
   </script>
   <script>if (window.I18N) I18N.apply();</script>

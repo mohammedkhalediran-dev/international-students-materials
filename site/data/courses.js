@@ -37,8 +37,7 @@ const SITE = {
   title: "مواد الطلاب الدوليين",
   subtitle: "كل ملفات الكورس الثالث في مكان واحد. اختر المادة، ثم المحاضرة، وافتح الملف.",
   filesBase: "files/",
-  disclaimer:
-    "موقع غير رسمي من إعداد طالب، ولا يمثل الجامعة. سيبقى هذا التنويه حتى تؤكد الجامعة الموقع رسمياً.",
+  disclaimer: "",
   university: {
     name: "جامعة بابل للعلوم الطبية",
     nameEn: "Babol University of Medical Sciences",
