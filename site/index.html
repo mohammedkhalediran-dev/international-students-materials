@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p1-14">
+  <link rel="stylesheet" href="css/style.css?v=p1-15">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -68,9 +68,6 @@
           <a class="btn btn-ghost" href="#how">كيف أستخدم الموقع</a>
         </div>
         <nav class="shortcuts" aria-label="اختصارات">
-          <button type="button" data-go="basic">العلوم الطبية الأساسية</button>
-          <button type="button" data-go="general">المواد العامة</button>
-          <button type="button" data-go="fav">المفضلة</button>
           <a href="#review" id="reviewShortcut" hidden>قائمة المراجعة</a>
           <a href="#latest">آخر الملفات</a>
         </nav>
@@ -92,6 +89,39 @@
           <p class="w-result" id="examOut" aria-live="polite"></p>
         </section>
       </div>
+    </div>
+  </section>
+
+  <!-- ===== البطاقات الكبيرة ===== -->
+  <section class="quick" aria-label="ابدأ من هنا">
+    <div class="container quick-grid">
+      <article class="qcard q-lapis">
+        <div class="qcard-top">
+          <span class="qcard-ico" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M8 7h8M8 11h6"/></svg></span>
+          <span class="qcard-tag">أساسية</span>
+        </div>
+        <h2>العلوم الطبية الأساسية</h2>
+        <p>مواد العلوم الطبية الأساسية ومحاضراتها.</p>
+        <button type="button" class="qcard-btn" data-go="basic">ابدأ <span aria-hidden="true">&rarr;</span></button>
+      </article>
+      <article class="qcard q-teal">
+        <div class="qcard-top">
+          <span class="qcard-ico" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.500 5.600 12 3z"/></svg></span>
+          <span class="qcard-tag">عامة</span>
+        </div>
+        <h2>المواد العامة</h2>
+        <p>المواد العامة في الكورس.</p>
+        <button type="button" class="qcard-btn" data-go="general">ابدأ <span aria-hidden="true">&rarr;</span></button>
+      </article>
+      <article class="qcard q-gold">
+        <div class="qcard-top">
+          <span class="qcard-ico" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.100L12 17l-5.4 2.900 1-6.100L3.200 9.500l6.100-.9z"/></svg></span>
+          <span class="qcard-tag">مفضلة</span>
+        </div>
+        <h2>المفضلة</h2>
+        <p>المواد التي أضفتها إلى المفضلة.</p>
+        <button type="button" class="qcard-btn" data-go="fav">ابدأ <span aria-hidden="true">&rarr;</span></button>
+      </article>
     </div>
   </section>
 
@@ -267,9 +297,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p1-14"></script>
-  <script src="js/i18n.js?v=p1-14"></script>
-  <script src="js/app.js?v=p1-14"></script>
+  <script src="data/courses.js?v=p1-15"></script>
+  <script src="js/i18n.js?v=p1-15"></script>
+  <script src="js/app.js?v=p1-15"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
