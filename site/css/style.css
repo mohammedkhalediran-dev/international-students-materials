@@ -2,17 +2,17 @@
    لازوردي حبري + فيروزي، وأضابير بألسنة تحمل رمز المادة. */
 
 :root {
-  --lapis: #13294b;
-  --lapis-deep: #0d1f3b;
-  --tab: #13294b;
+  --lapis: #1d4e89;
+  --lapis-deep: #163a68;
+  --tab: #1d4e89;
   --tq: #2cc4be;
   --tq-ink: #0b6b6a;
   --tq-soft: #ddf3f1;
-  --paper: #f4f6f9;
+  --paper: #f8fafc;
   --card: #ffffff;
   --text: #17233a;
   --muted: #566782;
-  --line: #dae1eb;
+  --line: #e3e9f1;
   --gold: #d99a1e;
   --warn-bg: #fff4d6;
   --warn-text: #6b4a00;
@@ -113,7 +113,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 1rem;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.btn-primary { background: var(--tq); color: var(--lapis-deep); }
+.btn-primary { background: var(--tq); color: #0d1f3b; }
 .btn-primary:hover { background: #5fdad4; }
 .btn-ghost { border-color: rgba(255, 255, 255, 0.38); color: #fff; background: transparent; }
 .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
