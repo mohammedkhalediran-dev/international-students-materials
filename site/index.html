@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p2-2">
+  <link rel="stylesheet" href="css/style.css?v=p2-3">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -128,13 +128,15 @@
   <!-- ===== 4. الأساتذة ===== -->
   <section class="section" id="professors">
     <div class="container">
-      <div class="section-head">
-        <div>
-          <h2>الأساتذة</h2>
-          <p>اضغط على اسم أستاذ لترى المواد التي يدرّسها في هذا الكورس.</p>
-        </div>
-      </div>
-      <div class="profs" id="profList"></div>
+      <details class="card fold" id="profFold">
+        <summary>
+          <span class="fold-title">
+            <h2>الأساتذة</h2>
+            <span class="fold-hint">اضغط على اسم أستاذ لترى المواد التي يدرّسها في هذا الكورس.</span>
+          </span>
+        </summary>
+        <div class="profs" id="profList"></div>
+      </details>
     </div>
   </section>
 
@@ -263,9 +265,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p2-2"></script>
-  <script src="js/i18n.js?v=p2-2"></script>
-  <script src="js/app.js?v=p2-2"></script>
+  <script src="data/courses.js?v=p2-3"></script>
+  <script src="js/i18n.js?v=p2-3"></script>
+  <script src="js/app.js?v=p2-3"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -659,6 +661,11 @@
           box.appendChild(b);
         });
       }
+
+      var profFold = $("profFold");
+      function openProfs() { if (profFold) profFold.open = true; }
+      document.querySelectorAll('a[href="#professors"]').forEach(function (a) { a.addEventListener("click", openProfs); });
+      if (location.hash === "#professors") openProfs();
 
       renderChips();
       renderGroups();

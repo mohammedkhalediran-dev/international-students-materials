@@ -623,10 +623,10 @@ a.ql:hover, button.ql:hover { color: var(--color-secondary-ink); }
 .subhead { margin-bottom: var(--space-4); font-size: var(--text-lg); font-weight: 700; }
 .faq details { margin-bottom: var(--space-2); overflow: hidden; }
 .faq details[open] { border-color: var(--color-secondary); }
-.faq summary, .lecture summary { list-style: none; cursor: pointer; }
-.faq summary::-webkit-details-marker, .lecture summary::-webkit-details-marker { display: none; }
+.faq summary, .lecture summary, .fold summary { list-style: none; cursor: pointer; }
+.faq summary::-webkit-details-marker, .lecture summary::-webkit-details-marker, .fold summary::-webkit-details-marker { display: none; }
 .faq summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); font-weight: 600; font-size: var(--text-sm); }
-.faq summary::after, .lecture summary::after {
+.faq summary::after, .lecture summary::after, .fold summary::after {
   content: "";
   flex: none;
   width: 8px;
@@ -636,7 +636,13 @@ a.ql:hover, button.ql:hover { color: var(--color-secondary-ink); }
   transform: rotate(45deg);
   transition: transform var(--ease);
 }
-.faq details[open] summary::after, .lecture[open] summary::after { transform: rotate(225deg); }
+.faq details[open] summary::after, .lecture[open] summary::after, .fold[open] summary::after { transform: rotate(225deg); }
+.fold { overflow: hidden; }
+.fold[open] { border-color: var(--color-secondary); }
+.fold summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); }
+.fold-title h2 { font-size: var(--text-xl); font-weight: 700; }
+.fold-hint { display: block; margin-top: var(--space-1); color: var(--color-muted); font-size: var(--text-sm); }
+.fold .profs { padding: 0 var(--space-5) var(--space-5); }
 .faq p { padding: 0 var(--space-4) var(--space-4); color: var(--color-muted); font-size: var(--text-sm); }
 
 /* ========== 5. صفحة المادة ========== */
