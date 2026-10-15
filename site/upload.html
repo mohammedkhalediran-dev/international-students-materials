@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>رفع المحاضرات | Medixa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <link rel="stylesheet" href="css/style.css?v=p3-12">
+  <link rel="stylesheet" href="css/upload.css?v=p3-12">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+  </script>
+</head>
+<body>
+  <noscript>
+    <p class="load-error">هذه الصفحة تحتاج إلى تفعيل JavaScript.</p>
+  </noscript>
+
+  <header class="up-top">
+    <div class="container up-top-in">
+      <a class="brand" href="index.html">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>
+        <span data-site-title></span>
+      </a>
+      <a class="btn btn-secondary btn-sm" href="index.html">العودة إلى الموقع</a>
+    </div>
+  </header>
+
+  <main class="container up-main" id="main">
+    <h1 class="up-title">رفع المحاضرات</h1>
+    <p class="up-lead">هذه الصفحة للمشرفين فقط. أدخل الرمز الخاص بك لتبدأ.</p>
+
+    <section class="card up-card" id="loginCard" aria-label="الدخول">
+      <form id="loginForm" autocomplete="off">
+        <label class="up-label" for="code">رمز الرفع</label>
+        <input class="field up-ltr" id="code" type="password" autocomplete="current-password" required>
+        <p class="up-msg" id="loginMsg" role="alert" hidden></p>
+        <div class="up-actions">
+          <button class="btn btn-primary" type="submit" id="loginBtn">دخول</button>
+        </div>
+      </form>
+    </section>
+
+    <div id="appArea" hidden>
+      <section class="card up-card" aria-label="رفع ملف">
+        <div class="up-who">
+          <p id="who"></p>
+          <button class="btn btn-secondary btn-sm" type="button" id="logout">خروج</button>
+        </div>
+
+        <form class="up-form" id="form" autocomplete="off" novalidate>
+          <div>
+            <label class="up-label" for="course">المادة</label>
+            <select class="field" id="course"></select>
+            <p class="up-hint up-ltr" id="courseEn"></p>
+          </div>
+
+          <div>
+            <label class="up-label" for="number">رقم المحاضرة</label>
+            <input class="field up-ltr" id="number" type="number" inputmode="numeric" min="1" max="999" step="1">
+            <p class="up-hint" id="lecHint">اختر المادة واكتب رقم المحاضرة.</p>
+          </div>
+
+          <div>
+            <label class="up-label" for="title">عنوان المحاضرة (كما هو في الملف، بالإنجليزية)</label>
+            <input class="field up-ltr" id="title" type="text" maxlength="200">
+          </div>
+
+          <div>
+            <label class="up-label" for="label">اسم الملف الذي يظهر للطلاب</label>
+            <input class="field up-ltr" id="label" type="text" maxlength="120" placeholder="Slides">
+            <p class="up-hint">مثال: Slides أو Lecture notes. إن تركته فارغاً يُؤخذ من اسم الملف.</p>
+          </div>
+
+          <div>
+            <label class="up-label" for="file">ملف PDF (حتى 20 ميغا)</label>
+            <input class="field" id="file" type="file" accept="application/pdf,.pdf">
+            <p class="up-hint" id="fileHint"></p>
+          </div>
+
+          <div id="progress" hidden>
+            <div class="bar"><i id="progressFill"></i></div>
+            <p class="bar-label" id="progressLabel"></p>
+          </div>
+
+          <p class="up-msg" id="formMsg" role="alert" hidden></p>
+
+          <div class="up-actions">
+            <button class="btn btn-primary" type="submit" id="send">رفع الملف</button>
+            <span class="up-hint">لا تغلق الصفحة أثناء الرفع.</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="card up-card" aria-label="الملفات المرفوعة">
+        <h2 class="up-sub">الملفات المرفوعة من هنا</h2>
+        <div id="list"></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=p3-12"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/app.js?v=p3-12"></script>
+  <script src="js/upload.js?v=p3-12"></script>
+</body>
+</html>

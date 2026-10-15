@@ -1,0 +1,33 @@
+/* css/upload.css — صفحة رفع المحاضرات (للمشرفين فقط)
+   كل القيم من متغيرات style.css؛ لا ألوان ولا مسافات مباشرة. */
+
+.up-top { background: var(--band-bg); border-bottom: 1px solid var(--band-line); }
+.up-top-in { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--header-h); }
+
+.up-main { max-width: 720px; padding-block: var(--space-6) var(--space-8); }
+.up-title { font-size: var(--text-xl); font-weight: 800; }
+.up-lead { margin-top: var(--space-1); color: var(--color-muted); }
+.up-card { margin-top: var(--space-5); padding: var(--space-5); }
+.up-sub { margin-bottom: var(--space-3); font-size: var(--text-lg); font-weight: 700; }
+
+.up-form { display: grid; gap: var(--space-4); }
+.up-label { display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); font-weight: 600; }
+.up-hint { margin-top: var(--space-1); color: var(--color-muted); font-size: var(--text-xs); }
+.up-ltr { direction: ltr; text-align: left; }
+input[type="file"].field { padding-block: var(--space-2); height: auto; }
+
+.up-msg { margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-danger-soft); color: var(--color-danger); font-size: var(--text-sm); }
+.up-msg.is-ok { background: var(--color-success-soft); color: var(--color-success); }
+.up-msg a { text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+
+.up-who { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); font-weight: 600; }
+.up-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+.up-form .up-actions { margin-top: 0; }
+
+.up-item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-3); border-top: 1px solid var(--color-border); }
+.up-item:first-child { border-top: 0; }
+.up-item-main { min-width: 0; }
+.up-item-name { font-weight: 600; overflow-wrap: anywhere; }
+.up-item-sub { color: var(--color-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.up-del { flex: none; background: var(--color-surface); border-color: var(--color-danger); color: var(--color-danger); }
+.up-del:hover { background: var(--color-danger-soft); }
