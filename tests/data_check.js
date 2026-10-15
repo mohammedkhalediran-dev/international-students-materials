@@ -10,7 +10,8 @@ const ids=new Set();COURSES.forEach(c=>{
  if(Math.abs(c.credits.theory+c.credits.practical-c.credits.total)>0.011)fail('credits '+c.id);
  c.lectures.forEach(l=>l.files.forEach(f=>{if(!fs.existsSync(path.join(root,SITE.filesBase,f.path)))fail('missing file '+f.path)}));
 });
-const tot=Math.round(COURSES.reduce((n,c)=>n+c.credits.total,0)*10)/10;
-if(tot!==16.3)fail('total '+tot);
+const semTot=s=>Math.round(COURSES.filter(c=>c.semester===s).reduce((n,c)=>n+c.credits.total,0)*100)/100;
+const tot=semTot(3);if(tot!==16.3)fail('sem3 total '+tot);
+if(semTot(2)!==20.61)fail('sem2 total '+semTot(2));
 if(SITE.university.image&&!fs.existsSync(path.join(root,SITE.university.image)))fail('university image');
 console.log(bad?bad+' failures':'data OK: '+COURSES.length+' courses, total '+tot);process.exit(bad?1:0);

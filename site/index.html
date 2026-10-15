@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p3-5">
+  <link rel="stylesheet" href="css/style.css?v=p3-6">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -36,7 +36,7 @@
     </a>
     <nav class="nav" id="nav" aria-label="التنقل الرئيسي">
         <a href="#home" data-ico="home" aria-current="page"><span>الرئيسية</span></a>
-        <a href="#subjects" data-ico="grid"><span>المواد</span></a>
+        <a href="#semesters" data-ico="grid"><span>المواد</span></a>
         <a href="#latest" data-ico="file" aria-current="page"><span>المحاضرات</span></a>
         <a href="#professors" data-ico="users" aria-current="page"><span>الأساتذة</span></a>
         <a href="#favorites" data-ico="star" aria-current="page"><span>المفضلة</span></a>
@@ -73,14 +73,8 @@
         <p class="hero-sub" id="heroSub"></p>
         <p class="hero-uni" id="heroUni" hidden></p>
         <div class="hero-cta">
-          <a class="btn btn-primary" href="#subjects">استكشف المواد الدراسية</a>
+          <a class="btn btn-primary" href="#semesters">استكشف المواد الدراسية</a>
           <a class="btn btn-secondary" href="#latest">أحدث المحاضرات</a>
-        </div>
-        <div class="figures" aria-label="ملخص المحتوى">
-          <div class="figure"><strong id="statCourses">0</strong><span>مادة</span></div>
-          <div class="figure"><strong id="statProfs">0</strong><span>أستاذ</span></div>
-          <div class="figure"><strong id="statCredits">0</strong><span>درجة الكورس كاملاً</span></div>
-          <div class="figure"><strong id="statFiles">0</strong><span>ملف PDF</span></div>
         </div>
       </div>
       <div class="hero-media">
@@ -92,7 +86,7 @@
   <!-- ===== الوصول السريع ===== -->
   <section aria-label="الوصول السريع">
     <div class="quick">
-      <a class="quick-item card hue-1" href="#subjects"><span class="tile" data-ico="book"></span><span class="quick-text"><strong>المواد الدراسية</strong><small>كل المواد في مكان واحد</small></span></a>
+      <a class="quick-item card hue-1" href="#semesters"><span class="tile" data-ico="book"></span><span class="quick-text"><strong>المواد الدراسية</strong><small>كل المواد في مكان واحد</small></span></a>
       <a class="quick-item card hue-2" href="#latest"><span class="tile" data-ico="file"></span><span class="quick-text"><strong>أحدث المحاضرات</strong><small>آخر الملفات المرفوعة</small></span></a>
       <span class="quick-item card is-soon hue-3" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>بنك الأسئلة</strong><small>أسئلة اختيار من متعدد للتدرّب</small></span><span class="badge badge-soon">قريباً</span></span>
       <span class="quick-item card is-soon hue-4" aria-disabled="true"><span class="tile" data-ico="calendar"></span><span class="quick-text"><strong>التقويم الأكاديمي</strong><small>مواعيد المحاضرات والامتحانات</small></span><span class="badge badge-soon">قريباً</span></span>
@@ -101,12 +95,25 @@
     </div>
   </section>
 
+  <!-- ===== الكورسات ===== -->
+  <section class="section" id="semesters">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>الكورسات</h2>
+          <p>اختر الكورس لتفتح موادّه.</p>
+        </div>
+      </div>
+      <div class="quick" id="semGrid"></div>
+    </div>
+  </section>
+
   <!-- ===== 2. المواد الدراسية: البحث والتصفية والبطاقات ===== -->
   <section class="section" id="subjects">
     <div class="container">
       <div class="section-head">
         <div>
-          <h2>المواد الدراسية</h2>
+          <h2>البحث في المواد</h2>
           <p>ابحث بالاسم أو الأستاذ أو المحاضرة، أو صفِّ حسب النوع.</p>
         </div>
       </div>
@@ -268,7 +275,7 @@
         <p id="footNotice" hidden></p>
       </div>
       <nav class="footer-links" aria-label="روابط التذييل">
-        <a href="#subjects">المواد</a>
+        <a href="#semesters">المواد</a>
         <a href="#latest">المحاضرات</a>
         <a href="#professors">الأساتذة</a>
         <a href="#tools">أدوات الطالب</a>
@@ -280,9 +287,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-5"></script>
-  <script src="js/i18n.js?v=p3-5"></script>
-  <script src="js/app.js?v=p3-5"></script>
+  <script src="data/courses.js?v=p3-6"></script>
+  <script src="js/i18n.js?v=p3-6"></script>
+  <script src="js/app.js?v=p3-6"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -296,16 +303,6 @@
       function href(c) { return "course.html?id=" + encodeURIComponent(c.id); }
       var norm = MS.norm;
 
-      /* ---------- الأرقام ---------- */
-      var profNames = {};
-      COURSES.forEach(function (c) { c.professors.forEach(function (p) { profNames[p.name] = 1; }); });
-      var credits = Math.round(COURSES.reduce(function (n, c) { return n + c.credits.total; }, 0) * 10) / 10;
-      var totalFiles = COURSES.reduce(function (n, c) { return n + MS.fileCount(c); }, 0);
-
-      MS.countUp($("statCourses"), COURSES.length, 0);
-      MS.countUp($("statProfs"), Object.keys(profNames).length, 0);
-      MS.countUp($("statCredits"), credits, 1);
-      MS.countUp($("statFiles"), totalFiles, 0);
 
       /* ---------- ودجت: تابع من حيث توقفت ---------- */
       function renderLast() {
@@ -316,7 +313,7 @@
         if (!c) {
           box.appendChild(el("p", "w-empty", "لم تفتح أي مادة بعد. اختر مادة من القائمة وابدأ."));
           var go = el("a", "w-link", "اذهب إلى المواد");
-          go.href = "#subjects";
+          go.href = "#semesters";
           box.appendChild(go);
           return;
         }
@@ -506,6 +503,26 @@
 
       function filtering() { return !!(state.q || state.prof || state.cat !== "all"); }
 
+      /* ---------- بطاقات الكورسات ---------- */
+      function renderSemesters() {
+        var grid = $("semGrid");
+        SEMESTERS.forEach(function (sem, i) {
+          var n = COURSES.filter(function (c) { return c.semester === sem.id; }).length;
+          var a = el("a", "quick-item card hue-" + (i % 6 + 1));
+          a.href = "semester.html?id=" + sem.id;
+          var tile = el("span", "tile");
+          tile.appendChild(MS.icon("book", 22));
+          a.appendChild(tile);
+          var txt = el("span", "quick-text");
+          txt.appendChild(el("strong", "", sem.name));
+          txt.appendChild(el("small", "", n ? MS.subjectsLabel(n) : "قريباً"));
+          a.appendChild(txt);
+          a.appendChild(el("span", "go"));
+          grid.appendChild(a);
+        });
+      }
+      renderSemesters();
+
       function renderGroups() {
         var root = $("groups");
         root.textContent = "";
@@ -524,27 +541,11 @@
           root.appendChild(lsec);
         }
 
-        if (!filtering()) {
-          // بلا بحث ولا تصفية: بطاقة لكل كورس، تفتح صفحته الخاصة
-          var semGrid = el("div", "quick");
-          SEMESTERS.forEach(function (sem, i) {
-            var n = COURSES.filter(function (c) { return c.semester === sem.id; }).length;
-            var a = el("a", "quick-item card hue-" + (i % 6 + 1));
-            a.href = "semester.html?id=" + sem.id;
-            var tile = el("span", "tile");
-            tile.appendChild(MS.icon("book", 22));
-            a.appendChild(tile);
-            var txt = el("span", "quick-text");
-            txt.appendChild(el("strong", "", sem.name));
-            txt.appendChild(el("small", "", n ? MS.subjectsLabel(n) : "قريباً"));
-            a.appendChild(txt);
-            a.appendChild(el("span", "go"));
-            semGrid.appendChild(a);
-          });
-          root.appendChild(semGrid);
+        if (!filtering() && !lr.length) {
           $("resultLine").textContent = "";
           return;
         }
+
 
         CATEGORIES.forEach(function (cat) {
           var list = sorted(COURSES.filter(function (c) { return c.category === cat.id && visible(c); }));

@@ -32,12 +32,12 @@ try:
     # 2) البحث والتصفية على البيانات الحقيقية
     p=page(b,'ar'); p.goto(BASE+'index.html'); p.wait_for_timeout(900)
     total=p.evaluate('COURSES.length'); basic=p.evaluate('COURSES.filter(c=>c.category=="basic").length')
-    chk(p.locator('#groups .quick-item').count()==p.evaluate('SEMESTERS.length'),'home shows one card per semester')
+    chk(p.locator('#semGrid .quick-item').count()==p.evaluate('SEMESTERS.length'),'home shows one card per semester')
     p2=page(b,'ar'); p2.goto(BASE+'semester.html?id=3'); p2.wait_for_timeout(700)
-    chk(p2.locator('.course-card').count()==total,'semester page lists all its subjects'); chk(not p2.errs,f'semester page js errors {p2.errs}'); p2.context.close()
+    chk(p2.locator('.course-card').count()==p.evaluate('COURSES.filter(c=>c.semester==3).length'),'semester page lists all its subjects'); chk(not p2.errs,f'semester page js errors {p2.errs}'); p2.context.close()
     p2=page(b,'ar'); p2.goto(BASE+'semester.html?id=1'); p2.wait_for_timeout(500)
     chk(p2.locator('.empty').count()==1 and p2.locator('.course-card').count()==0,'empty semester page'); p2.context.close()
-    for q,exp in [('Kidney',2),('الكلية',2),('للكلية',2),('فسيولوجيا',2),('11111131',1),('Shahbazi',1),('immune',0),('xyzxyz',0),('فيزيولوجيا',0)]:
+    for q,exp in [('Kidney',2),('الكلية',2),('للكلية',2),('فسيولوجيا',6),('11111131',1),('Shahbazi',1),('immune',0),('xyzxyz',0),('فيزيولوجيا',0)]:
         p.fill('#search',q); p.wait_for_timeout(150); chk(count(p)==exp,f'search "{q}" -> {exp} (got {count(p)})')
     p.fill('#search','immune'); p.wait_for_timeout(150); chk(p.locator('.lec-results .latest-item').count()==1,'lecture search immune')
     # كتابة فارسية (ی/ک) تطابق النص العربي (ي/ك)
@@ -47,12 +47,6 @@ try:
     p.click('#chips button:nth-child(1)'); p.fill('#search','zzz'); p.wait_for_timeout(150)
     chk(p.locator('#groups .empty').count()==1,'empty state on no results')
     p.fill('#search','')
-    # الأرقام من السجلات الفعلية
-    p.wait_for_timeout(1500)
-    files=p.evaluate('COURSES.reduce((n,c)=>n+c.lectures.reduce((m,l)=>m+l.files.length,0),0)')
-    p.evaluate('document.querySelector(".figures").scrollIntoView()'); p.wait_for_timeout(1600)
-    chk(p.inner_text('#statFiles').strip()==str(files),'files stat = actual records')
-    chk(p.inner_text('#statCourses').strip()==str(total),'courses stat = actual records')
     # لوحة المفاتيح والتركيز الظاهر
     p.goto(BASE+'index.html'); p.wait_for_timeout(600)
     p.keyboard.press('Tab'); chk(p.evaluate('document.activeElement.className')=='skip','first Tab reaches skip link')
