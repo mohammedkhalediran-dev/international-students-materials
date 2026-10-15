@@ -20,9 +20,15 @@
 أضف `draft: true` إلى المحاضرة أو الملف فيختفي من القوائم والأرقام والبحث.
 تنبيه: لا يحمي هذا الملف نفسه؛ أي ملف داخل مجلد files/ يمكن فتحه برابطه المباشر. لا ترفع ملفاً غير جاهز.
 
-## رفع المحاضرات من الموقع
+## رفع المحاضرات من الموقع (Cloudflare Pages)
 
-1. في Netlify: Site configuration ← Environment variables ← أضف `UPLOAD_CODES` بصيغة `سارة:رمز-طويل-1,علي:رمز-طويل-2` (كل رمز 8 أحرف فأكثر، بلا `:` ولا `,`).
-2. أعد النشر (Deploys ← Trigger deploy).
-3. افتح `/upload.html` وأدخل الرمز. الحد الأقصى 20 ميغا للملف.
-4. للتجربة المحلية: `node tests/dev_server.mjs` (مخزن في الذاكرة).
+الرفع يعمل بدالة في `functions/api/[[path]].js` ومنطقها في `lib/upload-core.mjs`، والتخزين في Cloudflare KV.
+
+1. في Cloudflare: Workers & Pages ← Create ← Pages ← Connect to Git ← اختر المستودع. Build command: اتركه فارغاً. Build output directory: `site`.
+2. أنشئ KV: Storage & Databases ← KV ← Create، باسم `lectures`.
+3. في مشروع Pages: Settings ← Bindings ← Add ← KV namespace. اسم المتغير `LECTURES` والمساحة `lectures`.
+4. Settings ← Variables and Secrets ← Add: الاسم `UPLOAD_CODES`، النوع Secret، والقيمة `سارة:رمز-طويل-1,علي:رمز-طويل-2` (كل رمز 8 أحرف فأكثر، بلا `:` ولا `,`).
+5. أعد النشر ثم افتح `/upload.html`. الحد الأقصى 20 ميغا للملف.
+6. للتجربة المحلية: `node tests/dev_server.mjs` (مخزن في الذاكرة).
+
+حدود Cloudflare المجانية: 1000 كتابة و1000 حذف و1000 عملية قائمة في اليوم، و100 ألف قراءة. كل ملف يستهلك قطعة كتابة لكل 2 ميغا.

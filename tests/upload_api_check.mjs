@@ -1,5 +1,5 @@
-// node tests/upload_api_check.mjs — فحص منطق الرفع (netlify/lib/core.mjs) بمخزن في الذاكرة
-import { handle, LIMITS } from "../netlify/lib/core.mjs";
+// node tests/upload_api_check.mjs — فحص منطق الرفع (lib/upload-core.mjs) بمخزن في الذاكرة
+import { handle, LIMITS } from "../lib/upload-core.mjs";
 import { createMockStore } from "./mock_store.mjs";
 import { randomUUID } from "node:crypto";
 
@@ -55,7 +55,7 @@ const up = await upload("code-sara-1234", big);
 chk(up.res.status === 200, "رفع 5 ميغا على 3 قطع ينجح " + up.res.status);
 const entry = (await up.res.json()).entry;
 chk(entry && entry.size === big.length && entry.courseId === "medical-immunology", "الإدخال يحمل الحجم والمادة");
-const listed = await (await call("uploads", { method: "GET" })).json();
+const listed = await (await call("uploads", { method: "GET", code: "code-sara-1234" })).json();
 chk(listed.items.length === 1 && !("by" in listed.items[0]), "القائمة العامة لا تكشف اسم الرافع");
 const js = await (await call("uploads.js", { method: "GET" })).text();
 chk(js.startsWith("window.UPLOADS = [") && js.includes(up.id), "uploads.js يعرّف window.UPLOADS");
@@ -85,11 +85,11 @@ chk((await call("finish", { code: "code-sara-1234", body: { id: missing, chunks:
 
 // 5) إعادة الطلب لا تكرر الإدخال
 const again = await call("finish", { code: "code-sara-1234", body: { id: up.id, chunks: 3, ...meta } });
-chk(again.status === 200 && (await (await call("uploads", { method: "GET" })).json()).items.filter((e) => e.id === up.id).length === 1, "إعادة finish لا تكرر الإدخال");
+chk(again.status === 200 && (await (await call("uploads", { method: "GET", code: "code-sara-1234" })).json()).items.filter((e) => e.id === up.id).length === 1, "إعادة finish لا تكرر الإدخال");
 
 // 6) رفعان متزامنان لا يضيع أحدهما
 const [a, b] = await Promise.all([upload("code-sara-1234", pdf(3000), { number: 3 }), upload("code-ali-98765", pdf(4000), { number: 4 })]);
-const ids = (await (await call("uploads", { method: "GET" })).json()).items.map((e) => e.id);
+const ids = (await (await call("uploads", { method: "GET", code: "code-sara-1234" })).json()).items.map((e) => e.id);
 chk(a.res.status === 200 && b.res.status === 200 && ids.includes(a.id) && ids.includes(b.id), "رفعان متزامنان يبقيان معاً");
 
 // 7) إلغاء الرفع والحذف
@@ -105,6 +105,20 @@ chk(store.keys(`chunks/${up.id}/`).length === 0, "الحذف يزيل القطع
 chk((await call(`file/${up.id}`, { method: "GET" })).status === 404, "الملف المحذوف لا يُعرض");
 chk((await call("delete", { code: "code-ali-98765", body: { id: up.id } })).status === 404, "حذف ثانٍ: غير موجود");
 chk((await call("nothing", { method: "GET" })).status === 404, "مسار مجهول: 404");
+
+// 8) الفهرس والمخزن
+chk((await call("uploads", { method: "GET" })).status === 401, "قائمة المشرفين تحتاج رمزاً");
+const keep = (await (await call("uploads", { method: "GET", code: "code-sara-1234" })).json()).items.map((e) => e.id).sort();
+store._data.delete("index"); // ضياع الفهرس
+const rebuilt = await (await call("uploads.js", { method: "GET" })).text();
+chk(keep.length > 0 && keep.every((id) => rebuilt.includes(id)), "الفهرس يُعاد بناؤه من مفاتيح الإدخالات عند ضياعه");
+const stale = await upload("code-sara-1234", pdf(2000), { number: 9 });
+store._data.set("index", { value: Buffer.from("[]"), metadata: {}, expires: 0 }); // فهرس قديم لا يعرف الملف
+chk((await call(`file/${stale.id}`, { method: "GET" })).status === 200, "الملف يُعرض حتى لو تأخر الفهرس");
+const longTitle = await upload("code-sara-1234", pdf(1500), { number: 10, title: "ع".repeat(300), label: "ع".repeat(200) });
+chk(longTitle.res.status === 200, "عنوان طويل بالعربية يُقصّ ويدخل حد البيانات الوصفية " + longTitle.res.status);
+const noStore = await handle(new Request("https://site.test/api/uploads.js"), { store: null, env: () => CODES, ip: "1.1.1.1", now: () => clock });
+chk((await noStore.text()).startsWith("window.UPLOADS = []"), "بلا مخزن مربوط: قائمة فارغة لا خطأ");
 
 console.log(fails.length ? `${passes} passed, ${fails.length} failed` : `upload api OK: ${passes} checks`);
 process.exit(fails.length ? 1 : 0);

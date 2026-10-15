@@ -209,7 +209,7 @@
       var a = el("a", "", "افتح المحاضرة");
       a.href = "course.html?id=" + encodeURIComponent(courseId) + "#lec-" + number;
       wrap.appendChild(a);
-      wrap.appendChild(document.createTextNode(" (قد يتأخر ظهوره للطلاب نصف دقيقة)."));
+      wrap.appendChild(document.createTextNode(" (قد يتأخر ظهوره للطلاب دقيقة)."));
       showMsg(msgBox, wrap, true);
       MS.toast("تم رفع الملف");
       $("file").value = "";

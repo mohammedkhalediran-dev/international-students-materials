@@ -4,7 +4,7 @@ import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { handle } from "../netlify/lib/core.mjs";
+import { handle } from "../lib/upload-core.mjs";
 import { createMockStore } from "./mock_store.mjs";
 
 const SITE = join(fileURLToPath(new URL(".", import.meta.url)), "..", "site");

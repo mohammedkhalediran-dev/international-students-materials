@@ -1,37 +1,29 @@
-// tests/mock_store.mjs — مخزن في الذاكرة يحاكي واجهة @netlify/blobs التي نستخدمها فقط
-// (get، getWithMetadata، getMetadata، set مع onlyIfMatch وonlyIfNew، delete).
+// tests/mock_store.mjs — مخزن في الذاكرة يحاكي واجهة lib/kv-store.mjs:
+// get، set (مع metadata وttl)، delete، list(prefix). ويفرض حد KV للبيانات الوصفية (1024 بايت).
 export function createMockStore() {
-  const data = new Map(); // key -> { value: Buffer, etag, metadata }
-  let counter = 0;
+  const data = new Map(); // key -> { value: Buffer, metadata, expires }
   const toBuf = (v) => (typeof v === "string" ? Buffer.from(v) : Buffer.from(new Uint8Array(v)));
-  const shape = (value, type) => {
-    if (type === "json") return JSON.parse(value.toString());
-    if (type === "arrayBuffer") return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
-    return value.toString();
-  };
-  return {
+  const live = (k, now) => { const e = data.get(k); if (e && e.expires && e.expires <= now) { data.delete(k); return null; } return e || null; };
+  const store = {
     _data: data,
+    now: () => Date.now(),
     async get(key, opts = {}) {
-      const e = data.get(key);
-      return e ? shape(e.value, opts.type) : null;
-    },
-    async getWithMetadata(key, opts = {}) {
-      const e = data.get(key);
-      return e ? { data: shape(e.value, opts.type), etag: e.etag, metadata: e.metadata } : null;
-    },
-    async getMetadata(key) {
-      const e = data.get(key);
-      return e ? { etag: e.etag, metadata: e.metadata } : null;
+      const e = live(key, store.now());
+      if (!e) return null;
+      if (opts.type === "json") return JSON.parse(e.value.toString());
+      if (opts.type === "arrayBuffer") return e.value.buffer.slice(e.value.byteOffset, e.value.byteOffset + e.value.byteLength);
+      return e.value.toString();
     },
     async set(key, value, opts = {}) {
-      const cur = data.get(key);
-      if (opts.onlyIfNew && cur) return { modified: false };
-      if (opts.onlyIfMatch && (!cur || cur.etag !== opts.onlyIfMatch)) return { modified: false };
-      const etag = "e" + ++counter;
-      data.set(key, { value: toBuf(value), etag, metadata: opts.metadata || {} });
-      return { modified: true, etag };
+      if (opts.metadata && Buffer.byteLength(JSON.stringify(opts.metadata)) > 1024) throw new Error("metadata too large");
+      if (opts.ttl !== undefined && opts.ttl < 60) throw new Error("ttl below KV minimum");
+      data.set(key, { value: toBuf(value), metadata: opts.metadata || {}, expires: opts.ttl ? store.now() + opts.ttl * 1000 : 0 });
     },
     async delete(key) { data.delete(key); },
+    async list(prefix) {
+      return [...data.keys()].filter((k) => k.startsWith(prefix) && live(k, store.now())).sort().map((k) => ({ key: k, metadata: data.get(k).metadata }));
+    },
     keys(prefix = "") { return [...data.keys()].filter((k) => k.startsWith(prefix)); }
   };
+  return store;
 }
