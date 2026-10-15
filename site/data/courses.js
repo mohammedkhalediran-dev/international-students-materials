@@ -34,7 +34,7 @@
 */
 
 const SITE = {
-  title: "مواد الطلاب الدوليين",
+  title: "Medixa",
   subtitle: "كل ملفات المواد في مكان واحد. اختر المادة، ثم المحاضرة، وافتح الملف.",
   filesBase: "files/",
   disclaimer: "",
