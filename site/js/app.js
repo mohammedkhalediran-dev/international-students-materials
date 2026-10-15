@@ -237,7 +237,7 @@
         var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
         var top = MS.el("div", "cc-cover");
         top.appendChild(MS.icon(c.icon, 40));
-        top.appendChild(MS.el("span", "cc-code", c.code));
+        if (c.code) top.appendChild(MS.el("span", "cc-code", c.code));
         top.appendChild(favButton(c, onFav));
         art.appendChild(top);
 
