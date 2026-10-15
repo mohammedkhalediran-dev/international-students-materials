@@ -525,5 +525,17 @@ const COURSES = [
     credits: null,
     professors: [{ name: "Dr. Babazadeh" }],
     lectures: []
+  },
+  {
+    id: "persian-literature-1",
+    semester: 1,
+    category: "general",
+    icon: "quill",
+    name: "Persian Literature",
+    nameAr: "الأدب الفارسي",
+    code: "",
+    credits: { total: 2 },
+    professors: [],
+    lectures: []
   }
 ];
