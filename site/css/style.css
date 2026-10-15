@@ -628,6 +628,8 @@ html[dir="ltr"] .cc-cover .cc-code { right: auto; left: var(--space-4); }
 a.quick-item:hover, button.quick-item:hover { border-color: var(--color-secondary); box-shadow: var(--shadow-md); }
 .quick-item .badge { position: absolute; inset-block-start: var(--space-2); inset-inline-end: var(--space-2); }
 .quick-item .tile { background: var(--h-bg); color: var(--h-ink); }
+.quick-item.is-current { border-color: var(--h-ink); background: var(--h-bg); }
+.quick-item.is-current .badge { position: static; margin-inline-start: auto; }
 .quick-text { flex: 1; min-width: 0; }
 .quick-text strong { display: block; font-size: var(--text-sm); font-weight: 700; line-height: var(--leading-tight); }
 .quick-text small { display: block; color: var(--color-muted); font-size: var(--text-xs); }
