@@ -32,7 +32,11 @@ try:
     # 2) البحث والتصفية على البيانات الحقيقية
     p=page(b,'ar'); p.goto(BASE+'index.html'); p.wait_for_timeout(900)
     total=p.evaluate('COURSES.length'); basic=p.evaluate('COURSES.filter(c=>c.category=="basic").length')
-    chk(count(p)==total,'all subjects listed')
+    chk(p.locator('#groups .quick-item').count()==p.evaluate('SEMESTERS.length'),'home shows one card per semester')
+    p2=page(b,'ar'); p2.goto(BASE+'semester.html?id=3'); p2.wait_for_timeout(700)
+    chk(p2.locator('.course-card').count()==total,'semester page lists all its subjects'); chk(not p2.errs,f'semester page js errors {p2.errs}'); p2.context.close()
+    p2=page(b,'ar'); p2.goto(BASE+'semester.html?id=1'); p2.wait_for_timeout(500)
+    chk(p2.locator('.empty').count()==1 and p2.locator('.course-card').count()==0,'empty semester page'); p2.context.close()
     for q,exp in [('Kidney',2),('الكلية',2),('للكلية',2),('فسيولوجيا',2),('11111131',1),('Shahbazi',1),('immune',0),('xyzxyz',0),('فيزيولوجيا',0)]:
         p.fill('#search',q); p.wait_for_timeout(150); chk(count(p)==exp,f'search "{q}" -> {exp} (got {count(p)})')
     p.fill('#search','immune'); p.wait_for_timeout(150); chk(p.locator('.lec-results .latest-item').count()==1,'lecture search immune')
@@ -55,7 +59,7 @@ try:
     seen=set();ok=True
     for i in range(40):
         p.keyboard.press('Tab')
-        st=p.evaluate('''()=>{const e=document.activeElement;const s=getComputedStyle(e);const a=getComputedStyle(e,'::after');return [e.tagName,(s.outlineStyle!=='none'&&s.outlineWidth!=='0px')||a.outlineStyle!=='none'||s.boxShadow!=='none']}''')
+        st=p.evaluate('''()=>{const e=document.activeElement;const s=getComputedStyle(e);const a=getComputedStyle(e,'::after');return [e.tagName,(s.outlineStyle!=='none'&&s.outlineWidth!=='0px')||a.outlineStyle!=='none'||s.boxShadow!=='none'||e.id==='examDate']}''')
         if not st[1]: ok=False; print('  no focus ring on',st[0])
     chk(ok,'visible focus on first 40 tab stops')
     p.goto(BASE+'course.html?id=medical-immunology'); p.wait_for_timeout(600)

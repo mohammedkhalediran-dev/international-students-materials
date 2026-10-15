@@ -542,9 +542,8 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
 .result-line:empty { display: none; }
 
 /* ---- مجموعات المواد ---- */
-.group { margin-top: var(--space-4); }
+.group { margin-top: var(--space-5); }
 .group-head { display: flex; align-items: baseline; gap: var(--space-3); }
-.group.fold .course-grid, .group.fold .latest { padding: 0 var(--space-5) var(--space-5); }
 .group-title { font-size: var(--text-lg); font-weight: 700; }
 .group-count { color: var(--color-muted); font-size: var(--text-sm); }
 
@@ -756,13 +755,6 @@ a.ql:hover, button.ql:hover { color: var(--color-secondary-ink); }
 .fold { overflow: hidden; }
 .fold[open] { border-color: var(--color-secondary); }
 .fold summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); }
-.group.fold summary, .semester.fold summary { justify-content: flex-start; }
-.semester { margin-top: var(--space-4); }
-.semester-body { padding: 0 var(--space-5) var(--space-5); }
-.semester-body .group:first-child { margin-top: 0; }
-.semester-empty { padding: var(--space-4); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-md); color: var(--color-muted); font-size: var(--text-sm); text-align: center; }
-.semester > summary .group-title { font-size: var(--text-xl); }
-.group.fold summary::after, .semester.fold summary::after { margin-inline-start: auto; }
 .fold-title h2 { font-size: var(--text-xl); font-weight: 700; }
 .fold-hint { display: block; margin-top: var(--space-1); color: var(--color-muted); font-size: var(--text-sm); }
 .fold .profs { padding: 0 var(--space-5) var(--space-5); }
@@ -989,8 +981,6 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
 }
 @media (max-width: 560px) {
   .profs { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
-  .group.fold .course-grid { padding: 0 var(--space-3) var(--space-3); }
-  .semester-body { padding: 0 var(--space-3) var(--space-3); }
   .prof-card { flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); }
   .prof-avatar { width: 32px; height: 32px; font-size: var(--text-sm); }
 }

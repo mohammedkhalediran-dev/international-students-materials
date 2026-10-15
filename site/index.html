@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p3-4">
+  <link rel="stylesheet" href="css/style.css?v=p3-5">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -280,9 +280,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-4"></script>
-  <script src="js/i18n.js?v=p3-4"></script>
-  <script src="js/app.js?v=p3-4"></script>
+  <script src="data/courses.js?v=p3-5"></script>
+  <script src="js/i18n.js?v=p3-5"></script>
+  <script src="js/app.js?v=p3-5"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -452,68 +452,12 @@
         return "قرأت " + MS.progress.done(c) + " من " + MS.lecturesLabel(c.lectures.length, true) + "، " + MS.filesLabel(files);
       }
 
-      function favButton(c) {
-        var b = el("button", "fav");
-        b.type = "button";
-        b.appendChild(MS.icon("star", 20));
-        function paint() {
-          var on = MS.favs.has(c.id);
-          b.classList.toggle("is-fav", on);
-          b.setAttribute("aria-pressed", String(on));
-          b.setAttribute("aria-label", (on ? "إزالة من المفضلة: " : "إضافة إلى المفضلة: ") + c.nameAr);
-        }
-        paint();
-        b.addEventListener("click", function () {
-          var on = MS.favs.toggle(c.id);
-          paint();
-          MS.toast(on ? "أُضيفت المادة إلى المفضلة" : "أُزيلت المادة من المفضلة");
+      /* بطاقة المادة: مكوّن مشترك (MS.courseCard في app.js) */
+      function makeCard(c) {
+        return MS.courseCard(c, function () {
           renderChips();
           if (state.cat === "fav") renderGroups();
         });
-        return b;
-      }
-
-      /* بطاقة المادة: مكوّن واحد لكل المواد (العلوم الأساسية والعامة) */
-      function makeCard(c) {
-        var art = el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
-        var top = el("div", "cc-cover");
-        top.appendChild(MS.icon(c.icon, 40));
-        top.appendChild(el("span", "cc-code", c.code));
-        top.appendChild(favButton(c));
-        art.appendChild(top);
-
-        var title = el("h3", "cc-title en");
-        var a = el("a", "cover", c.name);
-        a.href = href(c);
-        title.appendChild(a);
-        art.appendChild(title);
-        art.appendChild(el("p", "cc-ar", c.nameAr));
-        art.appendChild(el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · ")));
-
-        art.appendChild(el("p", "cc-grade", "الدرجة " + c.credits.total));
-        var foot = el("div", "cc-foot");
-        var total = c.lectures.length;
-        if (total) {
-          var done = MS.progress.done(c);
-          var prog = el("div", "cc-progress");
-          var bar = el("div", "bar");
-          var fill = el("i");
-          fill.style.setProperty("--p", Math.round(done / total * 100) + "%");
-          bar.appendChild(fill);
-          prog.appendChild(bar);
-          prog.appendChild(el("div", "bar-label", done + " من " + total + " مقروءة"));
-          foot.appendChild(prog);
-        }
-        var meta = el("div", "cc-meta");
-        meta.appendChild(el("span", total ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : "لم تُرفع ملفات بعد"));
-        var open = el("span", "cc-open");
-        open.setAttribute("aria-hidden", "true");
-        open.appendChild(el("span", "", "فتح المادة"));
-        open.appendChild(el("span", "go"));
-        meta.appendChild(open);
-        foot.appendChild(meta);
-        art.appendChild(foot);
-        return art;
       }
 
       /* ---------- بحث داخل عناوين المحاضرات ---------- */
@@ -560,7 +504,6 @@
         return out;
       }
 
-      var groupOpen = {};
       function filtering() { return !!(state.q || state.prof || state.cat !== "all"); }
 
       function renderGroups() {
@@ -581,49 +524,42 @@
           root.appendChild(lsec);
         }
 
-        SEMESTERS.forEach(function (sem) {
-          var inSem = COURSES.filter(function (c) { return c.semester === sem.id; });
-          var box = el("details", "semester card fold");
-          var sh = el("summary", "group-head");
-          sh.appendChild(el("h3", "group-title", sem.name));
-          sh.appendChild(el("span", "group-count", inSem.length ? MS.subjectsLabel(inSem.length) : "قريباً"));
-          box.appendChild(sh);
-          var body = el("div", "semester-body");
-          box.appendChild(body);
-          var shown = 0;
-
-          CATEGORIES.forEach(function (cat) {
-            var list = sorted(inSem.filter(function (c) { return c.category === cat.id && visible(c); }));
-            if (!list.length) return;
-            shown += list.length;
-
-            var sec = el("details", "group card fold");
-            var gkey = sem.id + "/" + cat.id;
-            sec.open = filtering() || groupOpen[gkey] !== false;
-            sec.addEventListener("toggle", function () { if (!filtering()) groupOpen[gkey] = sec.open; });
-            var head = el("summary", "group-head");
-            head.appendChild(el("h3", "group-title", cat.name));
-            head.appendChild(el("span", "group-count", MS.subjectsLabel(list.length)));
-            sec.appendChild(head);
-
-            var grid = el("div", "course-grid");
-            list.forEach(function (c) { grid.appendChild(makeCard(c)); });
-            sec.appendChild(grid);
-            body.appendChild(sec);
+        if (!filtering()) {
+          // بلا بحث ولا تصفية: بطاقة لكل كورس، تفتح صفحته الخاصة
+          var semGrid = el("div", "quick");
+          SEMESTERS.forEach(function (sem, i) {
+            var n = COURSES.filter(function (c) { return c.semester === sem.id; }).length;
+            var a = el("a", "quick-item card hue-" + (i % 6 + 1));
+            a.href = "semester.html?id=" + sem.id;
+            var tile = el("span", "tile");
+            tile.appendChild(MS.icon("book", 22));
+            a.appendChild(tile);
+            var txt = el("span", "quick-text");
+            txt.appendChild(el("strong", "", sem.name));
+            txt.appendChild(el("small", "", n ? MS.subjectsLabel(n) : "قريباً"));
+            a.appendChild(txt);
+            a.appendChild(el("span", "go"));
+            semGrid.appendChild(a);
           });
+          root.appendChild(semGrid);
+          $("resultLine").textContent = "";
+          return;
+        }
 
-          if (!inSem.length) {
-            // كورس بلا مواد بعد: يظهر فقط بلا بحث ولا تصفية
-            if (filtering()) return;
-            body.appendChild(el("p", "semester-empty", "لم تُضف مواد هذا الكورس بعد."));
-          } else if (!shown) {
-            return;
-          }
-          total += shown;
-          var skey = "s" + sem.id;
-          box.open = filtering() || (groupOpen[skey] !== undefined ? groupOpen[skey] : inSem.length > 0);
-          box.addEventListener("toggle", function (e) { if (e.target === box && !filtering()) groupOpen[skey] = box.open; });
-          root.appendChild(box);
+        CATEGORIES.forEach(function (cat) {
+          var list = sorted(COURSES.filter(function (c) { return c.category === cat.id && visible(c); }));
+          if (!list.length) return;
+          total += list.length;
+
+          var sec = el("section", "group");
+          var head = el("div", "group-head");
+          head.appendChild(el("h3", "group-title", cat.name));
+          head.appendChild(el("span", "group-count", MS.subjectsLabel(list.length)));
+          sec.appendChild(head);
+          var grid = el("div", "course-grid");
+          list.forEach(function (c) { grid.appendChild(makeCard(c)); });
+          sec.appendChild(grid);
+          root.appendChild(sec);
         });
 
         if (!total && !lr.length) {

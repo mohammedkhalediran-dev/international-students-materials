@@ -1,6 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v15";
-var SHELL = ["index.html", "course.html", "assets/university.webp"];
+var V = "ms-v16";
+var SHELL = ["index.html", "course.html", "semester.html", "assets/university.webp"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(V).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
 });

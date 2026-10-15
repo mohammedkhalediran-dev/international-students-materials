@@ -211,6 +211,72 @@
   MS.setLast = function (id) { save(KEY.last, id); };
   MS.getLast = function () { return load(KEY.last, null); };
 
+  /* ---------- بطاقة المادة (الرئيسية وصفحة الكورس) ---------- */
+  MS.courseCard = (function () {
+      function favButton(c, onFav) {
+        var b = MS.el("button", "fav");
+        b.type = "button";
+        b.appendChild(MS.icon("star", 20));
+        function paint() {
+          var on = MS.favs.has(c.id);
+          b.classList.toggle("is-fav", on);
+          b.setAttribute("aria-pressed", String(on));
+          b.setAttribute("aria-label", (on ? "إزالة من المفضلة: " : "إضافة إلى المفضلة: ") + c.nameAr);
+        }
+        paint();
+        b.addEventListener("click", function () {
+          var on = MS.favs.toggle(c.id);
+          paint();
+          MS.toast(on ? "أُضيفت المادة إلى المفضلة" : "أُزيلت المادة من المفضلة");
+          if (onFav) onFav();
+        });
+        return b;
+      }
+
+      function card(c, onFav) {
+        var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
+        var top = MS.el("div", "cc-cover");
+        top.appendChild(MS.icon(c.icon, 40));
+        top.appendChild(MS.el("span", "cc-code", c.code));
+        top.appendChild(favButton(c, onFav));
+        art.appendChild(top);
+
+        var title = MS.el("h3", "cc-title en");
+        var a = MS.el("a", "cover", c.name);
+        a.href = "course.html?id=" + encodeURIComponent(c.id);
+        title.appendChild(a);
+        art.appendChild(title);
+        art.appendChild(MS.el("p", "cc-ar", c.nameAr));
+        art.appendChild(MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · ")));
+
+        art.appendChild(MS.el("p", "cc-grade", "الدرجة " + c.credits.total));
+        var foot = MS.el("div", "cc-foot");
+        var total = c.lectures.length;
+        if (total) {
+          var done = MS.progress.done(c);
+          var prog = MS.el("div", "cc-progress");
+          var bar = MS.el("div", "bar");
+          var fill = MS.el("i");
+          fill.style.setProperty("--p", Math.round(done / total * 100) + "%");
+          bar.appendChild(fill);
+          prog.appendChild(bar);
+          prog.appendChild(MS.el("div", "bar-label", done + " من " + total + " مقروءة"));
+          foot.appendChild(prog);
+        }
+        var meta = MS.el("div", "cc-meta");
+        meta.appendChild(MS.el("span", total ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : "لم تُرفع ملفات بعد"));
+        var open = MS.el("span", "cc-open");
+        open.setAttribute("aria-hidden", "true");
+        open.appendChild(MS.el("span", "", "فتح المادة"));
+        open.appendChild(MS.el("span", "go"));
+        meta.appendChild(open);
+        foot.appendChild(meta);
+        art.appendChild(foot);
+        return art;
+      }
+    return card;
+  })();
+
   /* ---------- إشعار قصير بعد كل إجراء ---------- */
   var toastTimer;
   MS.toast = function (msg) {
