@@ -106,9 +106,9 @@
   --color-secondary: #3db8b3;
   --color-secondary-ink: #5fd0cb;
   --color-secondary-soft: #143a3d;
-  --color-bg: #0f1a28;
-  --color-surface: #16243a;
-  --color-surface-alt: #1c2d46;
+  --color-bg: #0c1522;
+  --color-surface: #152238;
+  --color-surface-alt: #1b2c45;
   --color-text: #e6ecf3;
   --color-muted: #9aa8ba;
   --color-border: #2a3b55;
@@ -129,13 +129,17 @@
   --hue-5-bg: #173a2a; --hue-5-ink: #5cc58f;
   --hue-6-bg: #3d1f2b; --hue-6-ink: #f09ab7;
   --focus-ring: 0 0 0 3px rgba(95, 208, 203, 0.4);
+  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 14px 28px -12px rgba(0, 0, 0, 0.6);
 }
 
 /* ========== 2. الأساسيات والطباعة ========== */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 [id] { scroll-margin-top: calc(var(--header-h) + var(--space-4)); }
+@view-transition { navigation: auto; }
 body {
+  transition: background-color 0.25s ease, color 0.25s ease;
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
@@ -151,6 +155,7 @@ button { cursor: pointer; }
 [hidden] { display: none !important; }
 .ico { display: inline-flex; flex: none; }
 .ico svg { display: block; }
+.tile .ico svg, .cc-cover .ico svg { fill: currentColor; fill-opacity: 0.16; }
 
 :focus-visible { outline: 3px solid var(--color-secondary); outline-offset: 2px; border-radius: var(--radius-sm); }
 
@@ -420,7 +425,8 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
 }
 .fav:hover { background: var(--color-surface-alt); color: var(--color-fav); }
 .fav svg path { fill: none; }
-.fav.is-fav { color: var(--color-fav); }
+.fav.is-fav { color: var(--color-fav); animation: pop 0.3s ease; }
+@keyframes pop { 40% { transform: scale(1.3); } }
 .fav.is-fav svg path { fill: currentColor; }
 
 /* رابط يغطي البطاقة كلها */
@@ -544,7 +550,7 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
 
 /* ---- مجموعات المواد ---- */
 .group { margin-top: var(--space-5); }
-.group-head { display: flex; align-items: baseline; gap: var(--space-3); }
+.group-head { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4); }
 .group-title { font-size: var(--text-lg); font-weight: 700; }
 .group-count { color: var(--color-muted); font-size: var(--text-sm); }
 
@@ -555,25 +561,50 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 0 var(--space-4) var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
   overflow: hidden;
-  transition: border-color var(--ease), box-shadow var(--ease);
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
 }
-.course-card:hover { border-color: var(--color-secondary); box-shadow: var(--shadow-md); }
+/* شريط لون المادة: العلامة الوحيدة التي تميّز البطاقة */
+.course-card::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 4px;
+  background: var(--h-ink, var(--color-secondary));
+  opacity: 0.75;
+}
+.course-card:hover { border-color: var(--h-ink, var(--color-secondary)); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.course-card:active { transform: scale(0.985); box-shadow: var(--shadow-sm); }
 .cc-cover {
-  position: relative;
-  display: grid;
-  place-items: center;
-  height: 96px;
-  margin-inline: calc(var(--space-4) * -1);
-  background: var(--h-bg, var(--color-secondary-soft));
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   color: var(--h-ink, var(--color-secondary-ink));
 }
-/* الرمز مكتوب LTR فاتجاهه المنطقي معكوس؛ لذلك نحدد جهته فعلياً */
-.cc-cover .cc-code { position: absolute; inset-block-start: var(--space-3); right: var(--space-4); flex: none; }
-html[dir="ltr"] .cc-cover .cc-code { right: auto; left: var(--space-4); }
-.cc-cover .fav { position: absolute; inset-block-start: var(--space-1); inset-inline-end: var(--space-2); margin: 0; }
-.cc-cover .fav:hover { background: var(--color-surface); }
+/* أيقونة المادة داخل لوح ملوّن مزدوج الدرجة */
+.cc-cover > .ico {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--h-bg, var(--color-secondary-soft));
+  transition: transform var(--ease);
+}
+.course-card:hover .cc-cover > .ico { transform: rotate(-6deg) scale(1.06); }
+.cc-cover .cc-code {
+  margin-inline-start: auto;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-muted);
+  opacity: 1;
+  background: var(--color-surface-alt);
+}
+.cc-cover .fav { margin: 0; }
+.cc-cover .fav:hover { background: var(--color-surface-alt); }
 .hue-1 { --h-bg: var(--hue-1-bg); --h-ink: var(--hue-1-ink); }
 .hue-2 { --h-bg: var(--hue-2-bg); --h-ink: var(--hue-2-ink); }
 .hue-3 { --h-bg: var(--hue-3-bg); --h-ink: var(--hue-3-ink); }
@@ -581,7 +612,7 @@ html[dir="ltr"] .cc-cover .cc-code { right: auto; left: var(--space-4); }
 .hue-5 { --h-bg: var(--hue-5-bg); --h-ink: var(--hue-5-ink); }
 .hue-6 { --h-bg: var(--hue-6-bg); --h-ink: var(--hue-6-ink); }
 .cc-code { min-width: 0; color: inherit; opacity: 0.8; font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.02em; direction: ltr; text-align: end; }
-.cc-title { margin-top: var(--space-4); font-family: var(--font-body); font-size: var(--text-base); font-weight: 600; line-height: var(--leading-tight); overflow-wrap: anywhere; }
+.cc-title { margin-top: var(--space-3); font-family: var(--font-body); font-size: var(--text-base); font-weight: 600; line-height: var(--leading-tight); overflow-wrap: anywhere; }
 .cc-ar { margin-top: var(--space-1); color: var(--color-secondary-ink); font-size: var(--text-sm); font-weight: 600; }
 .cc-profs { margin-top: var(--space-2); color: var(--color-muted); font-size: var(--text-sm); line-height: 1.6; overflow-wrap: anywhere; }
 .cc-grade { margin-top: var(--space-1); color: var(--color-muted); font-size: var(--text-xs); }
@@ -624,9 +655,10 @@ html[dir="ltr"] .cc-cover .cc-code { right: auto; left: var(--space-4); }
   padding: var(--space-3) var(--space-4);
   text-align: start;
   font-family: inherit;
-  transition: border-color var(--ease), box-shadow var(--ease);
+  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
 }
-a.quick-item:hover, button.quick-item:hover { border-color: var(--color-secondary); box-shadow: var(--shadow-md); }
+a.quick-item:hover, button.quick-item:hover { border-color: var(--color-secondary); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+a.quick-item:active, button.quick-item:active { transform: scale(0.985); }
 .quick-item .badge { position: absolute; inset-block-start: var(--space-2); inset-inline-end: var(--space-2); }
 .quick-item .tile { background: var(--h-bg); color: var(--h-ink); }
 .quick-item.is-current { border-color: var(--h-ink); background: var(--h-bg); }
@@ -989,5 +1021,6 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
+  .course-card:hover, a.quick-item:hover, button.quick-item:hover { transform: none; }
 }
