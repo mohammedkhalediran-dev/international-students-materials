@@ -12,7 +12,7 @@
 //   POST delete         يحذف ملفاً مرفوعاً
 // الرمز يُرسَل في الترويسة x-upload-code، ورموز المساعدين في متغير البيئة UPLOAD_CODES بصيغة: اسم:رمز,اسم:رمز
 
-import { createHash, timingSafeEqual } from "node:crypto";
+// يعمل على Netlify وCloudflare وNode بلا ترميزات خاصة: التشفير عبر Web Crypto العام (بلا node:crypto).
 
 export const LIMITS = {
   chunk: 3 * 1024 * 1024,   // أكبر قطعة تقبلها الدالة (المتصفح يرسل 2 ميغا)
@@ -27,7 +27,15 @@ const MANIFEST = "manifest.json";
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const COURSE_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
-const sha = (s) => createHash("sha256").update(String(s)).digest();
+const enc = new TextEncoder();
+const sha = async (s) => new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(String(s))));
+const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, "0")).join("");
+function safeEqual(a, b) { // مقارنة بزمن ثابت
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+  return d === 0;
+}
 const pad = (i) => String(i).padStart(3, "0");
 const chunkKey = (id, i) => `chunks/${id}/${pad(i)}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -40,36 +48,34 @@ function json(body, status = 200, extra = {}) {
 }
 const fail = (error, status) => json({ ok: false, error }, status);
 
-export function parseCodes(raw) {
-  return String(raw || "")
-    .split(/[\n,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => {
-      const i = s.indexOf(":");
-      if (i < 1) return null;
-      const name = s.slice(0, i).trim();
-      const code = s.slice(i + 1).trim();
-      if (!name || code.length < LIMITS.minCode) return null; // الرموز القصيرة تُهمل
-      return { name, digest: sha(code) };
-    })
-    .filter(Boolean);
+export async function parseCodes(raw) {
+  const out = [];
+  for (const part of String(raw || "").split(/[\n,]+/)) {
+    const s = part.trim();
+    const i = s.indexOf(":");
+    if (!s || i < 1) continue;
+    const name = s.slice(0, i).trim();
+    const code = s.slice(i + 1).trim();
+    if (!name || code.length < LIMITS.minCode) continue; // الرموز القصيرة تُهمل
+    out.push({ name, digest: await sha(code) });
+  }
+  return out;
 }
 
 /* التحقق من الرمز مع قفل مؤقت بعد محاولات خاطئة كثيرة (حسب عنوان الجهاز) */
 async function authenticate(req, deps) {
-  const users = parseCodes(deps.env("UPLOAD_CODES"));
+  const users = await parseCodes(deps.env("UPLOAD_CODES"));
   if (!users.length) return { res: fail("not_configured", 503) };
 
   const now = deps.now();
-  const key = "attempts/" + sha(deps.ip || "unknown").toString("hex").slice(0, 32);
+  const key = "attempts/" + hex(await sha(deps.ip || "unknown")).slice(0, 32);
   const rec = await deps.store.get(key, { type: "json" });
   const active = rec && now - rec.first < LIMITS.lockMs ? rec : null;
   if (active && active.count >= LIMITS.attempts) return { res: fail("locked", 429) };
 
-  const given = sha(req.headers.get("x-upload-code") || "");
+  const given = await sha(req.headers.get("x-upload-code") || "");
   let found = null;
-  for (const u of users) if (timingSafeEqual(u.digest, given)) found = u; // بلا خروج مبكر
+  for (const u of users) if (safeEqual(u.digest, given)) found = u; // بلا خروج مبكر
 
   if (!found) {
     await deps.store.set(key, JSON.stringify({ count: (active ? active.count : 0) + 1, first: active ? active.first : now }));
