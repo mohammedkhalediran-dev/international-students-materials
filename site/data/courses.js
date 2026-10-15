@@ -194,7 +194,18 @@ const COURSES = [
     code: "22222252",
     credits: { theory: 0.7, practical: 0.12, total: 0.82 },
     professors: [{ name: "Dr. Ashrafpour" }],
-    lectures: []
+    lectures: [
+      {
+        number: 1,
+        title: "Introduction to kidney functions, renal organization, and the basic mechanisms of urine formation",
+        titleAr: "مقدمة في وظائف الكلية وتنظيمها وآلية تكوين البول",
+        files: [
+          { label: "Session 1 notes", path: "فسيولوجيا-الكلية/المحاضرة-1-Physiology-of-Kidneys-Session-1.pdf", added: "2026-10-15" },
+          { label: "Slides: Renal Physiology", path: "فسيولوجيا-الكلية/المحاضرة-1-Kidney-Slides.pdf", added: "2026-10-15" },
+          { label: "Guyton & Hall 2026, Chapter 26", path: "فسيولوجيا-الكلية/المحاضرة-1-Guyton-Chapter-26.pdf", added: "2026-10-15" }
+        ]
+      }
+    ]
   },
   {
     id: "biochemistry-hormones",
