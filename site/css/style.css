@@ -542,9 +542,9 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
 .result-line:empty { display: none; }
 
 /* ---- مجموعات المواد ---- */
-.group { margin-top: var(--space-6); }
-.group:first-child { margin-top: var(--space-4); }
-.group-head { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4); }
+.group { margin-top: var(--space-4); }
+.group-head { display: flex; align-items: baseline; gap: var(--space-3); }
+.group.fold .course-grid, .group.fold .latest { padding: 0 var(--space-5) var(--space-5); }
 .group-title { font-size: var(--text-lg); font-weight: 700; }
 .group-count { color: var(--color-muted); font-size: var(--text-sm); }
 
@@ -569,7 +569,9 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
   background: var(--h-bg, var(--color-secondary-soft));
   color: var(--h-ink, var(--color-secondary-ink));
 }
-.cc-cover .cc-code { position: absolute; inset-block-start: var(--space-3); inset-inline-start: var(--space-4); flex: none; }
+/* الرمز مكتوب LTR فاتجاهه المنطقي معكوس؛ لذلك نحدد جهته فعلياً */
+.cc-cover .cc-code { position: absolute; inset-block-start: var(--space-3); right: var(--space-4); flex: none; }
+html[dir="ltr"] .cc-cover .cc-code { right: auto; left: var(--space-4); }
 .cc-cover .fav { position: absolute; inset-block-start: var(--space-1); inset-inline-end: var(--space-2); margin: 0; }
 .cc-cover .fav:hover { background: var(--color-surface); }
 .hue-1 { --h-bg: var(--hue-1-bg); --h-ink: var(--hue-1-ink); }
@@ -754,6 +756,8 @@ a.ql:hover, button.ql:hover { color: var(--color-secondary-ink); }
 .fold { overflow: hidden; }
 .fold[open] { border-color: var(--color-secondary); }
 .fold summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); }
+.group.fold summary { justify-content: flex-start; }
+.group.fold summary::after { margin-inline-start: auto; }
 .fold-title h2 { font-size: var(--text-xl); font-weight: 700; }
 .fold-hint { display: block; margin-top: var(--space-1); color: var(--color-muted); font-size: var(--text-sm); }
 .fold .profs { padding: 0 var(--space-5) var(--space-5); }
@@ -980,6 +984,7 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
 }
 @media (max-width: 560px) {
   .profs { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .group.fold .course-grid { padding: 0 var(--space-3) var(--space-3); }
   .prof-card { flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); }
   .prof-avatar { width: 32px; height: 32px; font-size: var(--text-sm); }
 }

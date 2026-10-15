@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p3-1">
+  <link rel="stylesheet" href="css/style.css?v=p3-2">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -280,9 +280,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-1"></script>
-  <script src="js/i18n.js?v=p3-1"></script>
-  <script src="js/app.js?v=p3-1"></script>
+  <script src="data/courses.js?v=p3-2"></script>
+  <script src="js/i18n.js?v=p3-2"></script>
+  <script src="js/app.js?v=p3-2"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -560,6 +560,9 @@
         return out;
       }
 
+      var groupOpen = {};
+      function filtering() { return !!(state.q || state.prof || state.cat !== "all"); }
+
       function renderGroups() {
         var root = $("groups");
         root.textContent = "";
@@ -583,8 +586,10 @@
           if (!list.length) return;
           total += list.length;
 
-          var sec = el("section", "group");
-          var head = el("div", "group-head");
+          var sec = el("details", "group card fold");
+          sec.open = filtering() || groupOpen[cat.id] !== false;
+          sec.addEventListener("toggle", function () { if (!filtering()) groupOpen[cat.id] = sec.open; });
+          var head = el("summary", "group-head");
           head.appendChild(el("h3", "group-title", cat.name));
           head.appendChild(el("span", "group-count", MS.subjectsLabel(list.length)));
           sec.appendChild(head);
