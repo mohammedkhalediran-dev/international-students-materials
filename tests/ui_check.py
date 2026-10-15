@@ -32,7 +32,7 @@ try:
       pg.fill('#search','immune');pg.wait_for_timeout(300)
       chk('Overview' in pg.inner_text('#groups'),f'{lang} lecture search')
       pg.fill('#search','');pg.click('#chips .chip:nth-child(3)');pg.wait_for_timeout(300)
-      chk(pg.locator('#groups .course-card').count()==14,f'{lang} shortcut general')
+      chk(pg.locator('#groups .course-card').count()==15,f'{lang} shortcut general')
       pg.click('#searchBtn');chk(pg.evaluate('document.activeElement.id')=='search',f'{lang} search button')
       # dark mode + viewer dialog
       pg.goto(BASE+'course.html?id=medical-immunology');pg.wait_for_timeout(800)
