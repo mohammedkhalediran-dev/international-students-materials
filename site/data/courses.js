@@ -417,5 +417,77 @@ const COURSES = [
     credits: { theory: 2, practical: 0, total: 2 },
     professors: [],
     lectures: []
+  },
+  {
+    id: "life-doctrine",
+    semester: 1,
+    category: "general",
+    icon: "book",
+    name: "Aeen-e Zendegi",
+    nameAr: "آیین زندگی",
+    code: "",
+    credits: { theory: 2, practical: 0, total: 2 },
+    professors: [{ name: "Dr. Yadollahpoor" }],
+    lectures: []
+  },
+  {
+    id: "basic-english-1",
+    semester: 1,
+    category: "general",
+    icon: "chat",
+    name: "Basic English 1",
+    nameAr: "الإنجليزية الأساسية 1",
+    code: "",
+    credits: { theory: 2, practical: 0, total: 2 },
+    professors: [{ name: "Dr. Shams" }],
+    lectures: []
+  },
+  {
+    id: "health-services-principles-s1",
+    semester: 1,
+    category: "general",
+    icon: "shield",
+    name: "Principles of Health Services",
+    nameAr: "مبادئ الخدمات الصحية",
+    code: "",
+    credits: { theory: 1.5, practical: 0, total: 1.5 },
+    professors: [{ name: "Dr. Faramarzi" }],
+    lectures: []
+  },
+  {
+    id: "biochemistry-molecule-cell",
+    semester: 1,
+    category: "basic",
+    icon: "flask",
+    name: "Biochemistry of molecule - cell",
+    nameAr: "الكيمياء الحيوية للجزيئات والخلية",
+    code: "",
+    credits: { theory: 1.9, practical: 0.42, total: 2.32 },
+    professors: [{ name: "Dr. Halalkhor" }],
+    lectures: []
+  },
+  {
+    id: "basic-english-2",
+    semester: 1,
+    category: "general",
+    icon: "quill",
+    name: "Basic English 2",
+    nameAr: "الإنجليزية الأساسية 2",
+    code: "",
+    credits: { theory: 0, practical: 2, total: 2 },
+    professors: [{ name: "Dr. Shams" }],
+    lectures: []
+  },
+  {
+    id: "cell-physiology",
+    semester: 1,
+    category: "basic",
+    icon: "droplet",
+    name: "Cell Physiology",
+    nameAr: "فسيولوجيا الخلية",
+    code: "",
+    credits: { theory: 0.82, practical: 0, total: 0.82 },
+    professors: [{ name: "Dr. Ashrafpour" }],
+    lectures: []
   }
 ];
