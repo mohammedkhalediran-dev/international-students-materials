@@ -54,7 +54,7 @@ const SITE = {
 const SEMESTERS = [
   { id: 1, name: "الكورس الأول", nameEn: "1st semester" },
   { id: 2, name: "الكورس الثاني", nameEn: "2nd semester" },
-  { id: 3, name: "الكورس الثالث", nameEn: "3rd semester" }
+  { id: 3, name: "الكورس الثالث", nameEn: "3rd semester", current: true }
 ];
 
 const CATEGORIES = [

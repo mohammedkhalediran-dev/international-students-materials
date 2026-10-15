@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p3-10">
+  <link rel="stylesheet" href="css/style.css?v=p3-12">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -287,9 +287,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-10"></script>
-  <script src="js/i18n.js?v=p3-10"></script>
-  <script src="js/app.js?v=p3-10"></script>
+  <script src="data/courses.js?v=p3-12"></script>
+  <script src="js/i18n.js?v=p3-12"></script>
+  <script src="js/app.js?v=p3-12"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -508,15 +508,16 @@
         var grid = $("semGrid");
         SEMESTERS.forEach(function (sem, i) {
           var n = COURSES.filter(function (c) { return c.semester === sem.id; }).length;
-          var a = el("a", "quick-item card hue-" + (i % 6 + 1));
+          var a = el("a", "quick-item card hue-" + (sem.current ? 3 : i % 2 + 1) + (sem.current ? " is-current" : ""));
           a.href = "semester.html?id=" + sem.id;
           var tile = el("span", "tile");
-          tile.appendChild(MS.icon("book", 22));
+          tile.appendChild(MS.icon(sem.current ? "calendar" : "book", 22));
           a.appendChild(tile);
           var txt = el("span", "quick-text");
           txt.appendChild(el("strong", "", sem.name));
           txt.appendChild(el("small", "", n ? MS.subjectsLabel(n) : "قريباً"));
           a.appendChild(txt);
+          if (sem.current) a.appendChild(el("span", "badge", "الحالي"));
           a.appendChild(el("span", "go"));
           grid.appendChild(a);
         });
