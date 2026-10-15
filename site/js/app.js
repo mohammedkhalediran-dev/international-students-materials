@@ -3,7 +3,7 @@
   "use strict";
 
   var MS = (window.MS = {});
-  var KEY = { fav: "ms.fav", read: "ms.read", last: "ms.last", exam: "ms.exam", theme: "ms.theme", review: "ms.review" };
+  var KEY = { fav: "ms.fav", read: "ms.read", last: "ms.last", exam: "ms.exam", theme: "ms.theme", review: "ms.review", study: "ms.study" };
 
   MS.lang = (window.I18N && I18N.lang) || "ar";
 

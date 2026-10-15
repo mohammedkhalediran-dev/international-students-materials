@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p3-12">
+  <link rel="stylesheet" href="css/style.css?v=p3-13">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -115,9 +115,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-12"></script>
-  <script src="js/i18n.js?v=p3-12"></script>
-  <script src="js/app.js?v=p3-12"></script>
+  <script src="data/courses.js?v=p3-13"></script>
+  <script src="js/i18n.js?v=p3-13"></script>
+  <script src="js/app.js?v=p3-13"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -372,6 +372,15 @@
             MS.toast(on ? "أُضيفت المحاضرة إلى قائمة المراجعة" : "أُزيلت من قائمة المراجعة");
           });
           tools.appendChild(rv);
+
+          // وضع الدراسة: يظهر فقط للمحاضرات التي جُهّز لها محتوى (study: true في courses.js)
+          if (lec.study) {
+            var sl = el("a", "mark-btn study-link");
+            sl.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number;
+            sl.appendChild(MS.icon("book", 18));
+            sl.appendChild(el("span", "", "ذاكرها خطوة بخطوة"));
+            tools.insertBefore(sl, tools.firstChild);
+          }
           body.appendChild(tools);
 
           var list = el("ul", "files");
