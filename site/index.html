@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>مواد الطلاب الدوليين</title>
-  <meta name="description" content="ملفات الكورس الثالث في مكان واحد.">
+  <meta name="description" content="ملفات المواد الدراسية للطلاب الدوليين في مكان واحد.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p2-3">
+  <link rel="stylesheet" href="css/style.css?v=p3-3">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -28,21 +28,30 @@
 
   <div class="notice" id="notice" hidden></div>
 
-  <!-- ===== الرأس (نفسه في كل الصفحات) ===== -->
+  <!-- ===== القائمة الجانبية والرأس (نفسهما في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="index.html">
+      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="18" height="18"/><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)"/></g></svg>
+      <span data-site-title></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="التنقل الرئيسي">
+        <a href="#home" data-ico="home" aria-current="page"><span>الرئيسية</span></a>
+        <a href="#subjects" data-ico="grid"><span>المواد</span></a>
+        <a href="#latest" data-ico="file" aria-current="page"><span>المحاضرات</span></a>
+        <a href="#professors" data-ico="users" aria-current="page"><span>الأساتذة</span></a>
+        <a href="#favorites" data-ico="star" aria-current="page"><span>المفضلة</span></a>
+        <a href="#tools" data-ico="tools" aria-current="page"><span>أدوات الطالب</span></a>
+        <span class="nav-soon" data-ico="help" aria-disabled="true"><span>بنك الأسئلة</span><span class="badge badge-soon">قريباً</span></span>
+        <span class="nav-soon" data-ico="calendar" aria-disabled="true"><span>التقويم الأكاديمي</span><span class="badge badge-soon">قريباً</span></span>
+    </nav>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html">
-        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="18" height="18"/><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)"/></g></svg>
-        <span data-site-title></span>
-      </a>
-      <nav class="nav" id="nav" aria-label="التنقل الرئيسي">
-        <a href="#home">الرئيسية</a>
-        <a href="#subjects">المواد</a>
-        <a href="#latest">المحاضرات</a>
-        <a href="#professors">الأساتذة</a>
-      </nav>
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
-        <button class="icon-btn" id="searchBtn" type="button" aria-label="بحث"></button>
         <a class="icon-btn" id="favLink" href="#favorites" aria-label="المفضلة"></a>
         <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
           <option value="ar" lang="ar">عربي</option>
@@ -50,7 +59,6 @@
           <option value="en" lang="en">English</option>
         </select>
         <button class="icon-btn" id="themeBtn" type="button"></button>
-        <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="nav"></button>
       </div>
     </div>
   </header>
@@ -60,7 +68,7 @@
   <section class="hero band" id="home">
     <div class="container hero-grid">
       <div class="hero-text">
-        <p class="eyebrow">للطلاب الدوليين، الكورس الثالث</p>
+        <p class="eyebrow">للطلاب الدوليين</p>
         <h1>رحلتك في عالم الطب تبدأ من هنا</h1>
         <p class="hero-sub" id="heroSub"></p>
         <p class="hero-uni" id="heroUni" hidden></p>
@@ -81,13 +89,25 @@
     </div>
   </section>
 
+  <!-- ===== الوصول السريع ===== -->
+  <section aria-label="الوصول السريع">
+    <div class="quick">
+      <a class="quick-item card hue-1" href="#subjects"><span class="tile" data-ico="book"></span><span class="quick-text"><strong>المواد الدراسية</strong><small>كل المواد في مكان واحد</small></span></a>
+      <a class="quick-item card hue-2" href="#latest"><span class="tile" data-ico="file"></span><span class="quick-text"><strong>أحدث المحاضرات</strong><small>آخر الملفات المرفوعة</small></span></a>
+      <span class="quick-item card is-soon hue-3" aria-disabled="true"><span class="tile" data-ico="help"></span><span class="quick-text"><strong>بنك الأسئلة</strong><small>أسئلة اختيار من متعدد للتدرّب</small></span><span class="badge badge-soon">قريباً</span></span>
+      <span class="quick-item card is-soon hue-4" aria-disabled="true"><span class="tile" data-ico="calendar"></span><span class="quick-text"><strong>التقويم الأكاديمي</strong><small>مواعيد المحاضرات والامتحانات</small></span><span class="badge badge-soon">قريباً</span></span>
+      <button class="quick-item card hue-5" type="button" data-go="fav"><span class="tile" data-ico="star"></span><span class="quick-text"><strong>المفضلة</strong><small>موادك المحفوظة</small></span><span class="badge" id="favCount">0</span></button>
+      <a class="quick-item card hue-6" id="reviewShortcut" href="#review" hidden><span class="tile" data-ico="list"></span><span class="quick-text"><strong>قائمة المراجعة</strong><small>راجعها لاحقاً</small></span><span class="badge" id="reviewCount">0</span></a>
+    </div>
+  </section>
+
   <!-- ===== 2. المواد الدراسية: البحث والتصفية والبطاقات ===== -->
   <section class="section" id="subjects">
     <div class="container">
       <div class="section-head">
         <div>
           <h2>المواد الدراسية</h2>
-          <p>مواد الكورس الثالث. ابحث بالاسم أو الأستاذ أو المحاضرة، أو صفِّ حسب النوع.</p>
+          <p>ابحث بالاسم أو الأستاذ أو المحاضرة، أو صفِّ حسب النوع.</p>
         </div>
       </div>
       <div class="toolbar">
@@ -161,14 +181,9 @@
           </label>
           <p class="w-result" id="examOut" aria-live="polite"></p>
         </section>
-        <section class="panel card" aria-labelledby="qlT">
-          <h3 class="panel-title" id="qlT">الوصول السريع</h3>
-          <ul class="ql-list">
-            <li><button class="ql" type="button" data-go="fav"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8-4.3-4.1 5.9-.9z"/></svg></span><span>المفضلة</span><span class="badge" id="favCount">0</span></button></li>
-            <li id="reviewShortcut" hidden><a class="ql" href="#review"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span>قائمة المراجعة</span><span class="badge" id="reviewCount">0</span></a></li>
-            <li><span class="ql is-soon" aria-disabled="true"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/></svg></span><span>بنك الأسئلة</span><span class="badge badge-soon">قريباً</span></span></li>
-            <li><span class="ql is-soon" aria-disabled="true"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg></span><span>التقويم الأكاديمي</span><span class="badge badge-soon">قريباً</span></span></li>
-          </ul>
+        <section class="panel card" aria-labelledby="wProgT">
+          <h3 class="panel-title" id="wProgT">تقدّمك في القراءة</h3>
+          <div class="donut-wrap" id="wProg"></div>
         </section>
       </div>
     </div>
@@ -265,9 +280,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p2-3"></script>
-  <script src="js/i18n.js?v=p2-3"></script>
-  <script src="js/app.js?v=p2-3"></script>
+  <script src="data/courses.js?v=p3-3"></script>
+  <script src="js/i18n.js?v=p3-3"></script>
+  <script src="js/app.js?v=p3-3"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -372,6 +387,31 @@
       });
       renderExam();
 
+      /* ---------- ودجت: تقدّمك (من المحاضرات المقروءة فعلاً على هذا الجهاز) ---------- */
+      function renderProgress() {
+        var box = $("wProg");
+        box.textContent = "";
+        var total = 0, done = 0;
+        COURSES.forEach(function (c) { total += c.lectures.length; done += MS.progress.done(c); });
+        if (!total) { box.appendChild(el("p", "w-empty", "لم تُرفع ملفات بعد")); return; }
+        var pct = Math.round(done / total * 100);
+        var C = 2 * Math.PI * 40;
+        var ring = el("div", "donut");
+        ring.innerHTML = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="40"/><circle class="value" cx="50" cy="50" r="40" stroke-dasharray="' + (C * pct / 100).toFixed(1) + " " + C.toFixed(1) + '"/></svg>';
+        ring.appendChild(el("span", "donut-text", pct + "%"));
+        box.appendChild(ring);
+        var leg = el("div", "donut-legend");
+        [[done, "مقروءة"], [total - done, "المتبقية"]].forEach(function (r) {
+          var row = el("div");
+          row.appendChild(el("strong", "", String(r[0])));
+          row.appendChild(document.createTextNode(" "));
+          row.appendChild(el("span", "", r[1]));
+          leg.appendChild(row);
+        });
+        box.appendChild(leg);
+      }
+      renderProgress();
+
       /* ---------- المواد: بحث، تصفية، ترتيب ---------- */
       var state = { cat: "all", q: "", sort: "default", prof: null };
       var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -435,11 +475,9 @@
 
       /* بطاقة المادة: مكوّن واحد لكل المواد (العلوم الأساسية والعامة) */
       function makeCard(c) {
-        var art = el("article", "course-card card");
-        var top = el("div", "cc-top");
-        var tile = el("span", "tile");
-        tile.appendChild(MS.icon(c.icon, 22));
-        top.appendChild(tile);
+        var art = el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
+        var top = el("div", "cc-cover");
+        top.appendChild(MS.icon(c.icon, 40));
         top.appendChild(el("span", "cc-code", c.code));
         top.appendChild(favButton(c));
         art.appendChild(top);
@@ -522,6 +560,9 @@
         return out;
       }
 
+      var groupOpen = {};
+      function filtering() { return !!(state.q || state.prof || state.cat !== "all"); }
+
       function renderGroups() {
         var root = $("groups");
         root.textContent = "";
@@ -545,8 +586,10 @@
           if (!list.length) return;
           total += list.length;
 
-          var sec = el("section", "group");
-          var head = el("div", "group-head");
+          var sec = el("details", "group card fold");
+          sec.open = filtering() || groupOpen[cat.id] !== false;
+          sec.addEventListener("toggle", function () { if (!filtering()) groupOpen[cat.id] = sec.open; });
+          var head = el("summary", "group-head");
           head.appendChild(el("h3", "group-title", cat.name));
           head.appendChild(el("span", "group-count", MS.subjectsLabel(list.length)));
           sec.appendChild(head);

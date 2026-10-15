@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="مواد الطلاب">
-  <link rel="stylesheet" href="css/style.css?v=p2-3">
+  <link rel="stylesheet" href="css/style.css?v=p3-3">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -27,20 +27,30 @@
 
   <div class="notice" id="notice" hidden></div>
 
+  <!-- ===== القائمة الجانبية والرأس (نفسهما في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="index.html">
+      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="18" height="18"/><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)"/></g></svg>
+      <span data-site-title></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="التنقل الرئيسي">
+        <a href="index.html#home" data-ico="home"><span>الرئيسية</span></a>
+        <a href="index.html#subjects" data-ico="grid" aria-current="page"><span>المواد</span></a>
+        <a href="index.html#latest" data-ico="file"><span>المحاضرات</span></a>
+        <a href="index.html#professors" data-ico="users"><span>الأساتذة</span></a>
+        <a href="index.html#favorites" data-ico="star"><span>المفضلة</span></a>
+        <a href="index.html#tools" data-ico="tools"><span>أدوات الطالب</span></a>
+        <span class="nav-soon" data-ico="help" aria-disabled="true"><span>بنك الأسئلة</span><span class="badge badge-soon">قريباً</span></span>
+        <span class="nav-soon" data-ico="calendar" aria-disabled="true"><span>التقويم الأكاديمي</span><span class="badge badge-soon">قريباً</span></span>
+    </nav>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="index.html">
-        <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="18" height="18"/><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)"/></g></svg>
-        <span data-site-title></span>
-      </a>
-      <nav class="nav" id="nav" aria-label="التنقل الرئيسي">
-        <a href="index.html#home">الرئيسية</a>
-        <a href="index.html#subjects" aria-current="page">المواد</a>
-        <a href="index.html#latest">المحاضرات</a>
-        <a href="index.html#professors">الأساتذة</a>
-      </nav>
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
-        <button class="icon-btn" id="searchBtn" type="button" aria-label="بحث"></button>
         <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
         <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
           <option value="ar" lang="ar">عربي</option>
@@ -48,7 +58,6 @@
           <option value="en" lang="en">English</option>
         </select>
         <button class="icon-btn" id="themeBtn" type="button"></button>
-        <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="nav"></button>
       </div>
     </div>
   </header>
@@ -106,9 +115,9 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p2-3"></script>
-  <script src="js/i18n.js?v=p2-3"></script>
-  <script src="js/app.js?v=p2-3"></script>
+  <script src="data/courses.js?v=p3-3"></script>
+  <script src="js/i18n.js?v=p3-3"></script>
+  <script src="js/app.js?v=p3-3"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;

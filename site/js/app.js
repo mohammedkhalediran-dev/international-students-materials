@@ -93,7 +93,13 @@
     download: '<path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/>',
     external: '<path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/>',
     calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
-    file: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>'
+    file: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
+    home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    users: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.5-3.2 2.8-5 5.5-5s5 1.8 5.5 5"/><path d="M16 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.6.6 2.7 2.2 3 4.7"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+    tools: '<path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+    list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'
   };
 
   MS.icon = function (name, size) {
@@ -253,7 +259,7 @@
     }
     var searchBtn = MS.$("searchBtn");
     if (searchBtn) {
-      searchBtn.appendChild(MS.icon("search", 20));
+      searchBtn.insertBefore(MS.icon("search", 20), searchBtn.firstChild);
       searchBtn.addEventListener("click", function () {
         var box = MS.$("search");
         if (box) {
@@ -277,17 +283,16 @@
       });
     }
 
-    menuBtn.appendChild(MS.icon("menu", 22));
-    menuBtn.addEventListener("click", function () {
-      var open = nav.classList.toggle("open");
+    var side = MS.$("sidebar");
+    function setSide(open) {
+      side.classList.toggle("open", open);
       menuBtn.setAttribute("aria-expanded", String(open));
-    });
-    nav.addEventListener("click", function (e) {
-      if (e.target.closest("a")) {
-        nav.classList.remove("open");
-        menuBtn.setAttribute("aria-expanded", "false");
-      }
-    });
+    }
+    menuBtn.appendChild(MS.icon("menu", 22));
+    menuBtn.addEventListener("click", function () { setSide(!side.classList.contains("open")); });
+    MS.$("scrim").addEventListener("click", function () { setSide(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setSide(false); });
+    nav.addEventListener("click", function (e) { if (e.target.closest("a")) setSide(false); });
 
     // تمييز القسم الظاهر في القائمة (في الصفحة الرئيسية فقط)
     var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
@@ -310,6 +315,10 @@
 
   /* ---------- نصوص مشتركة ---------- */
   MS.initShared = function () {
+    // أيقونات القائمة والبطاقات: تُرسم من اسمها في data-ico
+    [].forEach.call(document.querySelectorAll("[data-ico]"), function (n) {
+      n.insertBefore(MS.icon(n.getAttribute("data-ico"), n.classList.contains("tile") ? 22 : 20), n.firstChild);
+    });
     ["notice", "footNotice"].forEach(function (id) {
       var n = MS.$(id);
       if (!n) return;
