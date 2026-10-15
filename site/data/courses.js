@@ -489,5 +489,41 @@ const COURSES = [
     credits: { theory: 0.82, practical: 0, total: 0.82 },
     professors: [{ name: "Dr. Ashrafpour" }],
     lectures: []
+  },
+  {
+    id: "life-style",
+    semester: 1,
+    category: "general",
+    icon: "leaf",
+    name: "Life Style",
+    nameAr: "نمط الحياة",
+    code: "",
+    credits: null,
+    professors: [{ name: "Dr. Ashrafpour" }],
+    lectures: []
+  },
+  {
+    id: "embryology",
+    semester: 1,
+    category: "basic",
+    icon: "droplet",
+    name: "Embryology",
+    nameAr: "علم الأجنة",
+    code: "",
+    credits: null,
+    professors: [{ name: "Dr. Jorsaraei" }],
+    lectures: []
+  },
+  {
+    id: "histology",
+    semester: 1,
+    category: "basic",
+    icon: "flask",
+    name: "Histology",
+    nameAr: "علم الأنسجة",
+    code: "",
+    credits: null,
+    professors: [{ name: "Dr. Babazadeh" }],
+    lectures: []
   }
 ];
