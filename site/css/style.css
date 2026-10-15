@@ -459,6 +459,7 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
   gap: var(--space-6);
   padding-block: var(--space-6);
 }
+.hero-brand { color: var(--band-strong); font-family: var(--font-display); font-size: var(--text-xl); font-weight: 800; letter-spacing: 0.02em; }
 .eyebrow { display: inline-block; color: var(--band-accent); font-size: var(--text-sm); font-weight: 600; }
 .hero h1 { margin-top: var(--space-2); font-size: var(--text-2xl); font-weight: 800; }
 .hero-sub { margin-top: var(--space-3); max-width: 34em; color: var(--band-muted); font-size: var(--text-md); }

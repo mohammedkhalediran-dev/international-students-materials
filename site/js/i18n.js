@@ -262,7 +262,7 @@
     [/^الدرجة ([\d.]+)$/, function (m) { return W.grade + " " + m[1]; }],
     [/^النتائج: (.+)$/, function (m) { return W.results + m[1].split("، ").map(tr).join(W.sep); }],
     [/^النطق: (.+)$/, function (m) { return (lang === "fa" ? "تلفظ: " + faLetters(m[1]) : "Pronunciation: " + m[1]); }],
-    [/^(.+) \| مواد الطلاب الدوليين$/, function (m) { return tr(m[1]) + " | " + D["مواد الطلاب الدوليين"]; }]
+    [/^(.+) \| Medixa$/, function (m) { return tr(m[1]) + " | Medixa"; }]
   ];
 
   function tr(str) {
