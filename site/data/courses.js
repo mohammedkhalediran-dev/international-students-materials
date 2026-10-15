@@ -23,6 +23,9 @@
         ]
       }
 
+  حقل study: true في المحاضرة يفعّل زر "ذاكرها خطوة بخطوة"، ويشترط وجود الملف
+        data/study/<id المادة>-<رقم المحاضرة>.js (انظر المثال medical-immunology-1.js)
+
   حقل pron (اختياري) نطق العنوان بحروف عربية، مقسوماً بشرطات، ويظهر تحت العنوان:
         pron: "أوفر-فيو أوف ذي إي-ميون سس-تم"
 
@@ -251,6 +254,7 @@ const COURSES = [
         title: "Overview of the Immune System",
         titleAr: "نظرة عامة على الجهاز المناعي",
         pron: "أوفر-فيو أوف ذي إي-ميون سس-تم",
+        study: true,
         files: [
           {
             label: "Slides (Dr. Shahbazi)",

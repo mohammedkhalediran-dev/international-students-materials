@@ -8,6 +8,7 @@
    3. المكوّنات المشتركة: الأزرار، الحقول، الرأس، الشريط الملوّن، الأقسام، البطاقات، الحالات
    4. الصفحة الرئيسية: المواد، المحاضرات، الأدوات، الأساتذة، المساعدة
    5. صفحة المادة: مسار التنقل، الرأس، المحاضرات، العارض
+   5ب. وضع الدراسة: بطاقة الموضوع، الاختبار القصير، النتيجة
    6. التذييل والإشعار
    7. اللغة والاتجاه
    8. الشاشات الصغيرة والحركة المخفّضة */
@@ -892,6 +893,90 @@ a.ql:hover, button.ql:hover { color: var(--color-secondary-ink); }
 .viewer-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; background: var(--color-bg); color: var(--color-muted); font-weight: 600; }
 .viewer-note { padding: var(--space-2) var(--space-3); border-top: 1px solid var(--color-border); color: var(--color-muted); font-size: var(--text-xs); }
 
+/* ========== 5ب. وضع الدراسة ========== */
+.mark-btn.study-link { background: var(--color-primary); border-color: var(--color-primary); color: #fff; font-weight: 600; }
+.mark-btn.study-link:hover { background: var(--color-primary-strong); border-color: var(--color-primary-strong); color: #fff; }
+
+.study { padding-top: var(--space-5); }
+.study-loading { padding: var(--space-6) 0; color: var(--color-muted); text-align: center; font-weight: 600; }
+.study-top { display: grid; gap: var(--space-3); margin-bottom: var(--space-4); }
+.study-count { display: flex; align-items: baseline; gap: var(--space-2); font-weight: 700; }
+.study-steps { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.study-step {
+  display: grid;
+  place-items: center;
+  min-width: var(--control-h);
+  height: var(--control-h);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+  transition: border-color var(--ease), background var(--ease);
+}
+.study-step:hover { border-color: var(--color-secondary); }
+.study-step.is-done { background: var(--color-success-soft); border-color: var(--color-success); color: var(--color-success); }
+.study-step.is-current { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+
+.study-stage { scroll-margin-top: calc(var(--header-h) + var(--space-4)); }
+.study-card { padding: var(--space-5); }
+.study-eyebrow { display: flex; align-items: baseline; gap: var(--space-2); color: var(--color-secondary-ink); font-size: var(--text-sm); font-weight: 700; }
+.study-term { margin-top: var(--space-2); font-size: var(--text-xl); font-weight: 700; line-height: var(--leading-tight); overflow-wrap: anywhere; }
+.study-term:focus, .study-q:focus { outline: none; }
+.study-title { margin-top: var(--space-1); color: var(--color-muted); }
+.study-sub { margin: var(--space-5) 0 var(--space-3); font-size: var(--text-base); font-weight: 700; }
+
+.study-wordlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.study-wordlist li { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-alt); }
+.study-word { display: block; font-size: var(--text-md); font-weight: 700; overflow-wrap: anywhere; }
+.study-pron { display: block; margin-top: var(--space-1); color: var(--color-secondary-ink); font-weight: 600; }
+
+.study-facts { display: grid; gap: var(--space-4); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+.study-fact { padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.study-fact-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+.study-n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-pill); background: var(--color-secondary-soft); color: var(--color-secondary-ink); font-size: var(--text-sm); font-weight: 700; }
+.study-en { flex: 1; min-width: 0; font-size: var(--text-md); font-weight: 600; line-height: var(--leading-tight); overflow-wrap: anywhere; }
+.study-ar { margin-top: var(--space-3); line-height: var(--leading-normal); }
+.study-trick { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border-inline-start: 4px solid var(--color-fav); background: var(--color-warning-soft); }
+.study-trick-label { display: block; color: var(--color-warning); font-size: var(--text-xs); font-weight: 700; }
+.study-trick p { margin: var(--space-1) 0 0; line-height: var(--leading-normal); }
+.study-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); }
+
+.study-q { margin: var(--space-3) 0 var(--space-4); font-size: var(--text-md); font-weight: 600; line-height: var(--leading-tight); overflow-wrap: anywhere; }
+.study-opts { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.study-opt {
+  width: 100%;
+  min-height: var(--control-h);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  line-height: var(--leading-tight);
+  transition: border-color var(--ease), background var(--ease);
+}
+.study-opt:hover:not(:disabled) { border-color: var(--color-secondary); background: var(--color-secondary-soft); }
+.study-opt:disabled { cursor: default; }
+.study-opt.is-correct { border-color: var(--color-success); background: var(--color-success-soft); color: var(--color-success); font-weight: 600; }
+.study-opt.is-wrong { border-color: var(--color-danger); background: var(--color-danger-soft); color: var(--color-danger); }
+.study-feedback:empty { display: none; }
+.study-feedback { margin-top: var(--space-4); padding: var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-alt); }
+.study-feedback.is-correct { background: var(--color-success-soft); }
+.study-feedback.is-wrong { background: var(--color-danger-soft); }
+.study-verdict { display: block; font-weight: 700; }
+.study-feedback.is-correct .study-verdict { color: var(--color-success); }
+.study-feedback.is-wrong .study-verdict { color: var(--color-danger); }
+.study-why { margin: var(--space-1) 0 0; line-height: var(--leading-normal); }
+
+.study-score { display: block; margin: var(--space-3) 0; font-size: var(--text-2xl); font-weight: 800; direction: ltr; unicode-bidi: isolate; text-align: start; }
+.study-note { margin-top: var(--space-2); color: var(--color-muted); font-size: var(--text-sm); }
+.study-msg { margin-top: var(--space-3); font-weight: 600; }
+.study-msg.is-pass { color: var(--color-success); }
+.study-wrong { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.study-wrong li { display: grid; gap: var(--space-2); justify-items: start; padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+
 /* ========== 6. التذييل والإشعار ========== */
 .footer { margin-top: var(--space-8); background: var(--band-bg); border-top: 1px solid var(--band-line); color: var(--band-muted); font-size: var(--text-sm); }
 .footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-5); padding-block: var(--space-6) var(--space-5); }
@@ -935,7 +1020,8 @@ html[dir="ltr"] .go { transform: rotate(-45deg); }
 html[dir="ltr"] .pager .prev .go { transform: rotate(135deg); }
 /* السطر العربي والنطق العربي لا يظهران في الإنجليزية، والأسماء العربية لا تظهر في الفارسية */
 html[lang="en"] .cc-ar, html[lang="en"] .w-ar, html[lang="en"] .t-ar, html[lang="en"] .course-title-ar,
-html[lang="en"] .t-pron, html[lang="en"] .latest-pron, html[lang="en"] .uni-photo figcaption .en { display: none; }
+html[lang="en"] .t-pron, html[lang="en"] .latest-pron, html[lang="en"] .uni-photo figcaption .en,
+html[lang="en"] .study-title, html[lang="en"] .study-pron, html[lang="en"] .study-ar, html[lang="en"] .study-trick, html[lang="en"] .study-why { display: none; }
 html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang="fa"] .course-title-ar { display: none; }
 
 /* ========== 8. الشاشات ========== */
@@ -971,6 +1057,8 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
   .pager { flex-direction: column; }
   .footer-inner { flex-direction: column; }
   .viewer { width: 100vw; height: 100vh; border-radius: 0; }
+  .study-card { padding: var(--space-4); }
+  .study-actions .btn { flex: 1 1 100%; }
 }
 @media (max-width: 480px) {
   .header-inner { gap: var(--space-2); }
