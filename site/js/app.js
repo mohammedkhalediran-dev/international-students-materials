@@ -247,7 +247,7 @@
         title.appendChild(a);
         art.appendChild(title);
         art.appendChild(MS.el("p", "cc-ar", c.nameAr));
-        art.appendChild(MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · ")));
+        if (c.professors.length) art.appendChild(MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · ")));
 
         art.appendChild(MS.el("p", "cc-grade", "الدرجة " + c.credits.total));
         var foot = MS.el("div", "cc-foot");
