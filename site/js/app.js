@@ -122,6 +122,22 @@
   MS.fileCount = function (c) {
     return c.lectures.reduce(function (n, l) { return n + l.files.length; }, 0);
   };
+  /* الملفات المرفوعة من صفحة الرفع: تأتي من api/uploads.js (window.UPLOADS) وتُدمج في المواد قبل رسم أي صفحة.
+     المحاضرة الجديدة تُنشأ عند أول ملف، والموجودة يُضاف إليها الملف. بدون الخادم تبقى القائمة فارغة ولا يتأثر شيء. */
+  MS.applyUploads = function (items) {
+    (items || []).forEach(function (u) {
+      var c = u && u.id ? MS.course(u.courseId) : null;
+      if (!c) return;
+      var lec = c.lectures.filter(function (l) { return l.number === u.number; })[0];
+      if (!lec) {
+        lec = { number: u.number, title: u.title, files: [] };
+        c.lectures.push(lec);
+      }
+      lec.files.push({ label: u.label, url: "api/file/" + u.id, added: u.added, uploaded: true });
+    });
+  };
+  if (window.UPLOADS) MS.applyUploads(window.UPLOADS);
+
   MS.orderedCourses = function () {
     var out = [];
     CATEGORIES.forEach(function (cat) {
