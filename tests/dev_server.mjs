@@ -6,12 +6,15 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { handle } from "../netlify/lib/core.mjs";
 import { createMockStore } from "./mock_store.mjs";
+import { handleAuth } from "../functions/_lib/auth.js";
+import { createMockD1 } from "./mock_d1.mjs";
 
 const SITE = join(fileURLToPath(new URL(".", import.meta.url)), "..", "site");
 const PORT = Number(process.argv[2]) || 8772;
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".pdf": "application/pdf", ".webmanifest": "application/manifest+json" };
 
 const store = createMockStore();
+const authEnv = { DB: createMockD1(), REGISTER_CODE: process.env.REGISTER_CODE || "", ADMIN_EMAILS: process.env.ADMIN_EMAILS || "boss@x.com" };
 const codes = process.env.UPLOAD_CODES || "سارة:test-code-sara,علي:test-code-ali";
 const deps = (req) => ({ store, env: (k) => (k === "UPLOAD_CODES" ? codes : undefined), ip: req.socket.remoteAddress, now: () => Date.now() });
 
@@ -21,7 +24,8 @@ http.createServer(async (req, res) => {
     const parts = [];
     for await (const c of req) parts.push(c);
     const body = Buffer.concat(parts);
-    const r = await handle(new Request(url, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : body }), deps(req));
+    const rq = new Request(url, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : body });
+    const r = (await handleAuth(rq, authEnv, { ip: req.socket.remoteAddress })) || (await handle(rq, deps(req)));
     res.writeHead(r.status, Object.fromEntries(r.headers));
     if (r.body) for await (const c of r.body) res.write(c);
     res.end();
