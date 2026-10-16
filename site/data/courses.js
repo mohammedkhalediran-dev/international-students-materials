@@ -26,6 +26,9 @@
   حقل study: true في المحاضرة يفعّل زر "ذاكرها خطوة بخطوة"، ويشترط وجود الملف
         data/study/<id المادة>-<رقم المحاضرة>.js (انظر المثال medical-immunology-1.js)
 
+  حقل ai: true في المحاضرة يُظهر صندوق "اسأل عن هذه المحاضرة" في صفحة وضع الدراسة،
+        ويشترط وجود نص المحاضرة في data/text/<id المادة>-<رقم المحاضرة>.txt (انظر medical-immunology-1.txt)
+
   حقل pron (اختياري) نطق العنوان بحروف عربية، مقسوماً بشرطات، ويظهر تحت العنوان:
         pron: "أوفر-فيو أوف ذي إي-ميون سس-تم"
 
@@ -40,6 +43,8 @@ const SITE = {
   title: "Medixa",
   subtitle: "كل ملفات المواد في مكان واحد. اختر المادة، ثم المحاضرة، وافتح الملف.",
   filesBase: "files/",
+  // عنوان المساعد الذكي (Cloudflare Worker). فارغ = يُخفى صندوق الأسئلة في كل المحاضرات.
+  aiEndpoint: "https://medixa-ai.mohammed-khaled-iran.workers.dev",
   disclaimer: "",
   university: {
     name: "جامعة بابل للعلوم الطبية",
@@ -255,6 +260,7 @@ const COURSES = [
         titleAr: "نظرة عامة على الجهاز المناعي",
         pron: "أوفر-فيو أوف ذي إي-ميون سس-تم",
         study: true,
+        ai: true,
         files: [
           {
             label: "Slides (Dr. Shahbazi)",

@@ -1075,6 +1075,26 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
   .prof-card { flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); }
   .prof-avatar { width: 32px; height: 32px; font-size: var(--text-sm); }
 }
+/* ========== 5ج. المساعد الذكي (اسأل عن هذه المحاضرة) ========== */
+.ai-panel { padding-block: var(--space-5) var(--space-7); }
+.ai-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-5); display: grid; gap: var(--space-3); max-width: 760px; }
+.ai-title { font-family: var(--font-display); font-size: var(--text-md); margin: 0; }
+.ai-note { color: var(--color-muted); font-size: var(--text-sm); margin: 0; }
+.ai-log { display: flex; flex-direction: column; gap: var(--space-3); max-height: 60vh; overflow-y: auto; }
+.ai-log:empty { display: none; }
+.ai-msg { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); line-height: 1.9; max-width: 92%; overflow-wrap: anywhere; }
+.ai-user { align-self: flex-start; background: var(--color-secondary-soft); color: var(--color-text); white-space: pre-wrap; }
+.ai-bot { align-self: flex-end; background: var(--color-surface-alt); color: var(--color-text); }
+.ai-err { align-self: flex-end; background: var(--color-danger-soft); color: var(--color-danger); }
+.ai-p, .ai-h { margin: 0 0 var(--space-2); }
+.ai-h { font-weight: 700; }
+.ai-list { margin: 0 0 var(--space-2); padding-inline-start: var(--space-5); }
+.ai-form { display: grid; gap: var(--space-2); }
+.ai-label { font-weight: 600; font-size: var(--text-sm); }
+.ai-input { resize: vertical; min-height: 64px; }
+.ai-form .btn { justify-self: start; }
+.ai-form .btn:disabled { opacity: .6; cursor: not-allowed; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { transition: none !important; }
