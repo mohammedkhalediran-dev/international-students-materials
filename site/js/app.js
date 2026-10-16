@@ -250,12 +250,23 @@
         return b;
       }
 
-      /* بطاقة أفقية بثلاث مناطق: المعلومات (60%) والصورة (40%) في الصف الأول، والتذييل في صف تحتهما.
+      /* بطاقة عمودية (flex): الصورة في مساحة ثابتة، ثم المعلومات بعرض البطاقة، ثم التذييل في الأسفل.
          المفضلة في زاوية البطاقة، وزر الفتح الدائري هو رابط البطاقة كلها. */
       var uid = 0;
       function card(c, onFav) {
         var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
         art.appendChild(favButton(c, onFav));
+
+        var media = MS.el("div", "cc-media");
+        if (c.image) {
+          var pic = MS.el("img", "cc-img");
+          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
+          media.appendChild(pic);
+        } else {
+          art.classList.add("no-img");
+          media.appendChild(MS.icon(c.icon, 40));
+        }
+        art.appendChild(media);
 
         var info = MS.el("div", "cc-info");
         if (c.field) info.appendChild(MS.el("p", "cc-kicker", c.field));
@@ -291,17 +302,6 @@
           info.appendChild(facts);
         }
         art.appendChild(info);
-
-        var media = MS.el("div", "cc-media");
-        if (c.image) {
-          var pic = MS.el("img", "cc-img");
-          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
-          media.appendChild(pic);
-        } else {
-          art.classList.add("no-img");
-          media.appendChild(MS.icon(c.icon, 40));
-        }
-        art.appendChild(media);
 
         var foot = MS.el("div", "cc-foot");
         var total = c.lectures.length;
