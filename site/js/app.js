@@ -99,6 +99,7 @@
     users: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.5-3.2 2.8-5 5.5-5s5 1.8 5.5 5"/><path d="M16 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.6.6 2.7 2.2 3 4.7"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
     tools: '<path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+    arrow: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
     list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
     chevron: '<path d="M6 9l6 6 6-6"/>',
     chevrons: '<path d="M11 7l-5 5 5 5M18 7l-5 5 5 5"/>',
@@ -257,44 +258,78 @@
         return b;
       }
 
+      /* بطاقة عمودية (flex): الصورة في مساحة ثابتة، ثم المعلومات بعرض البطاقة، ثم التذييل في الأسفل.
+         المفضلة في زاوية البطاقة، وزر الفتح الدائري هو رابط البطاقة كلها. */
+      var uid = 0;
       function card(c, onFav) {
         var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
-        var top = MS.el("div", "cc-cover");
-        top.appendChild(MS.icon(c.icon, 40));
-        if (c.code) top.appendChild(MS.el("span", "cc-code", c.code));
-        top.appendChild(favButton(c, onFav));
-        art.appendChild(top);
+        art.appendChild(favButton(c, onFav));
 
-        var title = MS.el("h3", "cc-title en");
-        var a = MS.el("a", "cover", c.name);
-        a.href = "course.html?id=" + encodeURIComponent(c.id);
-        title.appendChild(a);
-        art.appendChild(title);
-        art.appendChild(MS.el("p", "cc-ar", c.nameAr));
-        if (c.professors.length) art.appendChild(MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · ")));
+        var media = MS.el("div", "cc-media");
+        if (c.image) {
+          var pic = MS.el("img", "cc-img");
+          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
+          media.appendChild(pic);
+        } else {
+          art.classList.add("no-img");
+          media.appendChild(MS.icon(c.icon, 40));
+        }
+        art.appendChild(media);
 
-        if (c.credits) art.appendChild(MS.el("p", "cc-grade", "الدرجة " + c.credits.total));
+        var info = MS.el("div", "cc-info");
+        if (c.field) info.appendChild(MS.el("p", "cc-kicker", c.field));
+        info.appendChild(MS.el("h3", "cc-title en", c.name));
+        info.appendChild(MS.el("p", "cc-ar", c.nameAr));
+        if (c.professors.length) {
+          var profs = MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · "));
+          profs.id = "ccp-" + (++uid);
+          info.appendChild(profs);
+          // الأسماء الطويلة تُختصر إلى سطرين، وزر «عرض المزيد» يظهر فقط إذا كان هناك نص مخفي
+          var more = MS.el("button", "cc-more", "عرض المزيد");
+          more.type = "button";
+          more.hidden = true;
+          more.setAttribute("aria-expanded", "false");
+          more.setAttribute("aria-controls", profs.id);
+          more.addEventListener("click", function () {
+            var open = profs.classList.toggle("is-open");
+            more.setAttribute("aria-expanded", String(open));
+            more.textContent = open ? "عرض أقل" : "عرض المزيد";
+          });
+          info.appendChild(more);
+          var measure = function () {
+            if (profs.classList.contains("is-open")) return;
+            more.hidden = profs.scrollHeight <= profs.clientHeight + 1;
+          };
+          requestAnimationFrame(measure);
+          if (window.ResizeObserver) new ResizeObserver(measure).observe(profs);
+        }
+        if (c.code || c.credits) {
+          var facts = MS.el("p", "cc-facts");
+          if (c.code) facts.appendChild(MS.el("span", "cc-code", c.code));
+          if (c.credits) facts.appendChild(MS.el("span", "", "الدرجة " + c.credits.total));
+          info.appendChild(facts);
+        }
+        art.appendChild(info);
+
         var foot = MS.el("div", "cc-foot");
         var total = c.lectures.length;
+        var state = MS.el("div", "cc-state");
+        state.appendChild(MS.el("span", total ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : "لم تُرفع ملفات بعد"));
         if (total) {
           var done = MS.progress.done(c);
-          var prog = MS.el("div", "cc-progress");
           var bar = MS.el("div", "bar");
           var fill = MS.el("i");
           fill.style.setProperty("--p", Math.round(done / total * 100) + "%");
           bar.appendChild(fill);
-          prog.appendChild(bar);
-          prog.appendChild(MS.el("div", "bar-label", done + " من " + total + " مقروءة"));
-          foot.appendChild(prog);
+          state.appendChild(bar);
+          state.appendChild(MS.el("span", "bar-label", done + " من " + total + " مقروءة"));
         }
-        var meta = MS.el("div", "cc-meta");
-        meta.appendChild(MS.el("span", total ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : "لم تُرفع ملفات بعد"));
-        var open = MS.el("span", "cc-open");
-        open.setAttribute("aria-hidden", "true");
-        open.appendChild(MS.el("span", "", "فتح المادة"));
-        open.appendChild(MS.el("span", "go"));
-        meta.appendChild(open);
-        foot.appendChild(meta);
+        foot.appendChild(state);
+        var go = MS.el("a", "cc-go cover");
+        go.href = "course.html?id=" + encodeURIComponent(c.id);
+        go.setAttribute("aria-label", "فتح المادة: " + c.name);
+        go.appendChild(MS.icon("arrow", 20));
+        foot.appendChild(go);
         art.appendChild(foot);
         return art;
       }

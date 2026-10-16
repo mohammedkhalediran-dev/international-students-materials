@@ -32,6 +32,7 @@
   حقل pron (اختياري) نطق العنوان بحروف عربية، مقسوماً بشرطات، ويظهر تحت العنوان:
         pron: "أوفر-فيو أوف ذي إي-ميون سس-تم"
 
+  field: تخصص المادة (تشريح، فسيولوجيا...) يظهر صغيراً أعلى البطاقة؛ مأخوذ من اسم المادة نفسه، ولا يوضع للمواد العامة.
   حقل credits هو الدرجات (نظري، عملي، المجموع) وليس ساعات معتمدة،
   ومجموعها لكل المواد هو درجة الكورس كاملاً.
 
@@ -75,6 +76,7 @@ const COURSES = [
   /* ---------- المواد العامة ---------- */
   {
     id: "medical-manners-1",
+    image: "assets/courses/medical-manners-1.webp",
     semester: 3,
     category: "general",
     icon: "heart",
@@ -87,6 +89,7 @@ const COURSES = [
   },
   {
     id: "medical-manners-2",
+    image: "assets/courses/medical-manners-2.webp",
     semester: 3,
     category: "general",
     icon: "heart",
@@ -99,6 +102,7 @@ const COURSES = [
   },
   {
     id: "general-english",
+    image: "assets/courses/general-english.webp",
     semester: 3,
     category: "general",
     icon: "chat",
@@ -111,6 +115,7 @@ const COURSES = [
   },
   {
     id: "islamic-thought-2",
+    image: "assets/courses/islamic-thought-2.webp",
     semester: 3,
     category: "general",
     icon: "crescent",
@@ -123,6 +128,7 @@ const COURSES = [
   },
   {
     id: "persian-literature-preliminary-3",
+    image: "assets/courses/persian-literature-preliminary-3.webp",
     semester: 3,
     category: "general",
     icon: "quill",
@@ -135,6 +141,7 @@ const COURSES = [
   },
   {
     id: "physical-training-2",
+    image: "assets/courses/physical-training-2.webp",
     semester: 3,
     category: "general",
     icon: "dumbbell",
@@ -152,8 +159,10 @@ const COURSES = [
   /* ---------- العلوم الطبية الأساسية ---------- */
   {
     id: "anatomy-respiratory",
+    image: "assets/courses/anatomy-respiratory.webp",
     semester: 3,
     category: "basic",
+    field: "تشريح",
     icon: "lungs",
     name: "Anatomy of the respiratory System",
     nameAr: "تشريح الجهاز التنفسي",
@@ -167,8 +176,10 @@ const COURSES = [
   },
   {
     id: "anatomy-urogenital",
+    image: "assets/courses/anatomy-urogenital.webp",
     semester: 3,
     category: "basic",
+    field: "تشريح",
     icon: "droplet",
     name: "Anatomy of the Urogenital System",
     nameAr: "تشريح الجهاز البولي التناسلي",
@@ -182,8 +193,10 @@ const COURSES = [
   },
   {
     id: "physiology-respiratory",
+    image: "assets/courses/physiology-respiratory.webp",
     semester: 3,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "lungs",
     name: "Physiology of respiratory",
     nameAr: "فسيولوجيا الجهاز التنفسي",
@@ -194,8 +207,10 @@ const COURSES = [
   },
   {
     id: "physiology-kidney",
+    image: "assets/courses/physiology-kidney.webp",
     semester: 3,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "kidney",
     name: "Physiology of Kidney",
     nameAr: "فسيولوجيا الكلية",
@@ -217,8 +232,10 @@ const COURSES = [
   },
   {
     id: "biochemistry-hormones",
+    image: "assets/courses/biochemistry-hormones.webp",
     semester: 3,
     category: "basic",
+    field: "كيمياء حيوية",
     icon: "hormone",
     name: "Biochemistry of Hormones",
     nameAr: "الكيمياء الحيوية للهرمونات",
@@ -229,8 +246,10 @@ const COURSES = [
   },
   {
     id: "biochemistry-kidney",
+    image: "assets/courses/biochemistry-kidney.webp",
     semester: 3,
     category: "basic",
+    field: "كيمياء حيوية",
     icon: "flask",
     name: "Biochemistry of Kidney",
     nameAr: "الكيمياء الحيوية للكلية",
@@ -241,8 +260,10 @@ const COURSES = [
   },
   {
     id: "medical-immunology",
+    image: "assets/courses/medical-immunology.webp",
     semester: 3,
     category: "basic",
+    field: "مناعة",
     icon: "shield",
     name: "Medical immunology",
     nameAr: "المناعة الطبية",
@@ -273,8 +294,10 @@ const COURSES = [
   },
   {
     id: "nutrition-principles",
+    image: "assets/courses/nutrition-principles.webp",
     semester: 3,
     category: "basic",
+    field: "تغذية",
     icon: "leaf",
     name: "General Principles of nutrition",
     nameAr: "المبادئ العامة للتغذية",
@@ -287,6 +310,7 @@ const COURSES = [
     id: "skeletal-muscular-anatomy",
     semester: 2,
     category: "basic",
+    field: "تشريح",
     icon: "dumbbell",
     name: "Skeletal & muscular anatomical Sciences",
     nameAr: "علوم التشريح الهيكلي والعضلي",
@@ -299,6 +323,7 @@ const COURSES = [
     id: "anatomy-digestive",
     semester: 2,
     category: "basic",
+    field: "تشريح",
     icon: "leaf",
     name: "Anatomy of the digestive System",
     nameAr: "تشريح الجهاز الهضمي",
@@ -311,6 +336,7 @@ const COURSES = [
     id: "anatomy-head-neck",
     semester: 2,
     category: "basic",
+    field: "تشريح",
     icon: "book",
     name: "Anatomy of Head and Neck",
     nameAr: "تشريح الرأس والعنق",
@@ -323,6 +349,7 @@ const COURSES = [
     id: "anatomy-cardiovascular",
     semester: 2,
     category: "basic",
+    field: "تشريح",
     icon: "heart",
     name: "Anatomy of the Cardio Vascular system",
     nameAr: "تشريح الجهاز القلبي الوعائي",
@@ -335,6 +362,7 @@ const COURSES = [
     id: "physiology-blood",
     semester: 2,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "droplet",
     name: "Physiology of blood",
     nameAr: "فسيولوجيا الدم",
@@ -347,6 +375,7 @@ const COURSES = [
     id: "biochemistry",
     semester: 2,
     category: "basic",
+    field: "كيمياء حيوية",
     icon: "flask",
     name: "Discipline Biochemistry",
     nameAr: "الكيمياء الحيوية",
@@ -359,6 +388,7 @@ const COURSES = [
     id: "physiology-heart",
     semester: 2,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "heart",
     name: "Physiology of Heart",
     nameAr: "فسيولوجيا القلب",
@@ -371,6 +401,7 @@ const COURSES = [
     id: "physiology-digestive",
     semester: 2,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "leaf",
     name: "Physiology of digestive",
     nameAr: "فسيولوجيا الجهاز الهضمي",
@@ -383,6 +414,7 @@ const COURSES = [
     id: "physiology-circulation",
     semester: 2,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "droplet",
     name: "Physiology of blood circulation",
     nameAr: "فسيولوجيا الدورة الدموية",
@@ -479,6 +511,7 @@ const COURSES = [
     id: "biochemistry-molecule-cell",
     semester: 1,
     category: "basic",
+    field: "كيمياء حيوية",
     icon: "flask",
     name: "Biochemistry of molecule - cell",
     nameAr: "الكيمياء الحيوية للجزيئات والخلية",
@@ -503,6 +536,7 @@ const COURSES = [
     id: "cell-physiology",
     semester: 1,
     category: "basic",
+    field: "فسيولوجيا",
     icon: "droplet",
     name: "Cell Physiology",
     nameAr: "فسيولوجيا الخلية",
@@ -527,6 +561,7 @@ const COURSES = [
     id: "embryology",
     semester: 1,
     category: "basic",
+    field: "علم الأجنة",
     icon: "droplet",
     name: "Embryology",
     nameAr: "علم الأجنة",
@@ -539,6 +574,7 @@ const COURSES = [
     id: "histology",
     semester: 1,
     category: "basic",
+    field: "علم الأنسجة",
     icon: "flask",
     name: "Histology",
     nameAr: "علم الأنسجة",
