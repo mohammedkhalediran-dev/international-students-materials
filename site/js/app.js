@@ -252,7 +252,12 @@
       function card(c, onFav) {
         var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
         var top = MS.el("div", "cc-cover");
-        top.appendChild(MS.icon(c.icon, 40));
+        if (c.image) {
+          var pic = MS.el("img", "cc-img");
+          pic.src = c.image; pic.width = 120; pic.height = 120; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
+          top.classList.add("has-img");
+          top.appendChild(pic);
+        } else top.appendChild(MS.icon(c.icon, 40));
         if (c.code) top.appendChild(MS.el("span", "cc-code", c.code));
         top.appendChild(favButton(c, onFav));
         art.appendChild(top);

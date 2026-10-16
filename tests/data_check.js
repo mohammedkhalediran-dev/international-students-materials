@@ -14,5 +14,6 @@ const semTot=s=>Math.round(COURSES.filter(c=>c.semester===s).reduce((n,c)=>n+(c.
 const tot=semTot(3);if(tot!==16.3)fail('sem3 total '+tot);
 if(semTot(1)!==12.64)fail('sem1 total '+semTot(1));
 if(semTot(2)!==20.61)fail('sem2 total '+semTot(2));
+COURSES.forEach(c=>{if(c.image&&!fs.existsSync(path.join(root,c.image)))fail('course image '+c.id)});
 if(SITE.university.image&&!fs.existsSync(path.join(root,SITE.university.image)))fail('university image');
 console.log(bad?bad+' failures':'data OK: '+COURSES.length+' courses, total '+tot);process.exit(bad?1:0);

@@ -67,6 +67,7 @@ const COURSES = [
   /* ---------- المواد العامة ---------- */
   {
     id: "medical-manners-1",
+    image: "assets/courses/medical-manners-1.webp",
     semester: 3,
     category: "general",
     icon: "heart",
@@ -79,6 +80,7 @@ const COURSES = [
   },
   {
     id: "medical-manners-2",
+    image: "assets/courses/medical-manners-2.webp",
     semester: 3,
     category: "general",
     icon: "heart",
@@ -91,6 +93,7 @@ const COURSES = [
   },
   {
     id: "general-english",
+    image: "assets/courses/general-english.webp",
     semester: 3,
     category: "general",
     icon: "chat",
@@ -103,6 +106,7 @@ const COURSES = [
   },
   {
     id: "islamic-thought-2",
+    image: "assets/courses/islamic-thought-2.webp",
     semester: 3,
     category: "general",
     icon: "crescent",
@@ -115,6 +119,7 @@ const COURSES = [
   },
   {
     id: "persian-literature-preliminary-3",
+    image: "assets/courses/persian-literature-preliminary-3.webp",
     semester: 3,
     category: "general",
     icon: "quill",
@@ -127,6 +132,7 @@ const COURSES = [
   },
   {
     id: "physical-training-2",
+    image: "assets/courses/physical-training-2.webp",
     semester: 3,
     category: "general",
     icon: "dumbbell",
@@ -144,6 +150,7 @@ const COURSES = [
   /* ---------- العلوم الطبية الأساسية ---------- */
   {
     id: "anatomy-respiratory",
+    image: "assets/courses/anatomy-respiratory.webp",
     semester: 3,
     category: "basic",
     icon: "lungs",
@@ -159,6 +166,7 @@ const COURSES = [
   },
   {
     id: "anatomy-urogenital",
+    image: "assets/courses/anatomy-urogenital.webp",
     semester: 3,
     category: "basic",
     icon: "droplet",
@@ -174,6 +182,7 @@ const COURSES = [
   },
   {
     id: "physiology-respiratory",
+    image: "assets/courses/physiology-respiratory.webp",
     semester: 3,
     category: "basic",
     icon: "lungs",
@@ -186,6 +195,7 @@ const COURSES = [
   },
   {
     id: "physiology-kidney",
+    image: "assets/courses/physiology-kidney.webp",
     semester: 3,
     category: "basic",
     icon: "kidney",
@@ -209,6 +219,7 @@ const COURSES = [
   },
   {
     id: "biochemistry-hormones",
+    image: "assets/courses/biochemistry-hormones.webp",
     semester: 3,
     category: "basic",
     icon: "hormone",
@@ -221,6 +232,7 @@ const COURSES = [
   },
   {
     id: "biochemistry-kidney",
+    image: "assets/courses/biochemistry-kidney.webp",
     semester: 3,
     category: "basic",
     icon: "flask",
@@ -233,6 +245,7 @@ const COURSES = [
   },
   {
     id: "medical-immunology",
+    image: "assets/courses/medical-immunology.webp",
     semester: 3,
     category: "basic",
     icon: "shield",
@@ -263,6 +276,7 @@ const COURSES = [
   },
   {
     id: "nutrition-principles",
+    image: "assets/courses/nutrition-principles.webp",
     semester: 3,
     category: "basic",
     icon: "leaf",
