@@ -76,11 +76,19 @@ try:
         chk(abs(w - 280) <= 1, f'عرض القائمة 280 (الفعلي {w})')
         chk(pg.evaluate('document.documentElement.dir') == 'rtl', 'اتجاه rtl')
         bb = sb.bounding_box()
-        chk(bb['x'] + bb['width'] >= 1439, 'القائمة على اليمين في العربية')
-        labels = pg.eval_on_selector_all('#sidebar .nav-label', 'els=>els.map(e=>e.textContent.trim())')
+        chk(abs(bb['x'] + bb['width'] - (1440 - 16)) <= 1.5 and abs(bb['y'] - 16) <= 1.5, f'بطاقة عائمة على اليمين بهامش 16 {bb}')
+        chk(pg.evaluate('parseFloat(getComputedStyle(document.getElementById("sidebar")).borderTopLeftRadius)') >= 12 and pg.evaluate('getComputedStyle(document.getElementById("sidebar")).boxShadow') != 'none', 'حواف مستديرة وظل')
+        labels = pg.eval_on_selector_all('#sidebar a .nav-label', 'els=>els.map(e=>e.textContent.trim())')
         chk(labels == ['الرئيسية', 'الكورسات والمواد', 'الكورس الأول', 'الكورس الثاني', 'الكورس الثالث', 'أحدث المحاضرات', 'المفضلة', 'الأساتذة', 'أدوات الطالب', 'المساعدة'], f'عناصر القائمة الفعّالة فقط: {labels}')
-        for hidden in ['مخطط الدراسة', 'التقويم', 'بنك الأسئلة', 'نتائج التدريب', 'درجاتي', 'الملف الشخصي', 'الإعدادات', 'تسجيل الخروج', 'قريباً']:
-            chk(hidden not in pg.inner_text('#sidebar'), f'عنصر غير متاح مخفي: {hidden}')
+        soon = pg.eval_on_selector_all('#sidebar .is-soon', 'els=>els.map(e=>[e.querySelector(".nav-label").textContent.trim(), e.tagName, e.getAttribute("aria-disabled"), e.hasAttribute("href"), e.tabIndex])')
+        want = ['مخطط الدراسة', 'التقويم والامتحانات', 'بنك الأسئلة', 'نتائج التدريب', 'درجاتي الجامعية', 'الملف الشخصي', 'الإعدادات']
+        chk([x[0] for x in soon] == want, f'العناصر غير المتاحة تظهر رمادية: {[x[0] for x in soon]}')
+        chk(all(x[1] == 'SPAN' and x[2] == 'true' and not x[3] and x[4] < 0 for x in soon), 'غير المتاحة بلا رابط وغير قابلة للتركيز')
+        chk('تسجيل الخروج' not in pg.inner_text('#sidebar'), 'تسجيل الخروج مخفي (لا جلسة دخول)')
+        chk(pg.locator('#sidebar .is-soon .badge').count() == 7, 'شارة «قريباً» على كل عنصر غير متاح')
+        ub = pg.inner_text('#sidebar .sb-user')
+        chk('زائر' in ub and 'تقدّمك محفوظ على هذا الجهاز' in ub, f'كتلة الحساب للزائر بلا اسم وهمي: {ub!r}')
+        chk(pg.evaluate('getComputedStyle(document.getElementById("navSub-courses").parentElement).visibility') == 'hidden', 'الكورسات المغلقة غير قابلة للتركيز')
         chk(pg.locator('#sidebar a:not([href])').count() == 0 and pg.locator('#sidebar a[href="#"]').count() == 0, 'لا روابط معطلة')
         chk(active_count(pg) == 1, f'حالة نشطة واحدة (الفعلي {active_count(pg)})')
         chk(pg.get_attribute('#sidebar [aria-current="page"]', 'data-nav') == 'home', 'الرئيسية نشطة عند الأعلى')
@@ -111,7 +119,7 @@ try:
         chk(abs(w - 76) <= 1, f'عرض القائمة المطوية 76 (الفعلي {w})')
         chk(pg.evaluate('JSON.parse(localStorage.getItem("ms.nav"))') == 'min', 'تفضيل الطي محفوظ')
         chk(pg.get_attribute('#sbCollapse', 'aria-expanded') == 'false', 'aria-expanded=false عند الطي')
-        chk(abs(pg.evaluate('parseFloat(getComputedStyle(document.body).paddingInlineStart)') - 76) <= 1, 'المحتوى يتكيّف مع عرض القائمة المطوية')
+        chk(abs(pg.evaluate('parseFloat(getComputedStyle(document.body).paddingInlineStart)') - (76 + 16)) <= 1, 'المحتوى يتكيّف مع عرض القائمة المطوية')
         chk(pg.evaluate('document.documentElement.scrollWidth') <= 1440, 'لا تمرير أفقي بعد الطي')
         # الاسم متاح للقارئ الشاشي وكتلميح عند المرور والتركيز
         chk('الرئيسية' in pg.locator('#sidebar .nav-link[data-nav=home]').inner_text() or pg.locator('#sidebar .nav-link[data-nav=home] .nav-label').text_content() == 'الرئيسية', 'الاسم يبقى في الشجرة للقارئ الشاشي')
@@ -188,6 +196,7 @@ try:
                     chk(abs(bb['x']) <= 1, f'{tag}: يفتح من اليسار في الإنجليزية')
                 else:
                     chk(abs(bb['x'] + bb['width'] - vw) <= 1, f'{tag}: يفتح من اليمين في العربية')
+                chk(abs(bb['y']) <= 1 and abs(bb['height'] - vh) <= 1, f'{tag}: الدرج بطول الشاشة كاملة')
                 chk(pg.get_attribute('#menuBtn', 'aria-expanded') == 'true', f'{tag}: aria-expanded=true')
                 chk(pg.evaluate('getComputedStyle(document.documentElement).overflow') == 'hidden', f'{tag}: الصفحة الخلفية لا تتمرر')
                 chk(pg.evaluate('getComputedStyle(document.getElementById("scrim")).visibility') == 'visible', f'{tag}: خلفية معتمة ظاهرة')
@@ -242,7 +251,7 @@ try:
         pg.wait_for_timeout(700)
         pg.locator('#sidebar .nav-toggle').click()
         d = pg.evaluate('''()=>{const s=document.querySelector("#sidebar .sb-scroll");return [s.scrollHeight>s.clientHeight, getComputedStyle(s).overflowY, document.querySelector("#sidebar .sb-foot").getBoundingClientRect().bottom]}''')
-        chk(d[0] and d[1] == 'auto' and d[2] <= 521, f'شاشة قصيرة: منطقة الروابط تتمرر والأدوات ثابتة {d}')
+        chk(d[0] and d[1] == 'auto' and d[2] <= 505, f'شاشة قصيرة: منطقة الروابط تتمرر والأدوات ثابتة {d}')
         c.close()
 
         # ---------- 6) الإنجليزية والفارسية على الكمبيوتر ----------
@@ -251,9 +260,10 @@ try:
         pg.goto(BASE + 'index.html')
         pg.wait_for_timeout(900)
         bb = pg.locator('#sidebar').bounding_box()
-        chk(abs(bb['x']) <= 1 and abs(bb['width'] - 280) <= 1, 'الإنجليزية: القائمة على اليسار بعرض 280')
+        chk(abs(bb['x'] - 16) <= 1.5 and abs(bb['width'] - 280) <= 1, 'الإنجليزية: القائمة على اليسار بعرض 280')
         txt = pg.inner_text('#sidebar')
         chk(not AR.search(txt), f'الإنجليزية: لا نص عربي في القائمة: {txt[:200]!r}')
+        chk('Guest' in txt and 'Soon' in txt, 'الإنجليزية: الزائر وقريباً مترجمان')
         for want in ['Home', 'Semesters and subjects', 'My study', 'Help', 'Study organizer']:
             chk(want in txt, f'الإنجليزية: «{want}» موجود')
         chk(not AR.search(pg.get_attribute('#sbCollapse', 'aria-label') or ''), 'الإنجليزية: aria-label لزر الطي مترجم')

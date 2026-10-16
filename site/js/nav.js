@@ -10,7 +10,9 @@
   var KEY_SEM = "ms.sem";       // كورس الطالب الحقيقي (رقم) إن حُفظ؛ لا واجهة تضبطه بعد فلا تظهر شارة «الحالي»
   var DESKTOP = "(min-width: 1081px)";
 
-  /* ---------- الإعداد: ما له صفحة أو وظيفة فعلية فقط يُعرض (enabled) ---------- */
+  /* ---------- الإعداد ----------
+   enabled: true = رابط فعلي. soon: true = صف رمادي بلا رابط وعليه «قريباً» (لا صفحة بعد، ولا يُنشأ رابط معطل).
+   بلا أي منهما = مخفي (مثل «تسجيل الخروج» لأنه لا جلسة دخول). لتفعيل عنصر: enabled: true وhref صفحته الحقيقية. ---------- */
   var NAV = [
     { items: [{ id: "home", label: "الرئيسية", icon: "home", href: "index.html#home", enabled: true }] },
     { title: "دراستي", items: [
@@ -22,20 +24,20 @@
     ] },
     { title: "تنظيم الدراسة", items: [
       { id: "tools", label: "أدوات الطالب", icon: "tools", href: "index.html#tools", enabled: true },
-      { id: "plan", label: "مخطط الدراسة", icon: "list", enabled: false },        // لا صفحة بعد
-      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", enabled: false } // لا صفحة بعد
+      { id: "plan", label: "مخطط الدراسة", icon: "list", soon: true },        // لا صفحة بعد
+      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", soon: true } // لا صفحة بعد
     ] },
     { title: "التدريب", items: [
-      { id: "qbank", label: "بنك الأسئلة", icon: "help", enabled: false },      // «قريباً»
-      { id: "results", label: "نتائج التدريب", icon: "chart", enabled: false }
+      { id: "qbank", label: "بنك الأسئلة", icon: "help", soon: true },      // «قريباً»
+      { id: "results", label: "نتائج التدريب", icon: "chart", soon: true }
     ] },
     { title: "حسابي", items: [
-      { id: "grades", label: "درجاتي الجامعية", icon: "cap", enabled: false },  // يحتاج تحقق هوية من الخادم قبل أي عرض
-      { id: "profile", label: "الملف الشخصي", icon: "user", enabled: false }
+      { id: "grades", label: "درجاتي الجامعية", icon: "cap", soon: true },  // يحتاج تحقق هوية من الخادم قبل أي عرض
+      { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
     ] }
   ];
   var FOOT = [
-    { id: "settings", label: "الإعدادات", icon: "gear", enabled: false },        // اللغة والوضع الليلي في الرأس حالياً
+    { id: "settings", label: "الإعدادات", icon: "gear", soon: true },        // اللغة والوضع الليلي في الرأس حالياً
     { id: "help", label: "المساعدة", icon: "help", href: "index.html#help", enabled: true },
     { id: "logout", label: "تسجيل الخروج", icon: "logout", enabled: false }     // لا تسجيل دخول في الموقع
   ];
@@ -72,7 +74,19 @@
     return a;
   }
 
+  function soonNode(it) {
+    var li = el("li", "nav-item");
+    var sp = el("span", "nav-link is-soon");
+    sp.setAttribute("aria-disabled", "true");
+    sp.appendChild(MS.icon(it.icon, 22));
+    sp.appendChild(el("span", "nav-label", it.label));
+    sp.appendChild(el("span", "badge badge-soon nav-badge", "قريباً"));
+    li.appendChild(sp);
+    return li;
+  }
+
   function itemNode(it) {
+    if (it.soon) return soonNode(it);
     var li = el("li", "nav-item");
     if (it.dynamic === "resume") {
       var c = lastCourse();
@@ -94,6 +108,7 @@
     btn.appendChild(MS.icon("chevron", 18));
     row.appendChild(btn);
     li.appendChild(row);
+    var wrap = el("div", "nav-sub-wrap");
     var ul = el("ul", "nav-sub");
     ul.id = subId;
     var cur = mySem();
@@ -109,7 +124,8 @@
       sli.appendChild(a);
       ul.appendChild(sli);
     });
-    li.appendChild(ul);
+    wrap.appendChild(ul);
+    li.appendChild(wrap);
     toggles.push({ li: li, btn: btn, ul: ul, id: it.id });
     return li;
   }
@@ -117,7 +133,7 @@
   function listNode(items) {
     var ul = el("ul", "nav-list");
     items.forEach(function (it) {
-      if (!it.enabled) return;
+      if (!it.enabled && !it.soon) return;
       var n = itemNode(it);
       if (n) ul.appendChild(n);
     });
@@ -143,6 +159,17 @@
     cls.appendChild(MS.icon("close", 22));
     top.appendChild(cls);
     side.appendChild(top);
+
+    // كتلة الحساب: لا حسابات للطلاب بعد، فتُعرض صفة الزائر الحقيقية بلا اسم أو درجات وهمية
+    var user = el("div", "sb-user");
+    var av = el("span", "sb-avatar"); av.appendChild(MS.icon("user", 22));
+    user.appendChild(av);
+    var ut = el("div", "sb-user-text");
+    ut.appendChild(el("strong", "", "زائر"));
+    var sem = mySem(), semObj = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.id === sem; })[0];
+    ut.appendChild(el("small", "", semObj ? semName(semObj) : "تقدّمك محفوظ على هذا الجهاز"));
+    user.appendChild(ut);
+    side.appendChild(user);
 
     scroll = el("div", "sb-scroll");
     var nav = el("nav", "nav"); nav.id = "nav"; nav.setAttribute("aria-label", T("التنقل الرئيسي"));
