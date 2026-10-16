@@ -133,19 +133,54 @@
   };
   /* الملفات المرفوعة من صفحة الرفع: تأتي من api/uploads.js (window.UPLOADS) وتُدمج في المواد قبل رسم أي صفحة.
      المحاضرة الجديدة تُنشأ عند أول ملف، والموجودة يُضاف إليها الملف. بدون الخادم تبقى القائمة فارغة ولا يتأثر شيء. */
+  /* أنواع المرفوعات (type): lecture = ملف أو رابط محاضرة، quiz = اختبار تفاعلي، exam = أسئلة السنوات السابقة.
+     kind: file = PDF مرفوع، link = رابط خارجي. العنصر برقم محاضرة 0 يخصّ المادة كلها ويُحفظ في c.extras بدل المحاضرات. */
   MS.applyUploads = function (items) {
     (items || []).forEach(function (u) {
       var c = u && u.id ? MS.course(u.courseId) : null;
       if (!c) return;
+      var external = u.kind === "link";
+      var file = {
+        label: u.label,
+        url: external ? u.url : "api/file/" + u.id,
+        added: u.added,
+        uploaded: true,
+        type: u.type || "lecture",
+        external: external,
+        latest: typeof u.showInLatest === "boolean" ? u.showInLatest : undefined
+      };
+      if (!u.number) {
+        (c.extras = c.extras || []).push(file);
+        return;
+      }
       var lec = c.lectures.filter(function (l) { return l.number === u.number; })[0];
       if (!lec) {
         lec = { number: u.number, title: u.title, files: [] };
         c.lectures.push(lec);
       }
-      lec.files.push({ label: u.label, url: "api/file/" + u.id, added: u.added, uploaded: true });
+      lec.files.push(file);
     });
   };
   if (window.UPLOADS) MS.applyUploads(window.UPLOADS);
+
+  /* هل يُحتسب هذا الملف في «أحدث المحاضرات»؟ القرار الصريح (latest) أولاً.
+     بلا قرار: تظهر ملفات كورس الطالب الحالي فقط، فلا تظهر مواد الكورسات القديمة. */
+  MS.currentSemester = function () {
+    var s = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.current; })[0];
+    return s ? s.id : null;
+  };
+  MS.inLatest = function (c, f) {
+    if (typeof f.latest === "boolean") return f.latest;
+    return c.semester === MS.currentSemester();
+  };
+
+  /* شكل الملف في القوائم: نص الأيقونة وزر الفتح حسب النوع (محاضرة، اختبار تفاعلي، أسئلة سنوات سابقة) */
+  MS.fileKind = function (f) {
+    var type = f.type || "lecture";
+    if (type === "quiz") return { ico: "اختبار", open: "ابدأ الاختبار", cls: "is-quiz" };
+    if (type === "exam") return { ico: "أسئلة", open: f.external ? "فتح الرابط" : "فتح الأسئلة", cls: "is-exam" };
+    return f.external ? { ico: "رابط", open: "فتح الرابط", cls: "is-link" } : { ico: "PDF", open: "فتح الملف", cls: "" };
+  };
 
   MS.orderedCourses = function () {
     var out = [];
@@ -313,8 +348,9 @@
 
         var foot = MS.el("div", "cc-foot");
         var total = c.lectures.length;
+        var onlyExtras = !total && c.extras && c.extras.length;
         var state = MS.el("div", "cc-state");
-        state.appendChild(MS.el("span", total ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : "لم تُرفع ملفات بعد"));
+        state.appendChild(MS.el("span", total || onlyExtras ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : onlyExtras ? "اختبارات وأسئلة سابقة" : "لم تُرفع ملفات بعد"));
         if (total) {
           var done = MS.progress.done(c);
           var bar = MS.el("div", "bar");

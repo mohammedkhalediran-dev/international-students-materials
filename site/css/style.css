@@ -623,6 +623,11 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 }
 .badge-soon { border: 1px dashed var(--color-border-strong); background: transparent; }
 .file-ico { flex: none; padding: 0 var(--space-2); border-radius: 6px; background: var(--color-danger); color: #fff; font-size: 0.6875rem; font-weight: 700; line-height: 1.9; direction: ltr; }
+/* اختبار تفاعلي، أسئلة سنوات، رابط: شارة بحدّ وخلفية فاتحة لتبقى مقروءة في الوضعين */
+.file-ico.is-quiz, .file-ico.is-exam, .file-ico.is-link { direction: inherit; border: 1px solid currentColor; background: var(--color-surface); }
+.file-ico.is-quiz { color: var(--color-secondary-ink); background: var(--color-secondary-soft); }
+.file-ico.is-exam { color: var(--color-text); }
+.file-ico.is-link { color: var(--color-muted); }
 
 /* النجمة (المفضلة) */
 .fav {

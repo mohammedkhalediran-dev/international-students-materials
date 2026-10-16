@@ -3,13 +3,18 @@
 //
 // المسارات (كلها تحت /api/):
 //   GET  uploads.js     يعرّف window.UPLOADS؛ تحمّله الصفحات قبل رسم المواد
-//   GET  uploads        قائمة المرفوعات JSON
+//   GET  uploads        قائمة المرفوعات JSON (عامة: بلا اسم الرافع)
 //   GET|HEAD file/<id>  يعرض ملف PDF مرفوعاً
 //   POST check          يتحقق من الرمز
+//   POST admin          قائمة المرفوعات كاملة (مع اسم الرافع ووقت الرفع) للمشرفين
 //   POST chunk          يستقبل قطعة من الملف (?id=&index=)
 //   POST finish         يُنهي الرفع ويضيف المحاضرة إلى القائمة
+//   POST link           يضيف رابطاً (اختبار تفاعلي، أسئلة سنوات سابقة، رابط محاضرة) بلا ملف
+//   POST edit           يعدّل رقم المحاضرة أو عنوانها أو الاسم الظاهر أو النوع أو الرابط أو خيار أحدث المحاضرات
 //   POST abort          يحذف قطع رفع لم يكتمل
-//   POST delete         يحذف ملفاً مرفوعاً
+//   POST delete         يحذف ملفاً أو رابطاً مرفوعاً
+// أنواع المرفوعات (type): lecture = ملف أو رابط محاضرة، quiz = اختبار تفاعلي، exam = أسئلة السنوات السابقة.
+// رقم المحاضرة 0 يعني أن العنصر للمادة كلها (يسمح به لـ quiz وexam فقط).
 // الرمز يُرسَل في الترويسة x-upload-code، ورموز المساعدين في متغير البيئة UPLOAD_CODES بصيغة: اسم:رمز,اسم:رمز
 
 // يعمل على Netlify وCloudflare وNode بلا ترميزات خاصة: التشفير عبر Web Crypto العام (بلا node:crypto).
@@ -26,6 +31,7 @@ export const LIMITS = {
 const MANIFEST = "manifest.json";
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const COURSE_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const TYPES = ["lecture", "quiz", "exam"];
 
 const enc = new TextEncoder();
 const sha = async (s) => new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(String(s))));
@@ -104,11 +110,30 @@ async function updateManifest(deps, mutate) {
   throw new Error("manifest_busy");
 }
 
-const publicEntry = (e) => ({ id: e.id, courseId: e.courseId, number: e.number, title: e.title, label: e.label, size: e.size, added: e.added });
+// الإدخالات القديمة بلا kind وtype: ملف PDF ومحاضرة. showInLatest غير محدد = القرار للموقع حسب كورس المادة.
+const publicEntry = (e) => {
+  const out = { id: e.id, courseId: e.courseId, number: e.number, title: e.title, label: e.label, size: e.size, added: e.added };
+  out.kind = e.kind === "link" ? "link" : "file";
+  out.type = TYPES.includes(e.type) ? e.type : "lecture";
+  if (out.kind === "link") out.url = e.url;
+  if (typeof e.showInLatest === "boolean") out.showInLatest = e.showInLatest;
+  return out;
+};
+// للمشرفين فقط: يضيف اسم الرافع ووقت الرفع
+const adminEntry = (e) => ({ ...publicEntry(e), filename: e.filename || "", by: e.by || "", at: e.at || "" });
 
 function cleanText(v, max) {
   return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
+function cleanUrl(v) {
+  const s = String(v == null ? "" : v).trim();
+  if (!s || s.length > 500 || /[\u0000-\u001f\u007f\s]/.test(s)) return "";
+  try {
+    const u = new URL(s);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : "";
+  } catch (e) { return ""; }
+}
+const flag = (v) => (v === true ? true : v === false ? false : undefined);
 function cleanFilename(v) {
   let n = cleanText(v, 120).replace(/[\\/:*?"<>|]/g, "_");
   if (!/\.pdf$/i.test(n)) n = (n || "lecture") + ".pdf";
@@ -150,7 +175,7 @@ async function uploadsJs(deps) {
 
 async function serveFile(id, method, deps) {
   const entry = (await readManifest(deps)).find((e) => e.id === id);
-  if (!entry) return fail("not_found", 404);
+  if (!entry || entry.kind === "link") return fail("not_found", 404);
   const headers = {
     "content-type": "application/pdf",
     "content-disposition": `inline; filename="lecture.pdf"; filename*=UTF-8''${encodeURIComponent(entry.filename || "lecture.pdf")}`,
@@ -191,14 +216,17 @@ async function finish(req, deps, who) {
   const id = String(b.id || "");
   const n = Number(b.chunks);
   const courseId = String(b.courseId || "");
-  const number = Number(b.number);
-  const title = cleanText(b.title, 200);
+  const number = b.number === undefined || b.number === null || b.number === "" ? 0 : Number(b.number);
+  const type = b.type === undefined ? "lecture" : String(b.type);
   const filename = cleanFilename(b.filename);
   const label = cleanText(b.label, 120) || filename.replace(/\.pdf$/i, "");
   if (!ID_RE.test(id) || !Number.isInteger(n) || n < 1 || n > LIMITS.maxChunks ||
-      !COURSE_RE.test(courseId) || !Number.isInteger(number) || number < 1 || number > 999 || !title) {
+      !COURSE_RE.test(courseId) || !TYPES.includes(type) || !Number.isInteger(number) || number < 0 || number > 999) {
     return fail("bad_request", 400);
   }
+  if (!shapeOk(type, number, cleanText(b.title, 200))) return fail("bad_request", 400);
+  const title = number > 0 ? cleanText(b.title, 200) : "";
+  const showInLatest = number > 0 ? flag(b.showInLatest) : undefined;
 
   const already = (await readManifest(deps)).find((e) => e.id === id);
   if (already) return json({ ok: true, entry: publicEntry(already) }); // إعادة الطلب بعد انقطاع
@@ -212,9 +240,84 @@ async function finish(req, deps, who) {
   if (size > LIMITS.file) { await dropChunks(deps, id, n); return fail("too_big", 413); }
   if (size < 1) return fail("bad_request", 400);
 
-  const entry = { id, courseId, number, title, label, filename, size, chunks: n, added: today(deps.now()), by: who };
+  const entry = { id, kind: "file", type, courseId, number, title, label, filename, size, chunks: n, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who };
+  if (showInLatest !== undefined) entry.showInLatest = showInLatest;
   await updateManifest(deps, (list) => list.concat([entry]));
   return json({ ok: true, entry: publicEntry(entry) });
+}
+
+// الشكل المقبول: المحاضرة (lecture) تحتاج رقماً من 1، والرقم 0 (للمادة كلها) لـ quiz وexam فقط، وأي رقم فوق 0 يحتاج عنواناً
+function shapeOk(type, number, title) {
+  if (type === "lecture" && number < 1) return false;
+  if (number > 0 && !title) return false;
+  return true;
+}
+
+/* رابط بلا ملف: اختبار تفاعلي أو أسئلة سنوات سابقة أو رابط محاضرة */
+async function addLink(req, deps, who) {
+  const b = await readJson(req);
+  if (!b) return fail("bad_request", 400);
+  const courseId = String(b.courseId || "");
+  const number = b.number === undefined || b.number === null || b.number === "" ? 0 : Number(b.number);
+  const type = b.type === undefined ? "quiz" : String(b.type);
+  const title = cleanText(b.title, 200);
+  const label = cleanText(b.label, 120);
+  const url = cleanUrl(b.url);
+  if (!COURSE_RE.test(courseId) || !TYPES.includes(type) || !Number.isInteger(number) || number < 0 || number > 999 || !label) {
+    return fail("bad_request", 400);
+  }
+  if (!url) return fail("bad_url", 400);
+  if (!shapeOk(type, number, title)) return fail("bad_request", 400);
+  const id = crypto.randomUUID();
+  const entry = { id, kind: "link", type, courseId, number, title: number > 0 ? title : "", label, url, size: 0, chunks: 0, added: today(deps.now()), at: new Date(deps.now()).toISOString(), by: who };
+  const showInLatest = number > 0 ? flag(b.showInLatest) : undefined;
+  if (showInLatest !== undefined) entry.showInLatest = showInLatest;
+  await updateManifest(deps, (list) => list.concat([entry]));
+  return json({ ok: true, entry: publicEntry(entry) });
+}
+
+/* تعديل بيانات عنصر مرفوع. عنوان المحاضرة يُطبَّق على كل المرفوعات التي لها المادة والرقم نفسه */
+async function edit(req, deps) {
+  const b = await readJson(req);
+  const id = b && String(b.id || "");
+  if (!id || !ID_RE.test(id)) return fail("bad_request", 400);
+  const cur = (await readManifest(deps)).find((e) => e.id === id);
+  if (!cur) return fail("not_found", 404);
+
+  const next = { ...cur };
+  if (b.number !== undefined) {
+    const n = b.number === null || b.number === "" ? 0 : Number(b.number);
+    if (!Number.isInteger(n) || n < 0 || n > 999) return fail("bad_request", 400);
+    next.number = n;
+  }
+  if (b.type !== undefined) {
+    if (!TYPES.includes(String(b.type))) return fail("bad_request", 400);
+    next.type = String(b.type);
+  }
+  if (b.label !== undefined) {
+    next.label = cleanText(b.label, 120);
+    if (!next.label) return fail("bad_request", 400);
+  }
+  if (b.title !== undefined) next.title = cleanText(b.title, 200);
+  if (b.url !== undefined) {
+    if (cur.kind !== "link") return fail("bad_request", 400);
+    next.url = cleanUrl(b.url);
+    if (!next.url) return fail("bad_url", 400);
+  }
+  if (b.showInLatest !== undefined) {
+    const f = flag(b.showInLatest);
+    if (f === undefined) delete next.showInLatest; else next.showInLatest = f;
+  }
+  next.type = TYPES.includes(next.type) ? next.type : "lecture";
+  if (next.number === 0) { next.title = ""; delete next.showInLatest; }
+  if (!shapeOk(next.type, next.number, next.title)) return fail("bad_request", 400);
+
+  await updateManifest(deps, (list) => list.map((e) => {
+    if (e.id === id) return next;
+    if (b.title !== undefined && next.number > 0 && e.courseId === next.courseId && e.number === next.number) return { ...e, title: next.title };
+    return e;
+  }));
+  return json({ ok: true, entry: adminEntry(next) });
 }
 
 async function remove(req, deps) {
@@ -224,7 +327,7 @@ async function remove(req, deps) {
   const entry = (await readManifest(deps)).find((e) => e.id === id);
   if (!entry) return fail("not_found", 404);
   await updateManifest(deps, (list) => list.filter((e) => e.id !== id));
-  await dropChunks(deps, id, entry.chunks);
+  if (entry.kind !== "link") await dropChunks(deps, id, entry.chunks);
   return json({ ok: true });
 }
 
@@ -248,12 +351,15 @@ export async function handle(req, deps) {
     const fm = path.match(/^file\/([0-9a-f-]{36})$/);
     if (fm && (method === "GET" || method === "HEAD")) return await serveFile(fm[1], method, deps);
 
-    if (method === "POST" && ["check", "chunk", "finish", "abort", "delete"].includes(path)) {
+    if (method === "POST" && ["check", "admin", "chunk", "finish", "link", "edit", "abort", "delete"].includes(path)) {
       const auth = await authenticate(req, deps);
       if (auth.res) return auth.res;
       if (path === "check") return json({ ok: true, name: auth.name });
+      if (path === "admin") return json({ ok: true, items: (await readManifest(deps)).map(adminEntry) });
       if (path === "chunk") return await receiveChunk(req, url, deps);
       if (path === "finish") return await finish(req, deps, auth.name);
+      if (path === "link") return await addLink(req, deps, auth.name);
+      if (path === "edit") return await edit(req, deps);
       if (path === "abort") return await abort(req, deps);
       return await remove(req, deps);
     }

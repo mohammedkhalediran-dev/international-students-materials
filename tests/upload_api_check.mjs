@@ -106,5 +106,57 @@ chk((await call(`file/${up.id}`, { method: "GET" })).status === 404, "الملف
 chk((await call("delete", { code: "code-ali-98765", body: { id: up.id } })).status === 404, "حذف ثانٍ: غير موجود");
 chk((await call("nothing", { method: "GET" })).status === 404, "مسار مجهول: 404");
 
+// 8) أنواع جديدة: روابط، اختبار تفاعلي، أسئلة سنوات، خيار أحدث المحاضرات، قائمة المشرفين
+const SARA = "code-sara-1234", ALI = "code-ali-98765";
+const adminList = async (code = SARA) => (await (await call("admin", { code, body: {} })).json()).items;
+chk((await call("admin", { body: {} })).status === 401, "قائمة المشرفين تحتاج رمزاً");
+const lecUp = await upload(SARA, pdf(2000), { number: 7, title: "Renal Blood Flow", showInLatest: false });
+const lecEntry = (await lecUp.res.json()).entry;
+chk(lecEntry.type === "lecture" && lecEntry.kind === "file" && lecEntry.showInLatest === false, "ملف المحاضرة: النوع والتفضيل محفوظان");
+const adm = (await adminList()).find((e) => e.id === lecUp.id);
+chk(adm && adm.by === "سارة" && /^\d{4}-\d\d-\d\dT/.test(adm.at), "قائمة المشرفين تعرض الرافع ووقت الرفع");
+chk(!("by" in (await (await call("uploads", { method: "GET" })).json()).items[0]), "القائمة العامة ما زالت بلا اسم الرافع");
+
+const quiz = await call("link", { code: ALI, body: { courseId: "medical-immunology", type: "quiz", label: "Interactive test 1", url: "https://quiz.example.com/t/1" } });
+const quizEntry = (await quiz.json()).entry;
+chk(quiz.status === 200 && quizEntry.kind === "link" && quizEntry.number === 0 && quizEntry.url === "https://quiz.example.com/t/1", "رابط اختبار تفاعلي للمادة كلها");
+chk((await call("link", { code: ALI, body: { courseId: "medical-immunology", type: "quiz", label: "x", url: "javascript:alert(1)" } })).status === 400, "رابط javascript يُرفض");
+chk((await call("link", { code: ALI, body: { courseId: "medical-immunology", type: "quiz", label: "x", url: "not a url" } })).status === 400, "رابط غير صالح يُرفض");
+chk((await call("link", { code: ALI, body: { courseId: "medical-immunology", type: "quiz", label: "", url: "https://a.example.com" } })).status === 400, "رابط بلا اسم يُرفض");
+chk((await call("link", { code: ALI, body: { courseId: "medical-immunology", type: "lecture", label: "x", url: "https://a.example.com" } })).status === 400, "رابط محاضرة بلا رقم يُرفض");
+chk((await call("link", { code: ALI, body: { courseId: "medical-immunology", type: "quiz", number: 3, label: "x", url: "https://a.example.com" } })).status === 400, "رقم محاضرة بلا عنوان يُرفض");
+chk((await call("link", { body: { courseId: "medical-immunology", type: "quiz", label: "x", url: "https://a.example.com" } })).status === 401, "إضافة رابط تحتاج رمزاً");
+chk((await call(`file/${quizEntry.id}`, { method: "GET" })).status === 404, "الرابط لا يُقدَّم كملف");
+
+const exam = await upload(SARA, pdf(1500), { type: "exam", number: 0, title: "", label: "Final 2025" });
+const examEntry = (await exam.res.json()).entry;
+chk(exam.res.status === 200 && examEntry.type === "exam" && examEntry.number === 0 && examEntry.title === "", "أسئلة سنوات سابقة (PDF) للمادة كلها بلا عنوان");
+chk((await upload(SARA, pdf(1500), { type: "lecture", number: 0, title: "" })).res.status === 400, "محاضرة بلا رقم تُرفض");
+chk((await upload(SARA, pdf(1500), { type: "weird" })).res.status === 400, "نوع مجهول يُرفض");
+
+// تعديل
+const second = await upload(ALI, pdf(1200), { number: 7, title: "Renal Blood Flow", label: "Notes" });
+const ed = await call("edit", { code: SARA, body: { id: lecUp.id, title: "Renal Blood Flow and GFR", label: "Slides v2", showInLatest: true } });
+chk(ed.status === 200, "التعديل ينجح");
+let all = await adminList();
+chk(all.find((e) => e.id === lecUp.id).label === "Slides v2" && all.find((e) => e.id === lecUp.id).showInLatest === true, "الاسم والتفضيل تغيّرا");
+chk(all.find((e) => e.id === second.id).title === "Renal Blood Flow and GFR", "عنوان المحاضرة يُطبَّق على كل ملفاتها");
+chk((await call("edit", { code: SARA, body: { id: lecUp.id, number: 8 } })).status === 200 && (await adminList()).find((e) => e.id === lecUp.id).number === 8, "تغيير رقم المحاضرة");
+chk((await call("edit", { code: SARA, body: { id: lecUp.id, number: 0 } })).status === 400, "محاضرة لا تصير بلا رقم");
+chk((await call("edit", { code: SARA, body: { id: examEntry.id, number: 4 } })).status === 400, "رقم جديد بلا عنوان يُرفض");
+chk((await call("edit", { code: SARA, body: { id: examEntry.id, number: 4, title: "Immune Tolerance" } })).status === 200, "ربط أسئلة السنوات بمحاضرة مع عنوان");
+chk((await call("edit", { code: SARA, body: { id: quizEntry.id, url: "https://quiz.example.com/t/2" } })).status === 200 && (await adminList()).find((e) => e.id === quizEntry.id).url === "https://quiz.example.com/t/2", "تعديل رابط");
+chk((await call("edit", { code: SARA, body: { id: lecUp.id, url: "https://x.example.com" } })).status === 400, "الرابط لا يُعدَّل على ملف");
+chk((await call("edit", { code: SARA, body: { id: quizEntry.id, url: "ftp://x" } })).status === 400, "رابط غير http يُرفض في التعديل");
+chk((await call("edit", { code: SARA, body: { id: lecUp.id, label: "  " } })).status === 400, "اسم ظاهر فارغ يُرفض");
+chk((await call("edit", { code: SARA, body: { id: randomUUID(), label: "x" } })).status === 404, "تعديل عنصر غير موجود");
+chk((await call("edit", { body: { id: lecUp.id, label: "x" } })).status === 401, "التعديل يحتاج رمزاً");
+// الحذف يشمل الرابط
+chk((await call("delete", { code: ALI, body: { id: quizEntry.id } })).status === 200 && !(await adminList()).some((e) => e.id === quizEntry.id), "حذف رابط");
+// إدخال قديم بلا kind وtype يظهر كمحاضرة PDF
+await store.set("manifest.json", JSON.stringify([{ id: "11111111-1111-4111-8111-111111111111", courseId: "medical-immunology", number: 1, title: "Old", label: "Old", filename: "o.pdf", size: 5, chunks: 1, added: "2026-10-01", by: "علي" }]));
+const old = (await (await call("uploads", { method: "GET" })).json()).items[0];
+chk(old.kind === "file" && old.type === "lecture" && !("showInLatest" in old), "إدخال قديم يُقرأ كمحاضرة PDF بلا تفضيل");
+
 console.log(fails.length ? `${passes} passed, ${fails.length} failed` : `upload api OK: ${passes} checks`);
 process.exit(fails.length ? 1 : 0);
