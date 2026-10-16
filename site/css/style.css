@@ -94,6 +94,8 @@
   --control-h: 44px;      /* الأزرار والحقول (يكفي للمس) */
   --icon-sm: 18px;
   --icon-md: 22px;
+  --logo: 36px;
+  --logo-bg: transparent;
   --tile: 44px;
   --focus-ring: 0 0 0 3px rgba(22, 140, 140, 0.35);
   --ease: 0.15s ease;
@@ -129,6 +131,7 @@
   --hue-5-bg: #173a2a; --hue-5-ink: #5cc58f;
   --hue-6-bg: #3d1f2b; --hue-6-ink: #f09ab7;
   --focus-ring: 0 0 0 3px rgba(95, 208, 203, 0.4);
+  --logo-bg: #f6f8fb;
 }
 
 /* ========== 2. الأساسيات والطباعة ========== */
@@ -305,7 +308,7 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
   font-size: var(--text-base);
   color: var(--band-strong);
 }
-.brand svg { flex: none; color: var(--color-secondary); }
+.brand-mark { display: block; flex: none; width: var(--logo); height: var(--logo); padding: var(--space-1); border-radius: var(--radius-sm); background: var(--logo-bg); object-fit: contain; }
 .brand > span { overflow-wrap: anywhere; line-height: var(--leading-tight); }
 .nav { display: flex; flex-direction: column; gap: var(--space-1); }
 .nav a, .nav .nav-soon {
