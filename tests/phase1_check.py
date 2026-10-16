@@ -34,7 +34,19 @@ try:
     total=p.evaluate('COURSES.length'); basic=p.evaluate('COURSES.filter(c=>c.category=="basic").length')
     chk(p.locator('#semGrid .quick-item').count()==p.evaluate('SEMESTERS.length'),'home shows one card per semester')
     p2=page(b,'ar'); p2.goto(BASE+'semester.html?id=3'); p2.wait_for_timeout(700)
-    chk(p2.locator('.course-card').count()==p.evaluate('COURSES.filter(c=>c.semester==3).length'),'semester page lists all its subjects'); chk(not p2.errs,f'semester page js errors {p2.errs}'); p2.context.close()
+    chk(p2.locator('.course-card').count()==p.evaluate('COURSES.filter(c=>c.semester==3).length'),'semester page lists all its subjects'); chk(not p2.errs,f'semester page js errors {p2.errs}')
+    mb=p2.locator('.cc-more:visible').first
+    chk(mb.count()==1,'long professor list shows "show more"')
+    if mb.count():
+        pid=mb.get_attribute('aria-controls'); h0=p2.evaluate(f'document.getElementById("{pid}").clientHeight')
+        mb.focus(); p2.keyboard.press('Enter'); p2.wait_for_timeout(100)
+        chk(mb.get_attribute('aria-expanded')=='true' and p2.evaluate(f'document.getElementById("{pid}").clientHeight')>h0,'show more expands with keyboard')
+        p2.keyboard.press('Enter'); p2.wait_for_timeout(100); chk(mb.get_attribute('aria-expanded')=='false','show more collapses')
+    p2.locator('.sem-filter .chip').nth(2).click(); p2.wait_for_timeout(100)
+    chk(p2.locator('.course-card:visible').count()==p.evaluate('COURSES.filter(c=>c.semester==3&&c.category=="general").length'),'semester filter: general only')
+    chk(p2.locator('.course-card .cc-kicker:visible').count()==0,'general subjects have no field label')
+    p2.locator('.sem-filter .chip').nth(0).click(); p2.wait_for_timeout(100)
+    chk(p2.locator('.course-card:visible').count()==14,'semester filter: all'); p2.context.close()
     p2=page(b,'ar'); p2.goto(BASE+'semester.html?id=1'); p2.wait_for_timeout(500)
     chk(p2.locator('.course-card').count()==p.evaluate('COURSES.filter(c=>c.semester==1).length'),'semester 1 page lists its subjects'); p2.context.close()
     for q,exp in [('Kidney',2),('الكلية',2),('للكلية',2),('فسيولوجيا',7),('11111131',1),('Shahbazi',1),('immune',0),('xyzxyz',0),('فيزيولوجيا',0)]:

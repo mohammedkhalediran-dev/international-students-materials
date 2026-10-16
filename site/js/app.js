@@ -250,26 +250,58 @@
         return b;
       }
 
-      /* بطاقة أفقية: المعلومات في جهة البداية والصورة في جهة النهاية (يسار الصفحة العربية) */
+      /* بطاقة أفقية بثلاث مناطق: المعلومات (60%) والصورة (40%) في الصف الأول، والتذييل في صف تحتهما.
+         المفضلة في زاوية البطاقة، وزر الفتح الدائري هو رابط البطاقة كلها. */
+      var uid = 0;
       function card(c, onFav) {
         var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
+        art.appendChild(favButton(c, onFav));
+
         var info = MS.el("div", "cc-info");
-
-        var top = MS.el("div", "cc-top");
-        var cat = MS.category(c);
-        top.appendChild(MS.el("span", "cc-kicker", cat ? cat.name : ""));
-        top.appendChild(favButton(c, onFav));
-        info.appendChild(top);
-
+        if (c.field) info.appendChild(MS.el("p", "cc-kicker", c.field));
         info.appendChild(MS.el("h3", "cc-title en", c.name));
         info.appendChild(MS.el("p", "cc-ar", c.nameAr));
-        if (c.professors.length) info.appendChild(MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · ")));
+        if (c.professors.length) {
+          var profs = MS.el("p", "cc-profs en", c.professors.map(function (p) { return p.name + (p.role ? " (" + p.role + ")" : ""); }).join(" · "));
+          profs.id = "ccp-" + (++uid);
+          info.appendChild(profs);
+          // الأسماء الطويلة تُختصر إلى سطرين، وزر «عرض المزيد» يظهر فقط إذا كان هناك نص مخفي
+          var more = MS.el("button", "cc-more", "عرض المزيد");
+          more.type = "button";
+          more.hidden = true;
+          more.setAttribute("aria-expanded", "false");
+          more.setAttribute("aria-controls", profs.id);
+          more.addEventListener("click", function () {
+            var open = profs.classList.toggle("is-open");
+            more.setAttribute("aria-expanded", String(open));
+            more.textContent = open ? "عرض أقل" : "عرض المزيد";
+          });
+          info.appendChild(more);
+          var measure = function () {
+            if (profs.classList.contains("is-open")) return;
+            more.hidden = profs.scrollHeight <= profs.clientHeight + 1;
+          };
+          requestAnimationFrame(measure);
+          if (window.ResizeObserver) new ResizeObserver(measure).observe(profs);
+        }
         if (c.code || c.credits) {
           var facts = MS.el("p", "cc-facts");
           if (c.code) facts.appendChild(MS.el("span", "cc-code", c.code));
           if (c.credits) facts.appendChild(MS.el("span", "", "الدرجة " + c.credits.total));
           info.appendChild(facts);
         }
+        art.appendChild(info);
+
+        var media = MS.el("div", "cc-media");
+        if (c.image) {
+          var pic = MS.el("img", "cc-img");
+          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
+          media.appendChild(pic);
+        } else {
+          art.classList.add("no-img");
+          media.appendChild(MS.icon(c.icon, 40));
+        }
+        art.appendChild(media);
 
         var foot = MS.el("div", "cc-foot");
         var total = c.lectures.length;
@@ -285,25 +317,12 @@
           state.appendChild(MS.el("span", "bar-label", done + " من " + total + " مقروءة"));
         }
         foot.appendChild(state);
-        // زر الفتح الدائري: رابط واحد يغطي البطاقة كلها، واسمه المقروء يذكر المادة
         var go = MS.el("a", "cc-go cover");
         go.href = "course.html?id=" + encodeURIComponent(c.id);
         go.setAttribute("aria-label", "فتح المادة: " + c.name);
         go.appendChild(MS.icon("arrow", 20));
         foot.appendChild(go);
-        info.appendChild(foot);
-        art.appendChild(info);
-
-        var media = MS.el("div", "cc-media");
-        if (c.image) {
-          var pic = MS.el("img", "cc-img");
-          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
-          media.appendChild(pic);
-        } else {
-          art.classList.add("no-img");
-          media.appendChild(MS.icon(c.icon, 44));
-        }
-        art.appendChild(media);
+        art.appendChild(foot);
         return art;
       }
     return card;
