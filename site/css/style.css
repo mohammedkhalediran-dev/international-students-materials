@@ -112,7 +112,8 @@
   --nav-group-bg: #f0f5f4;      /* المجموعة الأم المفتوحة: أخف من الصفحة النشطة */
   --nav-line: #e4e8e3;
   --nav-scrim: rgba(16, 40, 63, 0.5);
-  --nav-bar: 3px;               /* شريط الصفحة النشطة */
+  --nav-bar: 4px;               /* شريط الصفحة النشطة */
+  --nav-font: 0.9375rem;        /* 15px: خط الروابط */
 }
 
 /* الوضع الليلي: يُفعَّل فقط عند اختيار المستخدم (زر القمر) */
@@ -357,7 +358,8 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
   cursor: pointer;
   transition: background var(--ease), color var(--ease);
 }
-.sb-btn:hover { background: var(--nav-bg); color: var(--nav-text); }
+.sb-btn:hover { background: var(--nav-active-bg); color: var(--nav-accent); }
+.sb-collapse { background: var(--nav-bg); border-radius: var(--radius-pill); }
 .sb-close { display: none; }
 /* سهم الطي يشير نحو حافة القائمة عند الطي، ويعكس عند التوسيع */
 .sb-collapse .ico { display: grid; transition: transform var(--ease); }
@@ -392,11 +394,12 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   color: var(--nav-text);
-  font-size: var(--text-base);
+  font-size: var(--nav-font);
   font-weight: 500;
+  overflow: hidden;
   transition: background var(--ease), color var(--ease);
 }
-.nav-link .ico, .nav-sublink .ico { flex: none; display: grid; color: var(--nav-muted); }
+.nav-link .ico, .nav-sublink .ico { flex: none; display: grid; color: var(--nav-text); }
 .nav-link:hover, .nav-sublink:hover { background: var(--nav-bg); }
 .nav-link:focus-visible, .nav-sublink:focus-visible, .nav-toggle:focus-visible, .sb-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .nav-label { min-width: 0; overflow-wrap: anywhere; line-height: var(--leading-tight); }
@@ -409,13 +412,13 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .nav-link[aria-current="page"]::before, .nav-sublink[aria-current="page"]::before {
   content: "";
   position: absolute;
-  inset-block: var(--space-2);
+  inset-block: 0;
   inset-inline-start: 0;
   width: var(--nav-bar);
-  border-radius: var(--radius-pill);
   background: var(--nav-accent);
 }
-.nav-row { display: flex; align-items: center; gap: var(--space-1); }
+.nav-row { display: flex; align-items: center; gap: var(--space-1); border-radius: var(--radius-md); }
+.is-open > .nav-row { background: var(--nav-group-bg); }   /* المجموعة المفتوحة: خلفية هادئة تضم الرابط وزر التوسيع */
 .nav-row .nav-link { flex: 1; min-width: 0; }
 .nav-toggle {
   display: grid;
@@ -435,7 +438,9 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .nav-sub { display: none; flex-direction: column; gap: var(--space-1); margin-top: var(--space-1); padding-inline-start: var(--space-5); }
 .is-open > .nav-sub { display: flex; }
 .nav-sublink { font-size: var(--text-sm); }
-.is-parent > .nav-row .nav-link { background: var(--nav-group-bg); font-weight: 600; }   /* أخف من الصفحة النشطة، بلا شريط */
+.sb-foot .nav-link { font-size: var(--text-sm); }
+.is-open > .nav-row .nav-link { font-weight: 700; }
+.is-open > .nav-row .nav-link[aria-current="page"] { background: var(--nav-active-bg); }
 .nav-badge { margin-inline-start: auto; }
 .nav-tip {
   position: fixed;
