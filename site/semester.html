@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=p3-14">
+  <link rel="stylesheet" href="css/style.css?v=p3-15">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -62,19 +62,24 @@
     </div>
   </header>
 
-  <!-- رأس الصفحة: مسار التنقل + اسم الكورس -->
-  <section class="page-hero band">
+  <!-- رأس الصفحة: مسار التنقل + اسم الكورس + عدد المواد، ثم البانر -->
+  <div class="container sem-head">
     <nav class="breadcrumb" aria-label="مسار التنقل">
       <ol>
         <li><a href="index.html">الرئيسية</a></li>
         <li><span aria-current="page" id="crumbCurrent">الكورس</span></li>
       </ol>
     </nav>
-    <div class="c-body">
-      <h1 class="course-title" id="semTitle"></h1>
-      <p class="course-title-ar" id="semCount"></p>
-    </div>
-  </section>
+    <h1 class="sem-title" id="semTitle"></h1>
+    <p class="sem-count" id="semCount"></p>
+    <section class="banner" aria-label="Medixa">
+      <div>
+        <p class="banner-title"><span>معرفة أعمق.</span> <span>دراسة أذكى.</span></p>
+        <p class="banner-sub">محاضرات المواد ومصادرها في مكان واحد</p>
+      </div>
+      <img class="banner-img" src="assets/banner-lungs.webp" width="200" height="200" alt="">
+    </section>
+  </div>
 
   <main class="container" id="content"></main>
 
@@ -101,10 +106,10 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-14"></script>
+  <script src="data/courses.js?v=p3-15"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/i18n.js?v=p3-14"></script>
-  <script src="js/app.js?v=p3-14"></script>
+  <script src="js/i18n.js?v=p3-15"></script>
+  <script src="js/app.js?v=p3-15"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -135,20 +140,48 @@
         root.appendChild(empty);
         return;
       }
+      // العنوان + أزرار التصفية حسب النوع (الكل / العلوم الطبية الأساسية / المواد العامة)
+      var bar = el("div", "sem-filter");
+      bar.appendChild(el("h2", "", "المواد الدراسية"));
+      var chips = el("div", "chips");
+      chips.setAttribute("role", "group");
+      chips.setAttribute("aria-label", "تصفية المواد");
+      bar.appendChild(chips);
+      root.appendChild(bar);
+
+      var groups = [];
+      function chip(label, n, catId) {
+        var b = el("button", "chip");
+        b.type = "button";
+        b.appendChild(el("span", "", label));
+        b.appendChild(el("small", "", String(n)));
+        b.addEventListener("click", function () {
+          [].forEach.call(chips.children, function (x) { x.classList.toggle("is-on", x === b); x.setAttribute("aria-pressed", String(x === b)); });
+          groups.forEach(function (g) { g.sec.hidden = !!catId && g.id !== catId; });
+        });
+        chips.appendChild(b);
+        return b;
+      }
+      chip("الكل", list.length, null);
       CATEGORIES.forEach(function (cat) {
         var items = list.filter(function (c) { return c.category === cat.id; });
         if (!items.length) return;
+        chip(cat.name, items.length, cat.id);
         var sec = el("section", "group");
         var head = el("div", "group-head");
-        head.appendChild(el("h2", "group-title", cat.name));
+        head.appendChild(el("h3", "group-title", cat.name));
         head.appendChild(el("span", "group-count", MS.subjectsLabel(items.length)));
         sec.appendChild(head);
         var grid = el("div", "course-grid");
         items.forEach(function (c) { grid.appendChild(MS.courseCard(c)); });
         sec.appendChild(grid);
         root.appendChild(sec);
+        groups.push({ id: cat.id, sec: sec });
       });
+      chips.firstChild.classList.add("is-on");
+      [].forEach.call(chips.children, function (x, i) { x.setAttribute("aria-pressed", String(i === 0)); });
     })();
   </script>
+  <script>if (window.I18N) I18N.apply();</script>
 </body>
 </html>
