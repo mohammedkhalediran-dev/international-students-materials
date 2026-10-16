@@ -301,7 +301,7 @@ try:
         pg.goto(BASE + 'semester.html?id=3')
         pg.wait_for_timeout(900)
         cols = pg.evaluate('''()=>{const g=(s,p)=>getComputedStyle(document.querySelector(s))[p];return {surf:g("#sidebar","backgroundColor"),act:g("#sidebar [aria-current=page]","color"),actbg:g("#sidebar [aria-current=page]","backgroundColor"),mut:g("#sidebar .nav-title","color"),txt:g("#sidebar .nav-link[data-nav=latest]","color")}}''')
-        chk(cols['surf'] == 'rgb(255, 255, 255)' and cols['txt'] == 'rgb(16, 40, 63)' and cols['act'] == 'rgb(13, 88, 99)', f'ألوان النهاري المطلوبة {cols}')
+        chk(cols['surf'] == 'rgb(23, 50, 77)' and cols['txt'] == 'rgb(234, 241, 247)' and cols['act'] == 'rgb(111, 224, 216)', f'ألوان النهاري المطلوبة {cols}')
         chk(ratio(rgb(cols['act']), rgb(cols['actbg'])) >= 4.5 and ratio(rgb(cols['mut']), rgb(cols['surf'])) >= 4.5, 'تباين نهاري كافٍ')
         c.close()
 

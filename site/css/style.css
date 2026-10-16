@@ -103,14 +103,14 @@
   --ease: 0.15s ease;
 
   /* القائمة الجانبية (إعادة التصميم 2026-10-16) */
-  --nav-surface: #ffffff;
-  --nav-bg: #f5f6f3;            /* حالة المرور وأسطح ثانوية */
-  --nav-text: #10283f;
-  --nav-muted: #5b6b7b;
-  --nav-accent: #0d5863;
-  --nav-active-bg: #dfeeed;
-  --nav-group-bg: #f0f5f4;      /* المجموعة الأم المفتوحة: أخف من الصفحة النشطة */
-  --nav-line: #e4e8e3;
+  --nav-surface: #17324d;       /* كحلي الهوية: القائمة هي العنصر الداكن الوحيد في الصفحة */
+  --nav-bg: #1f3f5e;            /* حالة المرور وأسطح ثانوية */
+  --nav-text: #eaf1f7;
+  --nav-muted: #a9bdd1;
+  --nav-accent: #6fe0d8;
+  --nav-active-bg: #1c5560;
+  --nav-group-bg: #1b3b58;      /* المجموعة الأم المفتوحة */
+  --nav-line: #2b4a68;
   --nav-scrim: rgba(16, 40, 63, 0.5);
   --nav-bar: 4px;               /* شريط الصفحة النشطة */
   --nav-font: 0.9375rem;        /* 15px: خط الروابط */
@@ -146,14 +146,14 @@
   --hue-5-bg: #173a2a; --hue-5-ink: #5cc58f;
   --hue-6-bg: #3d1f2b; --hue-6-ink: #f09ab7;
   --focus-ring: 0 0 0 3px rgba(95, 208, 203, 0.4);
-  --nav-surface: #13243a;
-  --nav-bg: #1a2d46;
+  --nav-surface: #0f2033;
+  --nav-bg: #172c44;
   --nav-text: #e6ecf3;
   --nav-muted: #a3b2c4;
   --nav-accent: #7fdad5;
-  --nav-active-bg: #1d4a52;
-  --nav-group-bg: #182f45;
-  --nav-line: #2a3b55;
+  --nav-active-bg: #1b4650;
+  --nav-group-bg: #14293f;
+  --nav-line: #263a55;
   --nav-scrim: rgba(5, 12, 22, 0.65);
 }
 
@@ -473,6 +473,23 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .nav-label, .nav-badge { transition: opacity 0.15s ease; }
 .nav-tip { animation: nav-tip-in 0.12s ease both; }
 @keyframes nav-tip-in { from { opacity: 0; transform: translateX(var(--space-1)); } to { opacity: 1; transform: none; } }
+/* لمسات الهوية: سكة شجرة للكورسات، وهج للصفحة الحالية، شارة «قريباً» بألوان القائمة */
+.nav-sub { position: relative; }
+.nav-sub::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--space-1);
+  inset-inline-start: calc(var(--space-5) - var(--space-2));
+  width: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--nav-line);
+}
+.nav-sublink { padding-inline-start: var(--space-3); }
+.nav-link[aria-current="page"], .nav-sublink[aria-current="page"] { box-shadow: inset 0 0 0 1px var(--nav-accent); font-weight: 700; }
+.sidebar .badge-soon { border-color: var(--nav-muted); color: var(--nav-muted); background: transparent; }
+.sidebar .brand { font-size: var(--text-lg); letter-spacing: 0; }
+.sb-user { border: 1px solid var(--nav-line); }
+.sb-avatar { background: var(--nav-accent); color: var(--nav-surface); }
 .nav-tip {
   position: fixed;
   z-index: 70;
