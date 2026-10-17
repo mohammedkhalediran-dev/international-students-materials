@@ -33,43 +33,28 @@
     </div>
   </header>
 
-  <main class="container up-main" id="main">
-    <h1 class="up-title" id="pageTitle">تسجيل الدخول</h1>
-    <p class="up-lead">حسابك يحفظ مفضلتك وتقدمك وتاريخ الامتحان، فتجدها على أي جهاز.</p>
+  <main class="container lg-main" id="main">
+    <section class="card lg-card" id="formCard">
+      <h1 class="lg-title" id="pageTitle">أهلاً بك في <span data-site-title>Medixa</span></h1>
+      <p class="lg-lead">سجّل دخولك لتحفظ مفضلتك وتقدمك على أي جهاز، أو تصفّح الموقع كزائر.</p>
 
-    <section class="card up-card" id="formCard">
-      <div class="up-actions" role="group" aria-label="نوع العملية">
-        <button class="btn btn-primary btn-sm" type="button" id="tabLogin" aria-pressed="true">تسجيل الدخول</button>
-        <button class="btn btn-secondary btn-sm" type="button" id="tabRegister" aria-pressed="false">إنشاء حساب</button>
+      <div class="lg-actions">
+        <button class="btn lg-google" type="button" id="googleBtn">
+          <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+          <span>الدخول بحساب Google</span>
+        </button>
+        <p class="lg-or" aria-hidden="true"><span>أو</span></p>
+        <a class="btn btn-secondary lg-guest" id="guestBtn" href="index.html">المتابعة كزائر</a>
       </div>
-      <form class="up-form" id="form" novalidate>
-        <div id="nameRow" hidden>
-          <label class="up-label" for="name">اسمك</label>
-          <input class="field" id="name" type="text" maxlength="60" autocomplete="name">
-        </div>
-        <div>
-          <label class="up-label" for="email">البريد الإلكتروني</label>
-          <input class="field up-ltr" id="email" type="email" autocomplete="email" inputmode="email" required>
-        </div>
-        <div>
-          <label class="up-label" for="password">كلمة المرور</label>
-          <input class="field up-ltr" id="password" type="password" autocomplete="current-password" minlength="8" required>
-          <p class="up-hint" id="pwHint" hidden>8 أحرف على الأقل.</p>
-        </div>
-        <div id="codeRow" hidden>
-          <label class="up-label" for="code">رمز الدعوة (إن طُلب)</label>
-          <input class="field up-ltr" id="code" type="text" autocomplete="off">
-        </div>
-        <p class="up-msg" id="msg" role="alert" hidden></p>
-        <div class="up-actions">
-          <button class="btn btn-primary" type="submit" id="submit">دخول</button>
-        </div>
-      </form>
+
+      <p class="up-msg" id="msg" role="alert" hidden></p>
+      <p class="lg-note">الزائر يرى كل المواد، لكن مفضلته وتقدمه يبقيان على هذا الجهاز فقط.</p>
     </section>
 
-    <section class="card up-card" id="doneCard" hidden>
-      <p class="up-who"><span><span>أنت مسجّل الدخول باسم</span> <strong id="who" data-i18n-skip></strong></span></p>
-      <div class="up-actions">
+    <section class="card lg-card" id="doneCard" hidden>
+      <h1 class="lg-title">حسابي</h1>
+      <p class="lg-lead"><span>أنت مسجّل الدخول باسم</span> <strong id="who" data-i18n-skip></strong></p>
+      <div class="lg-actions">
         <a class="btn btn-primary" id="goNext" href="index.html">متابعة إلى الموقع</a>
         <a class="btn btn-secondary" id="adminLink" href="admin.html" hidden>إدارة الحسابات</a>
         <button class="btn btn-secondary" type="button" id="logout">خروج</button>

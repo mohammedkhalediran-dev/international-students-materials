@@ -31,3 +31,15 @@ input[type="file"].field { padding-block: var(--space-2); height: auto; }
 .up-item-sub { color: var(--color-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
 .up-del { flex: none; background: var(--color-surface); border-color: var(--color-danger); color: var(--color-danger); }
 .up-del:hover { background: var(--color-danger-soft); }
+
+/* صفحة الدخول (login.html): زائر + Google */
+.lg-main { max-width: 440px; padding-block: var(--space-7) var(--space-8); }
+.lg-card { padding: var(--space-6); text-align: center; }
+.lg-title { font-size: var(--text-xl); font-weight: 800; }
+.lg-lead { margin-top: var(--space-2); color: var(--color-muted); }
+.lg-actions { display: grid; gap: var(--space-3); margin-top: var(--space-5); }
+.lg-google { background: var(--color-surface); border-color: var(--color-border-strong); color: var(--color-text); gap: var(--space-3); }
+.lg-google:hover { border-color: var(--color-secondary); }
+.lg-or { display: flex; align-items: center; gap: var(--space-3); color: var(--color-muted); font-size: var(--text-sm); }
+.lg-or::before, .lg-or::after { content: ""; flex: 1; border-top: 1px solid var(--color-border); }
+.lg-note { margin-top: var(--space-4); color: var(--color-muted); font-size: var(--text-xs); }
