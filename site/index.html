@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Medixa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Medixa">
+  <link rel="stylesheet" href="css/style.css?v=mx-30">
+  <link rel="stylesheet" href="css/workspace.css?v=mx-30">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body class="home-page"><a class="skip" href="#main">تخطَّ إلى المحتوى</a>  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <a class="site-wordmark" href="index.html" aria-label="Medixa">Medixa</a>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+<main id="main" class="home-main container">
+<section class="welcome" id="home"><img class="welcome-art medical-art" src="assets/medical-thorax.webp" width="1254" height="1254" alt="" fetchpriority="high"><div class="welcome-copy"><p class="eyebrow" id="homeUniversity"></p><h1>معرفة أعمق.<br>دراسة أذكى.</h1><p class="welcome-sub">مساحتك لدراسة الطب</p><a class="btn btn-primary" href="#semesters">استكشف الكورسات <span data-ico="arrow"></span></a></div></section>
+<section class="section" id="semesters"><div class="section-head"><h2>كورساتك الدراسية</h2><a class="section-link" href="workspace.html?view=search">البحث في المواد <span data-ico="search"></span></a></div><div class="semester-tiles" id="semGrid"></div></section>
+<section class="section" id="resumeSection" hidden><div class="resume-card card" id="resumeCard"></div></section>
+<section class="section" id="latest"><div class="section-head"><h2>أحدث المحاضرات</h2><a class="section-link" href="workspace.html?view=lectures">عرض الكل <span data-ico="arrow"></span></a></div><div class="latest-stack" id="latestList"></div></section>
+<section class="section" id="tools"><div class="section-head"><h2>أدوات الدراسة</h2><p>تقدّمك محفوظ على هذا الجهاز</p></div><div class="tool-tiles"><a class="tool-tile card" href="workspace.html?view=planner"><span class="tile" data-ico="calendar"></span><div><h3>مخطط الدراسة</h3><p>نظّم دراستك خطوة بخطوة</p></div></a><a class="tool-tile card" href="workspace.html?view=questions"><span class="tile" data-ico="help"></span><div><h3>بنك الأسئلة</h3><p>تدرّب على أسئلة محاضراتك</p></div></a><a class="tool-tile card" href="workspace.html?view=favorites"><span class="tile" data-ico="star"></span><div><h3>المفضلة</h3><p>موادك المحفوظة</p></div></a></div></section>
+</main><footer class="footer"><div class="container footer-inner"><a class="brand" href="index.html">Medixa</a><nav class="footer-links" aria-label="روابط التذييل"><a href="workspace.html?view=help">المساعدة</a><a href="workspace.html?view=settings">الإعدادات</a><a href="upload.html">رفع المحاضرات</a></nav></div></footer><div class="toast" id="toast" role="status" aria-live="polite"></div><script src="data/courses.js?v=mx-30"></script><script src="api/uploads.js"></script><script src="js/i18n.js?v=mx-30"></script><script src="js/app.js?v=mx-30"></script><script src="js/nav.js?v=mx-30"></script><script src="js/home.js?v=mx-30"></script></body></html>
