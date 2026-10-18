@@ -2,8 +2,11 @@
 // يتطلب ربط KV باسم LECTURES وسرّ UPLOAD_CODES من لوحة Cloudflare. بدون الربط: القائمة فارغة وبقية المسارات 503.
 import { handle } from "../../netlify/lib/core.mjs";
 import { kvStore } from "../_lib/kvstore.js";
+import { handleAuth } from "../_lib/auth.js";
 
 export async function onRequest({ request, env }) {
+  const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
+  if (authRes) return authRes;
   if (!env.LECTURES) {
     const path = new URL(request.url).pathname;
     if (path.endsWith("/api/uploads.js")) {

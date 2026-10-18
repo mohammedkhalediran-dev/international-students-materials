@@ -62,6 +62,7 @@
   function save(k, v) {
     mem[k] = v;
     try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* يبقى في الذاكرة */ }
+    if (MS.onSave) MS.onSave(k); // مزامنة الحساب (js/auth.js)
   }
   MS.load = load;
   MS.save = save;
