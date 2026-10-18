@@ -158,5 +158,26 @@ await store.set("manifest.json", JSON.stringify([{ id: "11111111-1111-4111-8111-
 const old = (await (await call("uploads", { method: "GET" })).json()).items[0];
 chk(old.kind === "file" && old.type === "lecture" && !("showInLatest" in old), "إدخال قديم يُقرأ كمحاضرة PDF بلا تفضيل");
 
+// الرفع بالحساب (دور رافع/ممثل/مشرف) بدل الرمز
+const acct = (user) => (path, { code, body } = {}) => {
+  const headers = code ? { "x-upload-code": code } : {};
+  let b = body; if (body) { b = JSON.stringify(body); headers["content-type"] = "application/json"; }
+  const d = { ...deps("2.2.2.2"), account: async () => user };
+  return handle(new Request("https://site.test/api/" + path, { method: "POST", headers, body: b }), d);
+};
+const viaAccount = acct({ name: "نور" });
+chk((await (await viaAccount("check")).json()).name === "نور", "حساب مصرّح يدخل بلا رمز");
+chk((await acct(null)("check")).status === 401, "بلا حساب ولا رمز: يُرفض");
+chk((await (await viaAccount("check", { code: "code-ali-98765" })).json()).name === "علي", "إن أُرسل رمز فالأولوية للرمز");
+chk((await viaAccount("check", { code: "wrong-code-1" })).status === 401, "رمز خاطئ يُرفض حتى مع حساب");
+{
+  const d = { store, env: () => "", ip: "3.3.3.3", now: () => clock, account: async () => null };
+  const r = await handle(new Request("https://site.test/api/check", { method: "POST" }), d);
+  chk(r.status === 401, "بلا رموز مضبوطة وبلا حساب: 401 لا 503");
+  const d2 = { store, env: () => "", ip: "3.3.3.3", now: () => clock, account: async () => ({ name: "ريم" }) };
+  const r2 = await handle(new Request("https://site.test/api/check", { method: "POST" }), d2);
+  chk(r2.status === 200, "حساب مصرّح يعمل حتى بلا رموز مضبوطة");
+}
+
 console.log(fails.length ? `${passes} passed, ${fails.length} failed` : `upload api OK: ${passes} checks`);
 process.exit(fails.length ? 1 : 0);

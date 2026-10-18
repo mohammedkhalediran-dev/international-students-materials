@@ -2,7 +2,7 @@
 // يتطلب ربط KV باسم LECTURES وسرّ UPLOAD_CODES من لوحة Cloudflare. بدون الربط: القائمة فارغة وبقية المسارات 503.
 import { handle } from "../../netlify/lib/core.mjs";
 import { kvStore } from "../_lib/kvstore.js";
-import { handleAuth } from "../_lib/auth.js";
+import { handleAuth, uploadAccount } from "../_lib/auth.js";
 
 export async function onRequest({ request, env }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "" });
@@ -23,6 +23,7 @@ export async function onRequest({ request, env }) {
     store: kvStore(env.LECTURES),
     env: (k) => env[k],
     ip: request.headers.get("CF-Connecting-IP") || "",
-    now: () => Date.now()
+    now: () => Date.now(),
+    account: uploadAccount(env) // رفع بالحساب لدور رافع أو ممثل الدفعة أو مشرف
   });
 }

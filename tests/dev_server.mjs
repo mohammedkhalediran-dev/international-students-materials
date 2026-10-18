@@ -6,7 +6,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { handle } from "../netlify/lib/core.mjs";
 import { createMockStore } from "./mock_store.mjs";
-import { handleAuth } from "../functions/_lib/auth.js";
+import { handleAuth, uploadAccount } from "../functions/_lib/auth.js";
 import { createMockD1 } from "./mock_d1.mjs";
 import { mint, fakeFetch, CLIENT_ID } from "./google_token.mjs";
 
@@ -17,7 +17,7 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".js": "application/javascr
 const store = createMockStore();
 const authEnv = { DB: createMockD1(), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: process.env.ADMIN_EMAILS || "boss@x.com" };
 const codes = process.env.UPLOAD_CODES || "سارة:test-code-sara,علي:test-code-ali";
-const deps = (req) => ({ store, env: (k) => (k === "UPLOAD_CODES" ? codes : undefined), ip: req.socket.remoteAddress, now: () => Date.now() });
+const deps = (req) => ({ store, env: (k) => (k === "UPLOAD_CODES" ? codes : undefined), ip: req.socket.remoteAddress, now: () => Date.now(), account: uploadAccount(authEnv) });
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost:" + PORT);

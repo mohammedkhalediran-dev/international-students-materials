@@ -52,6 +52,16 @@
     var go = row("المتابعة إلى الموقع", ICON.go);
     go.addEventListener("click", function () { location.href = nextUrl(); });
     box.appendChild(go);
+    if (u.role === "admin" || u.role === "rep" || u.role === "uploader") {
+      var up = row("رفع الملفات", ICON.go);
+      up.addEventListener("click", function () { location.href = "upload.html"; });
+      box.appendChild(up);
+    }
+    if (u.role === "admin" || u.role === "rep") {
+      var an = row("التبليغات", ICON.go);
+      an.addEventListener("click", function () { location.href = "announce.html"; });
+      box.appendChild(an);
+    }
     if (u.role === "admin") {
       var adm = row("إدارة الحسابات", ICON.adm);
       adm.addEventListener("click", function () { location.href = "admin.html"; });
