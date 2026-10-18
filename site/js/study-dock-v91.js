@@ -13,7 +13,8 @@ function css(){
 #mx-dock>#mx-reader-nav{background:transparent;border:0;padding:0}
 #mx-dock>#mx-occlusion{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:4px;padding:4px 6px!important;font-size:13px!important}
 #mx-dock>#mx-occlusion button{padding:6px 8px}
-#mx-dock>button,#mx-dock>details>summary{min-height:40px}
+#mx-dock>button,#mx-dock>details>summary{min-height:44px}
+#mx-dock #mx-reader-nav button,#mx-dock #mx-reader-nav input,#mx-dock #mx-occlusion button{min-height:44px;min-width:44px}
 #mx-dock>#mx-ink-toggle{background:#e3f3f1;color:#153d4a;border:0;border-radius:12px;padding:10px 12px;font:700 13px system-ui;cursor:pointer}
 #mx-dock>#mx-ink-toggle[aria-expanded="true"]{outline:2px solid #69d6c9}
 #mx-dock>#mx-save-state{background:#fff;border-radius:10px;padding:9px 10px!important;font:600 13px system-ui!important}

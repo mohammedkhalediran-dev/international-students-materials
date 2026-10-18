@@ -107,7 +107,11 @@
     a.id = "accountBtn";
     a.className = "btn btn-secondary btn-sm";
     a.href = "login.html?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search);
-    a.textContent = user ? (user.name.split(" ")[0] || "حسابي") : "تسجيل الدخول";
+    var label = user ? (user.name.split(" ")[0] || "حسابي") : "تسجيل الدخول";
+    // على الهاتف يظهر الزر أيقونة فقط (44px) حتى لا يتجاوز الرأس عرض الشاشة؛ الاسم يبقى للقارئ الصوتي
+    if (window.MS && MS.icon) { var ic = MS.icon("user", 20); ic.setAttribute("aria-hidden", "true"); a.appendChild(ic); }
+    var t = document.createElement("span"); t.className = "acct-label"; t.textContent = label; a.appendChild(t);
+    a.setAttribute("aria-label", label);
     if (user) a.setAttribute("data-i18n-skip", "");
     box.insertBefore(a, box.firstChild);
   }

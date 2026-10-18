@@ -1,6 +1,13 @@
-# MEDIXA Step 46
+# MEDIXA Step 47
 
 Authoritative baseline: the attached MEDIXA-Step-38.zip (extracted 2026-10-18). Step 38 progress files are preserved in docs/checkpoints/step38/.
+
+## Completed in Step 47 — UI audit fixes (touch, contrast, small text, phone overflow)
+- Automated audit (ui-ux-pro-max priorities 1, 2, 5, 6) of 10 pages at 390 and 820 px in light and dark: before 14 pages scrolled sideways on phones, 132 texts under 12px, 444 contrast failures, 550 controls under 44px. After: 0 sideways scroll, 0 texts under 12px, 61 contrast reports (mostly white text on gradients/images the probe cannot measure, plus the hidden skip link), 132 small controls (mostly 38px buttons in page content and native inputs in the PDF reader).
+- Cause of the phone sideways scroll: the header was 9px wider than a 390px screen (the login button). On phones the account button is now a 44px person icon with the name kept for screen readers.
+- Header, footer, chips, small buttons, language menu and the reader dock now meet 44px touch height. Muted text #5f707b reaches 4.5:1 on white and ivory. The PDF badge uses an on-danger token in dark mode. Login page grey texts darkened to 5:1+ and small labels raised to 12px (layout unchanged).
+- tests/step47_ui_audit.py (70 checks) guards these rules.
+- Adobe OCR for the image-only lecture (Kidney Slides) is blocked: this environment cannot upload to Adobe (at.adobe.com). Needs at.adobe.com and *.adobe.io allowed in claude.ai settings.
 
 ## Completed in Step 46 — make a flashcard from the PDF text
 - New `site/js/study-text-cards-v92.js`: in the Cards tab, "from the page text" reads the chosen page with pdf.js and lists its sentences (split on . ! ? ؟ ؛ and line ends, 20–300 characters, no duplicates, max 60). "Answer" puts a sentence in the answer field; "Blank" hides its longest word in the question and puts that word in the answer. Nothing is saved until the student presses the panel's own save button, so cards go through the Step 42 storage guard; no new keys.
@@ -61,7 +68,7 @@ Authoritative baseline: the attached MEDIXA-Step-38.zip (extracted 2026-10-18). 
 See TEST-RESULTS.md.
 
 ## Next exact task
-Step 47: see NEXT-STEP.md.
+Step 48: see NEXT-STEP.md.
 
 ## Execution rules
 Export a complete standalone ZIP at each milestone. No GitHub push, main modification, Cloudflare deployment, or production Firebase/Google/D1 changes. Retain student storage keys and educational content.

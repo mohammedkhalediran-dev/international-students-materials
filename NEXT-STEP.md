@@ -1,9 +1,9 @@
-# Step 47 — next exact task
+# Step 48 — next exact task
 
-1. Resume from MEDIXA-Step-46.zip; run `npm test` and the browser checks (step39–46, v81_auth_smoke, auth_e2e, upload_e2e) with MEDIXA_CDN_DIR.
-2. Waiting on Mohammed: docs/proposals/study-cloud-backup.md (server storage of study data). Do not build it without his answer.
-3. Next local item: the rewrite of the legacy UI tests (ui_check.py, phase1_check.py, parts of nav_check.py) that still target the pre-v8.1 homepage, so the old checks (i18n completeness, design-system rules) run again on the current pages.
-4. Then real-device checks when an iPad is available: Safari safe-area and the dock, Apple Pencil drawing, offline reader.
+1. Resume from MEDIXA-Step-47.zip; run `npm test` and the browser checks (step39–47, v81_auth_smoke, auth_e2e, upload_e2e) with MEDIXA_CDN_DIR.
+2. Adobe (when at.adobe.com and *.adobe.io are allowed): OCR the image-only lecture files (currently files/فسيولوجيا-الكلية/المحاضرة-1-Kidney-Slides.pdf), keep the original bytes in original-pdf-backup/, record the change in tests/baseline-intentional-changes.json, and regenerate page images for lectures uploaded later.
+3. Remaining audit items: 38px buttons inside page content (course actions, planner, chips), native inputs in the PDF reader header (colour, width slider, stylus checkbox), workspace day labels at 4.48:1.
+4. Canva launch post / story / QR poster and a Figma file of the main pages, when the owner asks for them.
 5. Update docs, export and verify each checkpoint.
 
-Constraints unchanged: no GitHub/main changes, deployment or production Google/D1/Firebase configuration. Keep the login integration and all student storage keys.
+Constraints: no merge into main; production deploys only when Mohammed says «انشر». Keep the login integration and all student storage keys.
