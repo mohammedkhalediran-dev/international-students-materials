@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=p3-23">
+  <link rel="stylesheet" href="css/style.css?v=mx-30">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -35,6 +35,7 @@
   <header class="site-header">
     <div class="container header-inner">
       <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <a class="site-wordmark" href="index.html">Medixa</a>
       <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
         <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
@@ -90,23 +91,28 @@
       <div class="viewer-title en" id="viewerTitle"></div>
       <a class="btn btn-secondary btn-sm" id="viewerOpen" target="_blank" rel="noopener">فتح في تبويب</a>
       <a class="btn btn-secondary btn-sm" id="viewerDl" download>تنزيل</a>
+      <a class="btn btn-secondary btn-sm" id="annotateLink" target="_blank" rel="noopener">✎ اكتب وظلّل على PDF</a>
       <button class="icon-btn" id="viewerClose" type="button" aria-label="إغلاق"></button>
     </div>
     <div class="viewer-stage">
       <p class="viewer-loading" id="viewerLoading" role="status">جارٍ تحميل الملف…</p>
       <iframe class="viewer-frame" id="viewerFrame" title="عارض الملف"></iframe>
+      <aside class="viewer-notes">
+        <label for="lectureNotes">ملاحظاتي</label>
+        <textarea id="lectureNotes" maxlength="20000" placeholder="اكتب ملاحظاتك عن هذا الملف…"></textarea>
+        <p>تُحفظ ملاحظاتك على هذا الجهاز فقط.</p>
+      </aside>
     </div>
     <p class="viewer-note">إن لم يظهر الملف هنا، افتحه في تبويب مستقل.</p>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-23"></script>
+  <script src="data/courses.js?v=mx-30"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/i18n.js?v=p3-23"></script>
-  <script src="js/app.js?v=p3-23"></script>
-  <script src="js/auth.js?v=p3-23"></script>
-  <script src="js/nav.js?v=p3-23"></script>
+  <script src="js/i18n.js?v=mx-30"></script>
+  <script src="js/app.js?v=mx-30"></script><script src="js/auth.js?v=mx-30"></script>
+  <script src="js/nav.js?v=mx-30"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -133,6 +139,10 @@
         return;
       }
 
+      if (course.image) {
+        var art = el("img", "course-art medical-art"); art.src = course.image; art.alt = "";
+        document.querySelector(".page-hero").appendChild(art);
+      }
       MS.setLast(course.id);
       document.title = course.name + " | " + SITE.title;
       $("crumbCurrent").textContent = course.name;
@@ -261,11 +271,21 @@
 
       /* ---------- عارض الـ PDF ---------- */
       var dlg = $("viewer"), frame = $("viewerFrame");
+      var activeNoteKey = "";
+      $("lectureNotes").addEventListener("input", function () {
+        if (!activeNoteKey) return;
+        var notes = MS.load("ms.notes", {});
+        notes[activeNoteKey] = this.value;
+        MS.save("ms.notes", notes);
+      });
       $("viewerClose").appendChild(MS.icon("close", 22));
             function showViewer(url, title) {
+        activeNoteKey = course.id + "|" + url;
+        $("lectureNotes").value = MS.load("ms.notes", {})[activeNoteKey] || "";
         $("viewerTitle").textContent = title;
         $("viewerOpen").href = url;
         $("viewerDl").href = url;
+        $("annotateLink").href = "pdf-notes.html?file=" + encodeURIComponent(url);
         if (dlg.showModal) {
           $("viewerLoading").hidden = false;
           frame.src = url;

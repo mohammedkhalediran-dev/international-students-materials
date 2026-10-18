@@ -72,3 +72,12 @@
 
 - قاعدة D1 اسمها medixa (id: 8f0191c3-bac0-4dbc-8717-61e35c3196a5) مربوطة باسم DB في بيئتي Production وPreview، ومعها GOOGLE_CLIENT_ID وADMIN_EMAILS (2026-10-18). جرّب محمد الدخول بحساب Google على main.medixa.pages.dev ونجح، وظهرت لوحة الإدارة. دُمج feature/auth-db في main. شاشة موافقة Google في وضع Testing (المستخدمون التجريبيون فقط) وOAuth Client اسمه Medixa Web داخل مشروع Google Cloud باسم almaaqal-attendance. فرع الإنتاج الفعلي في إعدادات Cloudflare هو cloudflare-upload، فتحقق قبل أي رفع. صفحتا privacy وterms مفتوحتان في البوابة.
 - الأدوار والتبليغات (2026-10-18، بطلب محمد): users.role = student | uploader | rep | admin. المشرف من ADMIN_EMAILS فقط ولا يُعيَّن من اللوحة. يعيّن المشرف الباقي من admin.html (قائمة بجانب الإيقاف؛ POST /api/auth/user {id, role}). الرفع بالحساب: أدوار uploader وrep وadmin تدخل upload.html بلا رمز (deps.account في core.mjs ومساعده uploadAccount في auth.js)، ورموز UPLOAD_CODES ما زالت تعمل. التبليغات: جدول announcements (migrations/0002_announcements.sql، طُبّق على D1 الحقيقي)؛ GET /api/announcements عام، والنشر والحذف لـ rep وadmin من announce.html (عربي فقط)، ويظهر قسم «التبليغات» في الرئيسية فقط إن وُجد تبليغ. فحوص جديدة ضمن auth_api_check وupload_api_check وauth_e2e.
+
+## نسخة v8.1 (دمج 2026-10-18، فرع feature/medixa-v8.1-with-auth محلي؛ لم يُنشر)
+- الأساس تصميم MEDIXA v8.1 كاملاً (الرئيسية home.js، workspace.html، مخطط الدراسة وبنك الأسئلة، وضع الدراسة، pdf-notes.html للكتابة على PDF وأدوات الدراسة). وفوقه نظام الدخول من main: auth.js في كل الصفحات، login/admin/announce/privacy/terms، functions/_lib/auth.js وmigrations وD1، الأدوار، الرفع بالحساب، التبليغات في الرئيسية (قسم #announcements)، ومزامنة الحساب عبر MS.onSave.
+- الدخول Google + Cloudflare D1 (لا Firebase). بقيت functions/ وnetlify/ وmigrations/ كما في main.
+- إصلاح عرض PDF: site/pdf-raster/ (صور صفحات 4 محاضرات) وpdf-raster-manifest.js؛ pdf-notes.html يرسم الصور بدل تصيير PDF إن وُجدت. لا يغطي الملفات المرفوعة لاحقاً. ما زال يحتاج pdf.js وpdf-lib من cdnjs.
+- ملف المناعة PDF بقي الأصلي (v8.1 حملت نسخة أصغر؛ الأصل محفوظ في main).
+- حفظ الكتابة والبطاقات في pdf-notes محلي على الجهاز (medixa.pdf.annotations.v1 وmedixa.study.v1 وms.notes) وليس ضمن SYNC_KEYS.
+- فحوص جديدة: tests/v81_auth_smoke.py (يحتاج MEDIXA_CDN_DIR لتشغيل pdf.js بلا إنترنت) وanki_scheduler_check.cjs وredesign_check.mjs. فحصا ui_check.py وphase1_check.py (وجزء من nav_check.py) يخصان الرئيسية القديمة (#search في الرئيسية) ويفشلان مع تصميم v8.1: يحتاجان إعادة كتابة.
+- docs/v8.1/ فيه ملفات توثيق النسخة الأصلية.

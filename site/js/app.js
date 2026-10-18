@@ -168,7 +168,8 @@
      بلا قرار: تظهر ملفات كورس الطالب الحالي فقط، فلا تظهر مواد الكورسات القديمة. */
   MS.currentSemester = function () {
     var s = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.current; })[0];
-    return s ? s.id : null;
+    var selected=load("ms.sem",null);
+    return SEMESTERS.some(function(x){return x.id===selected;})?selected:(s?s.id:null);
   };
   MS.inLatest = function (c, f) {
     if (typeof f.latest === "boolean") return f.latest;
@@ -405,7 +406,11 @@
       themeBtn.appendChild(MS.icon(dark ? "sun" : "moon", 20));
       themeBtn.setAttribute("aria-label", dark ? "التبديل إلى الوضع النهاري" : "التبديل إلى الوضع الليلي");
     }
+    if (load(KEY.theme,"light") === "system") document.documentElement.setAttribute("data-theme",matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
     paintTheme();
+    window.addEventListener("medixa-theme", paintTheme);
+    var schemeQuery=matchMedia("(prefers-color-scheme: dark)");
+    if(schemeQuery.addEventListener)schemeQuery.addEventListener("change",function(e){if(load(KEY.theme,"light")==="system"){document.documentElement.setAttribute("data-theme",e.matches?"dark":"light");paintTheme();}});
     themeBtn.addEventListener("click", function () {
       var next = effectiveTheme() === "dark" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", next);
@@ -427,13 +432,14 @@
           box.scrollIntoView({ block: "center" });
           box.focus({ preventScroll: true });
         } else {
-          location.href = "index.html#search";
+          location.href = "workspace.html?view=search";
         }
       });
     }
 
     var favLink = MS.$("favLink");
     if (favLink) {
+      favLink.href="workspace.html?view=favorites";
       favLink.appendChild(MS.icon("star", 20));
       favLink.addEventListener("click", function (e) {
         // في الرئيسية: الضغط مرة ثانية على نفس الرابط يعيد تطبيق التصفية
@@ -447,6 +453,15 @@
     // القائمة الجانبية (الرسم والطي والدرج والتمييز) في js/nav.js
     if (MS.nav) MS.nav.init(menuBtn);
     menuBtn.appendChild(MS.icon("menu", 22));
+    if (!document.querySelector(".mobile-dock")) {
+      var dock = MS.el("nav", "mobile-dock"); dock.setAttribute("aria-label", I18N.t("التنقل الرئيسي"));
+      [["home","الرئيسية","index.html"],["book","الكورسات","index.html#semesters"],["search","بحث","workspace.html?view=search"],["star","المفضلة","workspace.html?view=favorites"],["tools","أدوات الدراسة","workspace.html?view=planner"]].forEach(function(it){
+        var a=MS.el("a");a.href=it[2];a.appendChild(MS.icon(it[0],22));a.appendChild(MS.el("span","",it[1]));
+        if(location.pathname.endsWith(it[2].split("?")[0]) && (it[2].includes("?") ? location.search===it[2].slice(it[2].indexOf("?")) : !it[2].includes("#"))) a.setAttribute("aria-current","page");
+        dock.appendChild(a);
+      });document.body.appendChild(dock);
+    }
+    document.documentElement.classList.toggle("reduced-motion",!!load("ms.reducedMotion",false));
   };
 
   /* ---------- نصوص مشتركة ---------- */
