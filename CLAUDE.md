@@ -81,3 +81,10 @@
 - حفظ الكتابة والبطاقات في pdf-notes محلي على الجهاز (medixa.pdf.annotations.v1 وmedixa.study.v1 وms.notes) وليس ضمن SYNC_KEYS.
 - فحوص جديدة: tests/v81_auth_smoke.py (يحتاج MEDIXA_CDN_DIR لتشغيل pdf.js بلا إنترنت) وanki_scheduler_check.cjs وredesign_check.mjs. فحصا ui_check.py وphase1_check.py (وجزء من nav_check.py) يخصان الرئيسية القديمة (#search في الرئيسية) ويفشلان مع تصميم v8.1: يحتاجان إعادة كتابة.
 - docs/v8.1/ فيه ملفات توثيق النسخة الأصلية.
+
+## Step 39 (2026-10-18): Step 38 هو الأساس الآن
+- الأساس المعتمد MEDIXA Step 38 (أدوات الدراسة الأحدث: study-suite-v85، timer v83، planner v84، workspace v86، backup v87، recovery v88، ink backup v89، occlusion v90). لا ترجع إلى v8 أو v8.1.
+- أُضيف فوقه نظام الدخول من فرع feature/medixa-v8.1-with-auth كما هو (تفاصيله في AUTH-INTEGRATION.md). Step 38 لم يكن فيه أي دخول أو Firebase.
+- الإصدار ?v=step39 وV = "medixa-step39" في sw.js.
+- `npm test` يشغّل فحوص الدراسة وفحوص الخادم (auth/middleware/upload/kv). فحوص المتصفح: tests/step39_login_integration.py وtests/auth_e2e.py وtests/v81_auth_smoke.py (تحتاج Playwright؛ MEDIXA_CDN_DIR لتشغيل pdf.js بلا إنترنت).
+- baseline-preservation يسمح فقط بالتغييرات الموثقة في tests/baseline-intentional-changes.json (بصمة المحتوى الجديد مثبتة).

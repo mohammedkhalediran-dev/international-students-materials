@@ -1,6 +1,11 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-v32";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=mx-31", "css/semester.css?v=mx-31", "css/workspace.css?v=mx-31", "js/app.js?v=mx-31", "js/nav.js?v=mx-31", "js/home.js?v=mx-31", "js/workspace.js?v=mx-31", "js/planner.js?v=mx-31", "js/questions.js?v=mx-31", "js/i18n.js?v=mx-31", "data/courses.js?v=mx-31", "data/study/medical-immunology-1.js?v=mx-31"];
+var V = "medixa-step46";
+var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=step44", "css/semester.css?v=step44", "css/workspace.css?v=step44", "js/app.js?v=step44", "js/nav.js?v=step44", "js/home.js?v=step44", "js/workspace.js?v=step44", "js/planner.js?v=step44", "js/questions.js?v=step44", "js/i18n.js?v=step44", "data/courses.js?v=step44", "data/study/medical-immunology-1.js?v=step44"];
+var CDN = [
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"
+];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(V).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
 });
@@ -13,6 +18,16 @@ self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
   var url = new URL(req.url);
+  // Step 45: مكتبات قارئ PDF الثابتة (إصدارات محددة) تُحفظ بعد أول زيارة ليعمل القارئ بلا إنترنت
+  if (CDN.indexOf(url.origin + url.pathname) !== -1) {
+    e.respondWith(caches.match(req, { ignoreSearch: true }).then(function (hit) {
+      return hit || fetch(req).then(function (res) {
+        if (res && (res.type === "opaque" || res.status === 200)) { var copy = res.clone(); caches.open(V).then(function (c) { c.put(req, copy); }); }
+        return res;
+      });
+    }));
+    return;
+  }
   if (url.origin !== location.origin) return;
   if (/^\/api\/(auth\/|sync|announcements)/.test(url.pathname)) return; // الحساب والمزامنة: دائماً من الشبكة
   if (/\/api\//.test(url.pathname)) return;

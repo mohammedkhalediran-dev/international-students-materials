@@ -1,0 +1,12 @@
+{
+  "netlify/lib/core.mjs": {
+    "step": 39,
+    "sha256": "e89e2072a813a2d0188cfe7e373264164bc14eb08bcaeca8fea9f1591ec1ae0f",
+    "reason": "Login integration: uploads by signed-in account (roles uploader/rep/admin) via deps.account; returns 401 instead of 503 when only accounts are configured. Already deployed and tested on the main test site."
+  },
+  "functions/api/[[path]].js": {
+    "step": 39,
+    "sha256": "dc0d24f17290bb731bc7c83b17427e6810a6d9c13e19be65ae10c68f56d813fe",
+    "reason": "Login integration: routes /api/auth/*, /api/sync and /api/announcements to functions/_lib/auth.js before the upload API, and passes uploadAccount(env) to the upload core."
+  }
+}

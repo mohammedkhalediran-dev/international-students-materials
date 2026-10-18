@@ -4,6 +4,8 @@ import subprocess, time, os, urllib.parse
 # MEDIXA_CDN_DIR (اختياري): مجلد فيه pdfjs-dist-3.11.174/package و pdf-lib-1.17.1/package ليعمل الفحص بلا إنترنت (npm pack pdfjs-dist@3.11.174 pdf-lib@1.17.1)
 CDN = os.environ.get('MEDIXA_CDN_DIR')
 from playwright.sync_api import sync_playwright
+# Since Step 45 the service worker fetches the pinned CDN files itself; let routing see those requests (Chromium).
+os.environ.setdefault('PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS', '1')
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 PORT = 8774; BASE = f'http://localhost:{PORT}/'
 srv = subprocess.Popen(['node', '--no-warnings', os.path.join(ROOT, 'tests', 'dev_server.mjs'), str(PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1.5)
