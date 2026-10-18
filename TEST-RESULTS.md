@@ -1,4 +1,11 @@
-# Step 46 test results — 2026-10-18
+# Step 47 test results — 2026-10-18
+
+## Step 47 additions — PASS
+- `python3 -I tests/step47_ui_audit.py` (headless Chromium): 70 checks — 6 pages × 390/820 px × light/dark: no horizontal scroll, no text under 12px, header/footer controls ≥44px tall (text links ≥24px wide), muted colour ≥4.5:1 on white.
+- Audit numbers before/after are in PROGRESS.md (same probe, 10 pages, 4 viewport/theme combinations).
+- Regression, all PASS (exit 0): npm test; step39 29; step40 6; step41 48; step42 15; step43 20; step44 11; step45 7; step46 10; step47 70; v81 smoke 45; auth_e2e; upload_e2e 33.
+
+# Step 46 test results
 
 ## Step 46 additions — PASS
 - `node tests/text-cards-check.cjs` (in npm test): 13 checks — English and Arabic sentence splitting, pdf.js line ends, duplicates, length limits, 60 cap, empty input, cloze for English and Arabic, no cloze without a long word, pdf.js items to text.
