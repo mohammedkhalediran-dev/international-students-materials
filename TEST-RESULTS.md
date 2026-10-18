@@ -1,3 +1,10 @@
+# Step 48 test results — 2026-10-19
+
+## Step 48 additions — PASS
+- `python3 -I tests/step48_account_sidebar.py` (headless Chromium, simulated server, test Google token): 30 checks — guest sidebar with sign-in link on 3 pages; after sign-in the sidebar shows the name, saved-to-account text and sign-out on index, semester, course, study and workspace; sign-out visible (drawer opened on the phone) and ends the session; English text; no JS errors; at 1280 and 390 px.
+- Read-only check of the real D1 database (Cloudflare connector): users and session counts only, no content read, nothing written.
+- Regression, all PASS (exit 0): npm test; step39 29; step40 6; step41 48; step42 15; step43 20; step44 11; step45 7; step46 10; step47 70; step48 30; v81 smoke 45; auth_e2e; upload_e2e 33.
+
 # Step 47 test results — 2026-10-18
 
 ## Step 47 additions — PASS

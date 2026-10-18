@@ -116,6 +116,35 @@
     box.insertBefore(a, box.firstChild);
   }
 
+  /* ---------- القائمة الجانبية (nav.js يرسم «زائر»؛ نحدّثها بعد معرفة الجلسة) ---------- */
+  function paintSidebar() {
+    var box = document.querySelector(".sb-user");
+    if (!box || box.getAttribute("data-auth")) return;
+    var text = box.querySelector(".sb-user-text"), strong = text && text.querySelector("strong"), small = text && text.querySelector("small");
+    if (!text || !strong) return;
+    box.setAttribute("data-auth", user ? "user" : "guest");
+    var act;
+    if (user) {
+      strong.textContent = user.name || user.email;
+      strong.setAttribute("data-i18n-skip", "");
+      if (small) small.textContent = "تقدّمك محفوظ في حسابك";
+      act = document.createElement("button");
+      act.type = "button";
+      act.textContent = "تسجيل الخروج";
+      act.addEventListener("click", function () {
+        act.disabled = true;
+        MSAuth.logout().then(function () { location.reload(); });
+      });
+    } else {
+      act = document.createElement("a");
+      act.href = "login.html?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search);
+      act.textContent = "سجّل الدخول لحفظ تقدّمك";
+    }
+    act.className = "sb-auth-action";
+    text.appendChild(act);
+    if (window.I18N && I18N.apply) I18N.apply();
+  }
+
   window.MSAuth = {
     api: api,
     user: function () { return user; },
@@ -136,6 +165,7 @@
 
   MSAuth.me().then(function () {
     paintHeader();
+    paintSidebar();
     if (!user) return;
     pull().then(function (changed) {
       var guard = "ms.sync.reloaded";
