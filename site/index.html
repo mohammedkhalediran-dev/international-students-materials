@@ -13,8 +13,8 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=mx-31">
-  <link rel="stylesheet" href="css/workspace.css?v=mx-31">
+  <link rel="stylesheet" href="css/style.css?v=mx-32">
+  <link rel="stylesheet" href="css/workspace.css?v=mx-32">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -42,13 +42,17 @@
   </header>
 
 <main id="main" class="home-main container">
-<section class="welcome" id="home"><img class="welcome-art medical-art" src="assets/medical-thorax.webp" width="1254" height="1254" alt="" fetchpriority="high"><div class="welcome-copy"><h1>معرفة أعمق.<br>دراسة أذكى.</h1><p class="welcome-sub">مساحتك لدراسة الطب</p><a class="btn btn-primary" href="#semesters">استكشف الكورسات <span data-ico="arrow"></span></a></div></section>
+<section class="organ-hero" id="home" aria-labelledby="ohTitle">
+<div class="oh-copy"><h1 id="ohTitle"><span>الطب ليس معلومات تحفظها.</span> <span class="oh-hl">بل عالم تكتشفه.</span></h1><p class="oh-sub">محاضرات المواد ووضع الدراسة وبنك الأسئلة في مكان واحد. اضغط على أي عضو لترى موادّه.</p><a class="btn btn-primary" href="#semesters">استكشف الكورسات <span data-ico="arrow"></span></a></div>
+<div class="oh-figure" id="ohFigure"><img class="oh-img" src="assets/medical-thorax.webp" width="1254" height="1254" alt="" fetchpriority="high"><svg class="oh-ecg" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 H120 l8-6 8 6 H150 l6 4 8-30 10 52 8-26 H236 l8-8 10 8 H400"/></svg></div>
+<div class="oh-side"><div class="oh-organs" id="ohOrgans" role="group" aria-label="الأعضاء"></div><div class="oh-detail" id="ohDetail" aria-live="polite"></div></div>
+</section>
 <section class="section" id="semesters"><div class="section-head"><h2>كورساتك الدراسية</h2><a class="section-link" href="workspace.html?view=search">البحث في المواد <span data-ico="search"></span></a></div><div class="semester-tiles" id="semGrid"></div></section>
 <section class="section" id="resumeSection" hidden><div class="resume-card card" id="resumeCard"></div></section>
 <section class="section" id="announcements" hidden><div class="section-head"><div><h2>التبليغات</h2><p>آخر ما نشره ممثل الدفعة والمشرفون.</p></div></div><div class="ann-list" id="annList"></div></section>
 <section class="section" id="latest"><div class="section-head"><h2>أحدث المحاضرات</h2><a class="section-link" href="workspace.html?view=lectures">عرض الكل <span data-ico="arrow"></span></a></div><div class="latest-stack" id="latestList"></div></section>
 <section class="section" id="tools"><div class="section-head"><h2>أدوات الدراسة</h2><p>تقدّمك محفوظ على هذا الجهاز</p></div><div class="tool-tiles"><a class="tool-tile card" href="workspace.html?view=planner"><span class="tile" data-ico="calendar"></span><div><h3>مخطط الدراسة</h3><p>نظّم دراستك خطوة بخطوة</p></div></a><a class="tool-tile card" href="workspace.html?view=questions"><span class="tile" data-ico="help"></span><div><h3>بنك الأسئلة</h3><p>تدرّب على أسئلة محاضراتك</p></div></a><a class="tool-tile card" href="workspace.html?view=favorites"><span class="tile" data-ico="star"></span><div><h3>المفضلة</h3><p>موادك المحفوظة</p></div></a></div></section>
-</main><footer class="footer"><div class="container footer-inner"><a class="brand" href="index.html">Medixa</a><nav class="footer-links" aria-label="روابط التذييل"><a href="workspace.html?view=help">المساعدة</a><a href="workspace.html?view=settings">الإعدادات</a><a href="upload.html">رفع المحاضرات</a></nav></div></footer><div class="toast" id="toast" role="status" aria-live="polite"></div><script src="data/courses.js?v=mx-31"></script><script src="api/uploads.js"></script><script src="js/i18n.js?v=mx-31"></script><script src="js/app.js?v=mx-31"></script><script src="js/auth.js?v=mx-31"></script><script src="js/nav.js?v=mx-31"></script><script src="js/home.js?v=mx-31"></script><script>
+</main><footer class="footer"><div class="container footer-inner"><a class="brand" href="index.html">Medixa</a><nav class="footer-links" aria-label="روابط التذييل"><a href="workspace.html?view=help">المساعدة</a><a href="workspace.html?view=settings">الإعدادات</a><a href="upload.html">رفع المحاضرات</a></nav></div></footer><div class="toast" id="toast" role="status" aria-live="polite"></div><script src="data/courses.js?v=mx-32"></script><script src="api/uploads.js"></script><script src="js/i18n.js?v=mx-32"></script><script src="js/app.js?v=mx-32"></script><script src="js/auth.js?v=mx-32"></script><script src="js/nav.js?v=mx-32"></script><script src="js/home.js?v=mx-32"></script><script src="js/organ-hero.js?v=mx-32"></script><script>
 (function () {
   if (!window.fetch || !window.MS) return;
   var el = MS.el;

@@ -162,3 +162,36 @@ html[dir=ltr] .semester-tile>div { padding-left:0; padding-right:var(--space-6);
  .question-hero img { height:130px; }
  html[dir=ltr] .welcome-art { left:auto; right:-12%; }
 }
+
+/* ===== الواجهة التفاعلية (الأعضاء) ===== */
+.organ-hero { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1.1fr); gap:var(--space-4); align-items:center; min-height:520px; padding:var(--space-6); border-radius:var(--radius-lg); color:var(--oh-ink); background:radial-gradient(ellipse at 48% 45%, var(--oh-bg-2) 0%, var(--oh-bg) 70%); }
+.oh-copy h1 { font-size:clamp(26px,2.6vw,40px); line-height:1.4; color:var(--oh-ink); margin-bottom:var(--space-4); }
+.oh-copy h1 span { display:block; }
+.oh-hl { color:var(--oh-accent); }
+.oh-sub { color:var(--oh-muted); font-size:var(--text-lg); line-height:1.8; margin-bottom:var(--space-5); max-width:34ch; }
+.oh-figure { position:relative; width:100%; max-width:460px; aspect-ratio:1; justify-self:center; }
+.oh-img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter:saturate(1.15) drop-shadow(0 0 var(--space-6) var(--oh-glow)); }
+.oh-ecg { position:absolute; inset-inline:-12%; top:52%; width:124%; height:18%; pointer-events:none; }
+.oh-ecg path { fill:none; stroke:var(--oh-heart); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; stroke-dasharray:60 340; animation:oh-trace 3.2s linear infinite; filter:drop-shadow(0 0 var(--space-1) var(--oh-heart)); }
+@keyframes oh-trace { from { stroke-dashoffset:400; } to { stroke-dashoffset:0; } }
+.oh-dot { position:absolute; left:var(--x); top:var(--y); width:var(--space-6); height:var(--space-6); margin:calc(var(--space-6) / -2) 0 0 calc(var(--space-6) / -2); padding:0; border:0; border-radius:50%; background:transparent; cursor:pointer; }
+.oh-dot::before { content:""; position:absolute; inset:var(--space-2); border-radius:50%; background:var(--oh-ink); box-shadow:0 0 0 var(--space-1) var(--oh-glow); transition:background .2s, transform .2s; }
+.oh-dot.is-on::before { background:var(--oh-accent); transform:scale(1.3); animation:oh-pulse 1.8s ease-out infinite; }
+@keyframes oh-pulse { 0% { box-shadow:0 0 0 0 var(--oh-glow); } 100% { box-shadow:0 0 0 var(--space-5) transparent; } }
+.oh-dot:focus-visible, .oh-organ:focus-visible { outline:2px solid var(--oh-accent); outline-offset:2px; }
+.oh-side { display:grid; gap:var(--space-4); }
+.oh-organs { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); }
+.oh-organ { display:block; text-align:start; padding:var(--space-3) var(--space-4); border:1px solid var(--oh-line); border-radius:var(--radius-md); background:var(--oh-card); color:var(--oh-ink); cursor:pointer; font:inherit; transition:border-color .2s, box-shadow .2s; }
+.oh-organ:hover, .oh-organ.is-on { border-color:var(--oh-accent); box-shadow:0 0 var(--space-4) var(--oh-glow); }
+.oh-organ b { display:block; font-size:var(--text-lg); unicode-bidi:isolate; }
+.oh-organ small { display:block; color:var(--oh-muted); font-size:var(--text-sm); }
+.oh-detail { padding:var(--space-4); border:1px solid var(--oh-line); border-radius:var(--radius-md); background:var(--oh-card); }
+.oh-detail h2 { font-size:var(--text-lg); color:var(--oh-ink); margin-bottom:var(--space-3); }
+.oh-links { display:grid; gap:var(--space-2); }
+.oh-link { display:block; padding:var(--space-2) var(--space-3); border-radius:var(--radius-sm); color:var(--oh-ink); text-decoration:none; background:var(--oh-bg-2); }
+.oh-link:hover { outline:1px solid var(--oh-accent); }
+.oh-link b { display:block; unicode-bidi:isolate; font-size:var(--text-sm); }
+.oh-link small { color:var(--oh-muted); }
+@media (max-width:1080px) { .organ-hero { grid-template-columns:1fr 1fr; } .oh-copy { grid-column:1 / -1; } .oh-side { grid-column:auto; } }
+@media (max-width:720px) { .organ-hero { grid-template-columns:1fr; padding:var(--space-4); min-height:0; } .oh-figure { max-width:340px; } }
+@media (prefers-reduced-motion:reduce) { .oh-ecg path { animation:none; stroke-dasharray:none; } .oh-dot.is-on::before { animation:none; } }
