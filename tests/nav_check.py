@@ -79,7 +79,7 @@ try:
         chk(abs(bb['x'] + bb['width'] - (1440 - 16)) <= 1.5 and abs(bb['y'] - 16) <= 1.5, f'بطاقة عائمة على اليمين بهامش 16 {bb}')
         chk(pg.evaluate('parseFloat(getComputedStyle(document.getElementById("sidebar")).borderTopLeftRadius)') >= 12 and pg.evaluate('getComputedStyle(document.getElementById("sidebar")).boxShadow') != 'none', 'حواف مستديرة وظل')
         labels = pg.eval_on_selector_all('#sidebar a .nav-label', 'els=>els.map(e=>e.textContent.trim())')
-        chk(labels == ['الرئيسية', 'الكورسات والمواد', 'الكورس الأول', 'الكورس الثاني', 'الكورس الثالث', 'أحدث المحاضرات', 'المفضلة', 'الأساتذة', 'أدوات الطالب', 'المساعدة'], f'عناصر القائمة الفعّالة فقط: {labels}')
+        chk(labels == ['الرئيسية', 'الكورسات والمواد', 'الكورس الأول', 'الكورس الثاني', 'الكورس الثالث', 'أحدث المحاضرات', 'المفضلة', 'الأساتذة', 'أدوات الطالب', 'حسابي', 'ملفاتي المعلّق عليها', 'المساعدة'], f'عناصر القائمة الفعّالة فقط: {labels}')
         soon = pg.eval_on_selector_all('#sidebar .is-soon', 'els=>els.map(e=>[e.querySelector(".nav-label").textContent.trim(), e.tagName, e.getAttribute("aria-disabled"), e.hasAttribute("href"), e.tabIndex])')
         want = ['مخطط الدراسة', 'التقويم والامتحانات', 'بنك الأسئلة', 'نتائج التدريب', 'درجاتي الجامعية', 'الملف الشخصي', 'الإعدادات']
         chk([x[0] for x in soon] == want, f'العناصر غير المتاحة تظهر رمادية: {[x[0] for x in soon]}')

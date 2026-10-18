@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>حسابي | Medixa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Medixa">
+  <link rel="stylesheet" href="css/style.css?v=n1-1">
+  <link rel="stylesheet" href="css/notes.css?v=n1-1">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body class="account-page">
+  <noscript>
+    <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
+  </noscript>
+  <a class="skip" href="#accMain">تخطَّ إلى المحتوى</a>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- ===== القائمة الجانبية (تُرسم من js/nav.js) والرأس (نفسه في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container account" id="accMain" tabindex="-1">
+    <h1 class="account-title">حسابي</h1>
+    <p class="reader-msg" id="accOff" hidden>ميزة الحساب غير مفعّلة بعد على هذا الموقع. تعليقاتك تُحفظ على هذا الجهاز فقط.</p>
+
+    <section class="panel acc-card" id="loginCard" hidden aria-labelledby="loginH">
+      <h2 id="loginH">تسجيل الدخول بالبريد</h2>
+      <p class="acc-hint">اكتب بريدك الإلكتروني وسنرسل لك رمزاً من 6 أرقام. لا توجد كلمة مرور. الحساب يُنشأ تلقائياً عند أول دخول.</p>
+      <form id="emailForm" class="acc-form" novalidate>
+        <label class="acc-label" for="emailIn">البريد الإلكتروني</label>
+        <input class="field" id="emailIn" type="email" inputmode="email" autocomplete="email" dir="ltr" required>
+        <button class="btn btn-primary" id="sendBtn" type="submit">أرسل الرمز</button>
+      </form>
+      <form id="codeForm" class="acc-form" hidden novalidate>
+        <p class="acc-hint" id="codeHint"></p>
+        <label class="acc-label" for="codeIn">الرمز المكوّن من 6 أرقام</label>
+        <input class="field" id="codeIn" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr" required>
+        <button class="btn btn-primary" id="verifyBtn" type="submit">تأكيد ودخول</button>
+        <button class="btn btn-secondary" id="againBtn" type="button">تغيير البريد أو إعادة الإرسال</button>
+      </form>
+      <p class="acc-err" id="accErr" role="alert" hidden></p>
+    </section>
+
+    <section class="panel acc-card" id="userCard" hidden aria-labelledby="userH">
+      <h2 id="userH">أنت مسجّل الدخول</h2>
+      <p class="acc-email en" id="userEmail" dir="ltr"></p>
+      <p class="acc-hint" id="userSync"></p>
+      <div class="acc-actions">
+        <button class="btn btn-secondary" id="outBtn" type="button">تسجيل الخروج</button>
+        <button class="btn btn-secondary acc-danger" id="delAllBtn" type="button">حذف كل تعليقاتي</button>
+      </div>
+    </section>
+
+    <section class="panel acc-card" id="guestCard" hidden aria-labelledby="guestH">
+      <h2 id="guestH">تعليقات محفوظة على هذا الجهاز</h2>
+      <p class="acc-hint" id="guestHint"></p>
+      <button class="btn btn-primary" id="mergeBtn" type="button">انقلها إلى حسابي</button>
+    </section>
+
+    <section class="panel acc-card" id="filesCard" aria-labelledby="filesH">
+      <h2 id="filesH">ملفاتي المعلّق عليها</h2>
+      <p class="acc-hint" id="filesEmpty" hidden>لا توجد ملفات معلّق عليها بعد. افتح أي ملف PDF من صفحة المادة واضغط «اكتب وظلّل».</p>
+      <ul class="acc-files" id="filesList"></ul>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=n1-1"></script>
+  <script src="data/cloud-config.js?v=n1-1"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/i18n.js?v=n1-1"></script>
+  <script src="js/app.js?v=n1-1"></script>
+  <script src="js/nav.js?v=n1-1"></script>
+  <script src="js/cloud.js?v=n1-1"></script>
+  <script src="js/notes-store.js?v=n1-1"></script>
+  <script src="js/account.js?v=n1-1"></script>
+</body>
+</html>

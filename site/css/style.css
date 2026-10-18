@@ -61,6 +61,9 @@
   --hue-4-bg: #efe8fb; --hue-4-ink: #6b46c1;
   --hue-5-bg: #e6f4ec; --hue-5-ink: #1e7b4f;
   --hue-6-bg: #fde7ee; --hue-6-ink: #b33a63;
+  /* ألوان أقلام القارئ والتظليل (صفحة reader.html) */
+  --ink-1: #17324d; --ink-2: #c62828; --ink-3: #1565c0; --ink-4: #2e7d32; --ink-5: #e65100; --ink-6: #6a1b9a;
+  --hl-1: #ffeb3b; --hl-2: #69f0ae; --hl-3: #ff80ab; --hl-4: #40c4ff; --hl-5: #ffab40;
 
   /* المسافات: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 */
   --space-1: 4px;

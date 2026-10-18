@@ -32,6 +32,8 @@
       { id: "results", label: "نتائج التدريب", icon: "chart", soon: true }
     ] },
     { title: "حسابي", items: [
+      { id: "account", label: "حسابي", icon: "user", href: "account.html", enabled: true },
+      { id: "notes", label: "ملفاتي المعلّق عليها", icon: "pen", href: "account.html#files", enabled: true },
       { id: "grades", label: "درجاتي الجامعية", icon: "cap", soon: true },  // يحتاج تحقق هوية من الخادم قبل أي عرض
       { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
     ] }
@@ -47,6 +49,14 @@
 
   /* ---------- أدوات صغيرة ---------- */
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  /* بريد الطالب المسجَّل (من الجلسة المخزنة محلياً فقط؛ لا طلب شبكة) */
+  function signedEmail() {
+    try {
+      var r = JSON.parse(localStorage.getItem("medixa-auth") || "null");
+      var u = r && (r.user || (r.currentSession && r.currentSession.user));
+      return u && u.email ? String(u.email) : "";
+    } catch (e) { return ""; }
+  }
   function page() { var p = location.pathname.split("/").pop() || "index.html"; return p; }
   function semName(s) { return MS.lang === "en" && s.nameEn ? s.nameEn : s.name; }
   function mySem() { var v = MS.load ? MS.load(KEY_SEM, null) : null; return typeof v === "number" ? v : null; }
@@ -165,7 +175,10 @@
     var av = el("span", "sb-avatar"); av.appendChild(MS.icon("user", 22));
     user.appendChild(av);
     var ut = el("div", "sb-user-text");
-    ut.appendChild(el("strong", "", "زائر"));
+    var who = signedEmail();
+    var nameEl = el("strong", who ? "en" : "", who || "زائر");
+    if (who) nameEl.setAttribute("dir", "ltr");
+    ut.appendChild(nameEl);
     var sem = mySem(), semObj = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.id === sem; })[0];
     ut.appendChild(el("small", "", semObj ? semName(semObj) : "تقدّمك محفوظ على هذا الجهاز"));
     user.appendChild(ut);
@@ -203,6 +216,8 @@
       if (spyId && (location.hash === "" || location.hash === "#home" || SPY[location.hash.slice(1)])) return spyId;
       return HASH[location.hash] || "home";
     }
+    if (p === "account.html") return location.hash === "#files" ? "notes" : "account";
+    if (p === "reader.html") return "notes";
     var s = pageSemester();
     return s ? "sem-" + s : null;
   }

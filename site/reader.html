@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>اكتب وظلّل على الملف | Medixa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Medixa">
+  <link rel="stylesheet" href="css/style.css?v=n1-1">
+  <link rel="stylesheet" href="css/notes.css?v=n1-1">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body class="reader-page">
+  <noscript>
+    <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
+  </noscript>
+  <a class="skip" href="#readerStage">تخطَّ إلى المحتوى</a>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- ===== القائمة الجانبية (تُرسم من js/nav.js) والرأس (نفسه في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="reader-top" aria-label="شريط الأدوات">
+    <div class="reader-head">
+      <a class="btn btn-secondary btn-sm" id="backLink" href="index.html">رجوع</a>
+      <h1 class="reader-title en" id="readerTitle"></h1>
+      <a class="sync-pill" id="syncPill" href="account.html" data-state="local"><span class="ico-slot" id="syncIco"></span><span id="syncText"></span></a>
+    </div>
+    <div class="reader-bar" id="toolbar" role="toolbar" aria-label="أدوات الكتابة والتظليل">
+      <div class="tool-group" role="group" aria-label="الأداة">
+        <button class="tool-btn" type="button" data-tool="view" aria-pressed="false" data-ico="hand" title="تصفّح بلا رسم"><span>تصفّح</span></button>
+        <button class="tool-btn" type="button" data-tool="pen" aria-pressed="true" data-ico="pen" title="قلم"><span>قلم</span></button>
+        <button class="tool-btn" type="button" data-tool="hl" aria-pressed="false" data-ico="highlighter" title="تظليل"><span>تظليل</span></button>
+        <button class="tool-btn" type="button" data-tool="text" aria-pressed="false" data-ico="text" title="كتابة نص"><span>نص</span></button>
+        <button class="tool-btn" type="button" data-tool="eraser" aria-pressed="false" data-ico="eraser" title="ممحاة"><span>ممحاة</span></button>
+      </div>
+      <div class="tool-group" id="swatches" role="group" aria-label="اللون"></div>
+      <div class="tool-group" role="group" aria-label="السمك">
+        <button class="size-btn" type="button" data-size="0" aria-pressed="false" aria-label="رفيع"><i class="dot dot-1"></i></button>
+        <button class="size-btn" type="button" data-size="1" aria-pressed="true" aria-label="متوسط"><i class="dot dot-2"></i></button>
+        <button class="size-btn" type="button" data-size="2" aria-pressed="false" aria-label="سميك"><i class="dot dot-3"></i></button>
+      </div>
+      <div class="tool-group" role="group" aria-label="تراجع">
+        <button class="tool-btn icon-only" type="button" id="undoBtn" data-ico="undo" aria-label="تراجع" disabled></button>
+        <button class="tool-btn icon-only" type="button" id="redoBtn" data-ico="redo" aria-label="إعادة" disabled></button>
+      </div>
+      <div class="tool-group" role="group" aria-label="التكبير">
+        <button class="tool-btn icon-only" type="button" id="zoomOut" data-ico="zoomout" aria-label="تصغير"></button>
+        <button class="zoom-label" type="button" id="zoomFit" aria-label="ملاءمة العرض">100%</button>
+        <button class="tool-btn icon-only" type="button" id="zoomIn" data-ico="zoomin" aria-label="تكبير"></button>
+      </div>
+      <div class="tool-group" role="group" aria-label="خيارات">
+        <button class="tool-btn" type="button" id="fingerBtn" aria-pressed="false" data-ico="hand" title="يسمح للإصبع بالرسم بدل القلم فقط"><span>الإصبع يرسم</span></button>
+        <button class="btn btn-primary btn-sm" type="button" id="exportBtn">تنزيل PDF بتعليقاتي</button>
+      </div>
+    </div>
+  </section>
+
+  <main class="reader-stage" id="readerStage" tabindex="-1">
+    <p class="reader-msg" id="readerMsg" role="status">جارٍ تحميل الملف…</p>
+    <div class="reader-pages" id="pages"></div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/courses.js?v=n1-1"></script>
+  <script src="data/cloud-config.js?v=n1-1"></script>
+  <script src="api/uploads.js"></script>
+  <script src="js/i18n.js?v=n1-1"></script>
+  <script src="js/app.js?v=n1-1"></script>
+  <script src="js/nav.js?v=n1-1"></script>
+  <script src="js/cloud.js?v=n1-1"></script>
+  <script src="js/notes-store.js?v=n1-1"></script>
+  <script src="vendor/pdf.min.js?v=3.11.174"></script>
+  <script src="js/reader.js?v=n1-1"></script>
+</body>
+</html>

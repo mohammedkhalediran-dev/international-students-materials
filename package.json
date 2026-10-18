@@ -4,5 +4,8 @@
   "description": "موقع ثابت مع دالة رفع صغيرة (Netlify Functions + Blobs)",
   "dependencies": {
     "@netlify/blobs": "^11.1.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10"
   }
 }
