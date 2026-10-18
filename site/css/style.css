@@ -312,6 +312,7 @@ input[type="date"].field { direction: ltr; text-align: right; color-scheme: ligh
 .search-pill:hover { color: var(--color-text); }
 .search-pill > span:not(.ico) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .header-actions { display: flex; align-items: center; gap: var(--space-1); margin-inline-start: auto; }
+.header-actions #accountBtn { white-space: nowrap; }
 .lang-sel {
   height: 36px;
   padding-inline: var(--space-2);

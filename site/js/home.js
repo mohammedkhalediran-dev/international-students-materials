@@ -6,7 +6,6 @@
   if(legacy[location.hash]){location.replace("workspace.html?view="+legacy[location.hash]+(location.hash==="#review"?"&tab=review":""));return;}
   MS.initShared();MS.initHeader();
   var el=MS.el,$=MS.$;
-  $("homeUniversity").textContent=SITE.university ? (MS.lang==="en"?SITE.university.nameEn:MS.lang==="fa"?SITE.university.nameFa:SITE.university.name) : SITE.subtitle;
   var selected=MS.load("ms.sem",null)||MS.currentSemester();
   SEMESTERS.slice().sort(function(a,b){return b.id-a.id;}).forEach(function(s){
     var a=el("a","semester-tile card"+(s.id===selected?" is-current":""));a.href="semester.html?id="+s.id;
