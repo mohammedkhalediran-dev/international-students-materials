@@ -160,7 +160,7 @@
     top.appendChild(cls);
     side.appendChild(top);
 
-    // كتلة الحساب: لا حسابات للطلاب بعد، فتُعرض صفة الزائر الحقيقية بلا اسم أو درجات وهمية
+    // كتلة الحساب: تبدأ «زائر»، ثم يحدّثها js/auth.js باسم الطالب وزر الخروج إن كانت هناك جلسة دخول
     var user = el("div", "sb-user");
     var av = el("span", "sb-avatar"); av.appendChild(MS.icon("user", 22));
     user.appendChild(av);

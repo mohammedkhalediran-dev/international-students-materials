@@ -483,6 +483,8 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .sb-user-text { display: grid; min-width: 0; line-height: var(--leading-tight); }
 .sb-user-text strong { font-size: var(--nav-font); color: var(--nav-text); }
 .sb-user-text small { color: var(--nav-muted); font-size: var(--text-xs); }
+.sb-auth-action { justify-self: start; display: inline-flex; align-items: center; min-height: var(--control-h); padding: 0; border: 0; background: none; color: var(--nav-accent); font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.sb-auth-action:disabled { opacity: .6; cursor: wait; }
 .nav-link.is-soon { color: var(--nav-muted); cursor: default; }
 .nav-link.is-soon .ico { color: var(--nav-muted); opacity: 0.8; }
 .nav-link.is-soon:hover { background: transparent; }

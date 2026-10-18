@@ -1,6 +1,12 @@
-# MEDIXA Step 47
+# MEDIXA Step 48
 
 Authoritative baseline: the attached MEDIXA-Step-38.zip (extracted 2026-10-18). Step 38 progress files are preserved in docs/checkpoints/step38/.
+
+## Completed in Step 48 — signed-in students no longer look like guests
+- Report from Mohammed (2026-10-19): after signing in, the site still showed «زائر».
+- Evidence: the production D1 database had new sessions after his sign-in, so the server login worked. Cause: the v8.1 sidebar (js/nav.js) always printed «زائر»; only the header button knew about the session.
+- Fix: js/auth.js now updates the sidebar account block after checking the session: the student's name, «تقدّمك محفوظ في حسابك» and a sign-out button; guests get «سجّل الدخول لحفظ تقدّمك». Translated to English and Persian.
+- tests/step48_account_sidebar.py: 30 checks (guest, signed in on 5 pages, sign-out, English) at 1280 and 390 px.
 
 ## Completed in Step 47 — UI audit fixes (touch, contrast, small text, phone overflow)
 - Automated audit (ui-ux-pro-max priorities 1, 2, 5, 6) of 10 pages at 390 and 820 px in light and dark: before 14 pages scrolled sideways on phones, 132 texts under 12px, 444 contrast failures, 550 controls under 44px. After: 0 sideways scroll, 0 texts under 12px, 61 contrast reports (mostly white text on gradients/images the probe cannot measure, plus the hidden skip link), 132 small controls (mostly 38px buttons in page content and native inputs in the PDF reader).
