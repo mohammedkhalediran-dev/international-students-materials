@@ -1,0 +1,19 @@
+<!doctype html><html><body><main id="pages"></main><output id="test-result">RUNNING</output><script>
+const doc='lecture.pdf';history.replaceState(null,'',location.pathname+'?file='+encodeURIComponent(doc));const key='medixa.v88.session:'+new URL(doc,location.href).href;
+localStorage.setItem(key,JSON.stringify({version:1,document:doc,page:3,savedAt:1}));
+const results=[];function assert(v,msg){results.push((v?'PASS ':'FAIL ')+msg)}
+</script><script src="../site/js/study-recovery-v88.js"></script><script>
+setTimeout(()=>{
+ const banner=document.getElementById('mx88-recovery');assert(!!banner,'recovery banner exists');
+ const buttons=banner.querySelectorAll('button');assert(buttons.length===2,'resume and dismiss controls');
+ const pages=document.getElementById('pages');const add=(n)=>{const el=document.createElement('section');el.className='page';el.textContent='Page '+n;pages.append(el);};
+ buttons[0].click();add(1);add(2);
+ assert(JSON.parse(localStorage.getItem(key)).page===3,'pending recovery does not overwrite page');
+ add(3);
+ setTimeout(()=>{
+ assert(banner.style.display==='none','recovery closes when target loads');
+ assert(JSON.parse(localStorage.getItem(key)).page===3,'restored page persists');
+ document.getElementById('test-result').textContent=results.join(' | ');
+ },100);
+},100);
+</script></body></html>

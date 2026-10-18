@@ -1,0 +1,25 @@
+/* Semester catalog uses the shared Medixa card system. */
+.semester-design .sem-head { padding-top:var(--space-5); }
+.semester-design .sem-title { font-size:var(--text-2xl); color:var(--color-heading); }
+.semester-design .sem-count { color:var(--color-muted); margin-top:var(--space-1); }
+.semester-design .banner { position:relative; display:flex; align-items:center; overflow:hidden; min-height:246px; height:auto; padding:var(--space-6); margin-top:var(--space-5); border-radius:var(--radius-lg); background:var(--banner-bg); }
+.semester-design .banner::after { content:""; position:absolute; inset-block:0; left:0; width:52%; background:url('../assets/medical-thorax.webp') center 18%/cover no-repeat; pointer-events:none; }
+.semester-design .banner > div { position:relative; z-index:1; width:58%; }
+.semester-design .banner-title { font-family:var(--font-body); font-size:clamp(26px,3vw,42px); color:var(--color-on-petrol); }
+.semester-design .banner-sub { font-size:var(--text-base); color:var(--color-on-petrol-muted); }
+.semester-design .banner-tag { font-size:var(--text-xs); letter-spacing:.18em; color:var(--color-on-petrol-muted); }
+.semester-design .sem-filter { margin-block:var(--space-5); }
+.semester-design .group-title { font-size:var(--text-base); color:var(--color-muted); }
+.semester-design .group { margin-top:var(--space-5); }
+@media(max-width:720px) {
+ .semester-design .sem-head { padding-top:var(--space-4); }
+ .semester-design .sem-title { font-size:var(--text-xl); }
+ .semester-design .banner { min-height:176px; padding:var(--space-4); margin-top:var(--space-4); }
+ .semester-design .banner::after { width:46%; background-position:center; }
+ .semester-design .banner > div { width:62%; }
+ .semester-design .banner-title { font-size:var(--text-lg); line-height:1.4; }
+ .semester-design .banner-sub { font-size:var(--text-xs); }
+ .semester-design .banner-tag { display:none; }
+ .semester-design .sem-filter-head h2 { font-size:var(--text-lg); }
+ .semester-design .chip { font-size:var(--text-xs); padding-inline:var(--space-3); }
+}

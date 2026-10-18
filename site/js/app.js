@@ -3,7 +3,7 @@
   "use strict";
 
   var MS = (window.MS = {});
-  var KEY = { fav: "ms.fav", read: "ms.read", last: "ms.last", exam: "ms.exam", theme: "ms.theme", review: "ms.review" };
+  var KEY = { fav: "ms.fav", read: "ms.read", last: "ms.last", exam: "ms.exam", theme: "ms.theme", review: "ms.review", study: "ms.study", nav: "ms.nav" };
 
   MS.lang = (window.I18N && I18N.lang) || "ar";
 
@@ -62,6 +62,7 @@
   function save(k, v) {
     mem[k] = v;
     try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* يبقى في الذاكرة */ }
+    if (MS.onSave) MS.onSave(k); // مزامنة الحساب (js/auth.js)
   }
   MS.load = load;
   MS.save = save;
@@ -100,7 +101,15 @@
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
     tools: '<path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
     arrow: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
-    list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'
+    list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+    chevron: '<path d="M6 9l6 6 6-6"/>',
+    chevrons: '<path d="M11 7l-5 5 5 5M18 7l-5 5 5 5"/>',
+    play: '<circle cx="12" cy="12" r="9"/><path d="M10.5 8.8l4.2 3.2-4.2 3.2z"/>',
+    chart: '<path d="M6 20v-7M12 20V6M18 20v-10"/>',
+    cap: '<path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11.5V16c1.5 1.4 3.2 2 5 2s3.5-.6 5-2v-4.5"/><path d="M21 9v5"/>',
+    user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.6-3.6 3.4-5.5 7-5.5s6.4 1.9 7 5.5"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6"/>',
+    logout: '<path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M15 8l4 4-4 4M19 12H9"/>'
   };
 
   MS.icon = function (name, size) {
@@ -125,19 +134,55 @@
   };
   /* الملفات المرفوعة من صفحة الرفع: تأتي من api/uploads.js (window.UPLOADS) وتُدمج في المواد قبل رسم أي صفحة.
      المحاضرة الجديدة تُنشأ عند أول ملف، والموجودة يُضاف إليها الملف. بدون الخادم تبقى القائمة فارغة ولا يتأثر شيء. */
+  /* أنواع المرفوعات (type): lecture = ملف أو رابط محاضرة، quiz = اختبار تفاعلي، exam = أسئلة السنوات السابقة.
+     kind: file = PDF مرفوع، link = رابط خارجي. العنصر برقم محاضرة 0 يخصّ المادة كلها ويُحفظ في c.extras بدل المحاضرات. */
   MS.applyUploads = function (items) {
     (items || []).forEach(function (u) {
       var c = u && u.id ? MS.course(u.courseId) : null;
       if (!c) return;
+      var external = u.kind === "link";
+      var file = {
+        label: u.label,
+        url: external ? u.url : "api/file/" + u.id,
+        added: u.added,
+        uploaded: true,
+        type: u.type || "lecture",
+        external: external,
+        latest: typeof u.showInLatest === "boolean" ? u.showInLatest : undefined
+      };
+      if (!u.number) {
+        (c.extras = c.extras || []).push(file);
+        return;
+      }
       var lec = c.lectures.filter(function (l) { return l.number === u.number; })[0];
       if (!lec) {
         lec = { number: u.number, title: u.title, files: [] };
         c.lectures.push(lec);
       }
-      lec.files.push({ label: u.label, url: "api/file/" + u.id, added: u.added, uploaded: true });
+      lec.files.push(file);
     });
   };
   if (window.UPLOADS) MS.applyUploads(window.UPLOADS);
+
+  /* هل يُحتسب هذا الملف في «أحدث المحاضرات»؟ القرار الصريح (latest) أولاً.
+     بلا قرار: تظهر ملفات كورس الطالب الحالي فقط، فلا تظهر مواد الكورسات القديمة. */
+  MS.currentSemester = function () {
+    var s = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.current; })[0];
+    var selected=load("ms.sem",null);
+    return SEMESTERS.some(function(x){return x.id===selected;})?selected:(s?s.id:null);
+  };
+  MS.inLatest = function (c, f) {
+    if (typeof f.latest === "boolean") return f.latest;
+    return c.semester === MS.currentSemester();
+  };
+
+  /* شكل الملف في القوائم: نص الأيقونة وزر الفتح حسب النوع (محاضرة، اختبار تفاعلي، أسئلة سنوات سابقة) */
+  MS.fileKind = function (f) {
+    var type = f.type || "lecture";
+    if (type === "quiz") return { ico: "اختبار", open: "ابدأ الاختبار", cls: "is-quiz" };
+    if (type === "exam") return { ico: "أسئلة", open: f.external ? "فتح الرابط" : "فتح الأسئلة", cls: "is-exam" };
+    return f.external ? { ico: "رابط", open: "فتح الرابط", cls: "is-link" } : { ico: "PDF", open: "فتح الملف", cls: "" };
+  };
 
   MS.orderedCourses = function () {
     var out = [];
@@ -250,12 +295,23 @@
         return b;
       }
 
-      /* بطاقة أفقية بثلاث مناطق: المعلومات (60%) والصورة (40%) في الصف الأول، والتذييل في صف تحتهما.
+      /* بطاقة عمودية (flex): الصورة في مساحة ثابتة، ثم المعلومات بعرض البطاقة، ثم التذييل في الأسفل.
          المفضلة في زاوية البطاقة، وزر الفتح الدائري هو رابط البطاقة كلها. */
       var uid = 0;
       function card(c, onFav) {
         var art = MS.el("article", "course-card card hue-" + (MS.orderedCourses().indexOf(c) % 6 + 1));
         art.appendChild(favButton(c, onFav));
+
+        var media = MS.el("div", "cc-media");
+        if (c.image) {
+          var pic = MS.el("img", "cc-img");
+          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
+          media.appendChild(pic);
+        } else {
+          art.classList.add("no-img");
+          media.appendChild(MS.icon(c.icon, 40));
+        }
+        art.appendChild(media);
 
         var info = MS.el("div", "cc-info");
         if (c.field) info.appendChild(MS.el("p", "cc-kicker", c.field));
@@ -292,21 +348,11 @@
         }
         art.appendChild(info);
 
-        var media = MS.el("div", "cc-media");
-        if (c.image) {
-          var pic = MS.el("img", "cc-img");
-          pic.src = c.image; pic.width = 180; pic.height = 180; pic.alt = ""; pic.loading = "lazy"; pic.decoding = "async";
-          media.appendChild(pic);
-        } else {
-          art.classList.add("no-img");
-          media.appendChild(MS.icon(c.icon, 40));
-        }
-        art.appendChild(media);
-
         var foot = MS.el("div", "cc-foot");
         var total = c.lectures.length;
+        var onlyExtras = !total && c.extras && c.extras.length;
         var state = MS.el("div", "cc-state");
-        state.appendChild(MS.el("span", total ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : "لم تُرفع ملفات بعد"));
+        state.appendChild(MS.el("span", total || onlyExtras ? "cc-status has-files" : "cc-status", total ? MS.lecturesLabel(total) : onlyExtras ? "اختبارات وأسئلة سابقة" : "لم تُرفع ملفات بعد"));
         if (total) {
           var done = MS.progress.done(c);
           var bar = MS.el("div", "bar");
@@ -353,7 +399,6 @@
   MS.initHeader = function () {
     var themeBtn = MS.$("themeBtn");
     var menuBtn = MS.$("menuBtn");
-    var nav = MS.$("nav");
 
     function paintTheme() {
       var dark = effectiveTheme() === "dark";
@@ -361,7 +406,11 @@
       themeBtn.appendChild(MS.icon(dark ? "sun" : "moon", 20));
       themeBtn.setAttribute("aria-label", dark ? "التبديل إلى الوضع النهاري" : "التبديل إلى الوضع الليلي");
     }
+    if (load(KEY.theme,"light") === "system") document.documentElement.setAttribute("data-theme",matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
     paintTheme();
+    window.addEventListener("medixa-theme", paintTheme);
+    var schemeQuery=matchMedia("(prefers-color-scheme: dark)");
+    if(schemeQuery.addEventListener)schemeQuery.addEventListener("change",function(e){if(load(KEY.theme,"light")==="system"){document.documentElement.setAttribute("data-theme",e.matches?"dark":"light");paintTheme();}});
     themeBtn.addEventListener("click", function () {
       var next = effectiveTheme() === "dark" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", next);
@@ -383,13 +432,14 @@
           box.scrollIntoView({ block: "center" });
           box.focus({ preventScroll: true });
         } else {
-          location.href = "index.html#search";
+          location.href = "workspace.html?view=search";
         }
       });
     }
 
     var favLink = MS.$("favLink");
     if (favLink) {
+      favLink.href="workspace.html?view=favorites";
       favLink.appendChild(MS.icon("star", 20));
       favLink.addEventListener("click", function (e) {
         // في الرئيسية: الضغط مرة ثانية على نفس الرابط يعيد تطبيق التصفية
@@ -400,34 +450,18 @@
       });
     }
 
-    var side = MS.$("sidebar");
-    function setSide(open) {
-      side.classList.toggle("open", open);
-      menuBtn.setAttribute("aria-expanded", String(open));
-    }
+    // القائمة الجانبية (الرسم والطي والدرج والتمييز) في js/nav.js
+    if (MS.nav) MS.nav.init(menuBtn);
     menuBtn.appendChild(MS.icon("menu", 22));
-    menuBtn.addEventListener("click", function () { setSide(!side.classList.contains("open")); });
-    MS.$("scrim").addEventListener("click", function () { setSide(false); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setSide(false); });
-    nav.addEventListener("click", function (e) { if (e.target.closest("a")) setSide(false); });
-
-    // تمييز القسم الظاهر في القائمة (في الصفحة الرئيسية فقط)
-    var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
-    if (!links.length || !("IntersectionObserver" in window)) return;
-    var map = {};
-    links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (!en.isIntersecting) return;
-        links.forEach(function (a) { a.classList.remove("is-active"); });
-        var a = map[en.target.id];
-        if (a) a.classList.add("is-active");
-      });
-    }, { rootMargin: "-45% 0px -50% 0px" });
-    Object.keys(map).forEach(function (id) {
-      var s = document.getElementById(id);
-      if (s) io.observe(s);
-    });
+    if (!document.querySelector(".mobile-dock")) {
+      var dock = MS.el("nav", "mobile-dock"); dock.setAttribute("aria-label", I18N.t("التنقل الرئيسي"));
+      [["home","الرئيسية","index.html"],["book","الكورسات","index.html#semesters"],["search","بحث","workspace.html?view=search"],["star","المفضلة","workspace.html?view=favorites"],["tools","أدوات الدراسة","workspace.html?view=planner"]].forEach(function(it){
+        var a=MS.el("a");a.href=it[2];a.appendChild(MS.icon(it[0],22));a.appendChild(MS.el("span","",it[1]));
+        if(location.pathname.endsWith(it[2].split("?")[0]) && (it[2].includes("?") ? location.search===it[2].slice(it[2].indexOf("?")) : !it[2].includes("#"))) a.setAttribute("aria-current","page");
+        dock.appendChild(a);
+      });document.body.appendChild(dock);
+    }
+    document.documentElement.classList.toggle("reduced-motion",!!load("ms.reducedMotion",false));
   };
 
   /* ---------- نصوص مشتركة ---------- */

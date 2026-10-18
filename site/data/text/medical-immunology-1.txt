@@ -1,0 +1,203 @@
+Overview of the
+Immune System
+
+A young baby with his mother in India
+
+The term immunity is derived from the Latin word immunitas,
+which referred to the protection from legal prosecution
+offered to Roman senators during their tenures in office.
+Historically, immunity meant protection from disease and, more specifically,
+infectious disease.
+The cells and molecules responsible for immunity constitute the immune
+system, and their collective and coordinated response to the introduction of
+foreign substances is called the immune response.
+
+• The immune system is remarkably versatile defense system that has evolved to protect
+animals from invading pathogenic microorganisms and cancer.
+
+• It is able to generate an enormous variety of cells and molecules capable of specifically
+recognizing and eliminating an apparently limitless variety of foreign invaders.
+
+• These cells and molecules act together in a dynamic network whose complexity rivals that
+of the nervous system
+
+• Functionally, an immune response can be divided into two related activities—recognition and response.
+• Immune recognition is remarkable for its specificity.
+• The immune system is able to recognize subtle chemical differences that distinguish one foreign pathogen from another.
+• Furthermore, the system is able to discriminate between foreign molecules and the body’s own cells and proteins.
+• Once a foreign organism has been recognized, the immune system recruits a variety of cells and molecules to mount an
+appropriate response, called an effector response, to eliminate or neutralize the organism.
+
+• In this way the system is able to convert the initial recognition event into a variety of effector responses, each uniquely
+suited for eliminating a particular type of pathogen.
+
+• Later exposure to the same foreign organism induces a memory response, characterized by a more rapid and heightened
+immune reaction that serves to eliminate the pathogen and prevent disease
+
+Historical Perspective
+• The discipline of immunology grew out of the observation that individuals
+who had recovered from certain infectious diseases were thereafter
+protected from the disease.
+• The Latin term immunitas, meaning “exempt,” is the source of the English
+word immunity, meaning the state of protection from infectious disease.
+
+• Perhaps the earliest written reference to the phenomenon of immunity can
+be traced back to Thucydides, the great historian of the Peloponnesian
+War.
+• In describing a plague in Athens, he wrote in 430 BC that only those who
+had recovered from the plague could nurse the sick because they would
+not contract the disease a second time.
+• Although early societies recognized the phenomenon of immunity, almost
+two thousand years passed before the concept was successfully converted
+into medically effective practice.
+
+• The first recorded attempts to induce immunity deliberately were performed by the Chinese and Turks in
+the fifteenth century.
+
+• Various reports suggest that the dried crusts derived from smallpox pustules were either inhaled into the
+nostrils or inserted into small cuts in the skin (a technique called variolation).
+• In 1718, Lady Mary Wortley Montagu, observed the positive effects of variolation on the native
+population and had the technique performed on her own children.
+• The method was significantly improved by the English physician Edward Jenner, in 1798.
+
+• Intrigued by the fact that milkmaids who had contracted the mild disease cowpox were subsequently
+immune to smallpox, which is a disfiguring and often fatal disease, Jenner reasoned that introducing
+fluid from a cowpox pustule into people (i.e., inoculating them) might protect them from smallpox.
+• To test this idea, he inoculated an eight-year-old boy with fluid from a cowpox pustule and later
+intentionally infected the child with smallpox.
+• As predicted,the child did not develop smallpox
+
+• Jenner’s technique of inoculating with cowpox to protect against smallpox spread quickly throughout Europe.
+
+• Louis Pasteur had succeeded in growing the bacterium thought to cause fowl cholera in culture and then had shown that
+chickens injected with the cultured bacterium developed cholera.
+
+• After returning from a summer vacation, he injected some chickens with an old culture. The chickens became ill, but, to
+Pasteur’s surprise, they recovered.
+• Pasteur then grew a fresh culture of the bacterium with the intention of injecting it into some fresh chickens. But, as the story
+goes, his supply of chickens was limited, and therefore he used the previously injected chickens.
+• Again to his surprise, the chickens were completely protected from the disease.
+• Pasteur hypothesized and proved that aging had weakened the virulence of the pathogen and that such an attenuated strain
+might be administered to protect against the disease.
+• He called this attenuated strain a vaccine (from the Latin Vacca, meaning “cow”), in honor of Jenner’s work with cowpox
+
+inoculation.
+
+• Pasteur extended these findings to other diseases, demonstrating that it was
+possible to attenuate, or weaken, a pathogen and administer the attenuated
+strain as a vaccine.
+• In a now classic experiment at Pouilly-le-Fort in 1881, Pasteur first vaccinated
+one group of sheep with heat-attenuated anthrax bacillus (Bacillus anthracis);
+he then challenged the vaccinated sheep and some unvaccinated sheep with a
+virulent culture of the bacillus.
+• All the vaccinated sheep lived, and all the unvaccinated animals died.
+• These experiments marked the beginnings of the discipline of immunology
+
+• In 1885, Pasteur administered his first vaccine to a human, a young
+boy who had been bitten repeatedly by a rabid dog (Figure 1-1).
+• The boy, Joseph Meister, was inoculated with a series of attenuated
+rabies virus preparations.
+• He lived and later became a custodian at the Pasteur Institute
+
+Wood engraving of Louis Pasteur watching Joseph
+Meister receive the rabies vaccine
+
+INNATE AND ADAPTIVE IMMUNITY
+Defense against microbes is mediated by the early reactions of innate immunity and the later
+responses of adaptive immunity
+
+Innate immunity (also called natural or native immunity) provides the early line of defense against
+microbes.
+It consists of cellular and biochemical defense mechanisms that are in place even before infection and are
+poised to respond rapidly to infections
+
+The mechanisms of innate immunity are specific for structures that are common to groups of
+related microbes and may not distinguish fine differences between microbes.
+
+The Immune System Includes Innate and Adaptive Components
+
+• Immunity—the state of protection from infectious disease —has both a less specific and more specific component.
+• The less specific component, innate immunity, provides the first line of defense against infection.
+• Most components of innate immunity are present before the onset of infection and constitute a set of diseaseresistance mechanisms that are not specific to a particular pathogen but that include cellular and molecular
+components that recognize classes of molecules peculiar to frequently encountered pathogens.
+• Phagocytic cells, such as macrophages and neutrophils, barriers such as skin, and a variety of antimicrobial
+compounds synthesized by the host all play important roles in innate immunity.
+• In contrast to the broad reactivity of the innate immune system, which is uniform in all members of a species, the
+specific component, adaptive immunity, does not come into play until there is an antigenic challenge to the
+organism.
+
+• Adaptive immunity responds to the challenge with a high degree of specificity as well as
+the remarkable property of “memory.”
+• Typically, there is an adaptive immune response against an antigen within five or six days
+after the initial exposure to that antigen.
+• Exposure to the same antigen some time in the future results in a memory response: the
+immune response to the second challenge occurs more quickly than the first, is stronger,
+and is often more effective in neutralizing and clearing the pathogen.
+• The major agents of adaptive immunity are lymphocytes and the antibodies
+
+Innate Immunity
+• Innate immunity can be seen to comprise four types of defensive
+barriers: anatomic, physiologic, phagocytic, and inflammatory
+
+The Skin and the Mucosal Surfaces Provide
+Protective Barriers Against Infection
+• Physical and anatomic barriers that tend to prevent the entry of pathogens are an organism’s
+first line of defense against infection.
+
+• The skin and the surface of mucous membranes are included in this category because they are
+effective barriers to the entry of most microorganisms.
+• The skin consists of two distinct layers: a thinner outer layer—the epidermis—and a thicker
+layer—the dermis.
+• The epidermis contains several layers of tightly packed epithelial cells.
+• The outer epidermal layer consists of dead cells and is filled with a waterproofing protein
+called keratin.
+
+• The dermis, which is composed of connective tissue, contains blood vessels,
+hair follicles, sebaceous glands, and sweat glands.
+
+• The sebaceous glands are associated with the hair follicles and produce an
+oily secretion called sebum.
+• Sebum consists of lactic acid and fatty acids, which maintain the pH of the
+skin between 3 and 5; this pH inhibits the growth of most microorganisms.
+• A few bacteria that metabolize sebum live as commensals on the skin and
+
+sometimes cause a severe form of acne.
+
+• Breaks in the skin resulting from scratches, wounds, or abrasion are obvious
+routes of infection.
+
+• The skin may also be penetrated by biting insects (e.g., mosquitoes, mites, ticks,
+fleas, and sandflies); if these harbor pathogenic organisms, they can introduce the
+
+pathogen into the body as they feed.
+• The protozoan that causes malaria, for example, is deposited in humans by
+mosquitoes when they take a blood meal.
+• Similarly, bubonic plague is spread by the bite of fleas, and Lyme disease is
+
+spread by the bite of ticks
+
+• The conjunctivae and the alimentary, respiratory, and urogenital tracts are lined by mucous membranes,
+not by the dry, protective skin that covers the exterior of the body.
+• These membranes consist of an outer epithelial layer and an underlying layer of connective tissue.
+
+Saliva, tears, and mucous secretions act to wash away potential invaders and also contain antibacterial or
+antiviral substances.
+• The viscous fluid called mucus, which is secreted by epithelial cells of mucous embranes,entraps
+foreign microorganisms.
+• In the lower respiratory tract, the mucous membrane is covered by cilia, hairlike protrusions of the
+epithelial-cell membranes.
+• The synchronous movement of cilia propels mucus-entrapped microorganisms from these tracts.
+• In addition, nonpathogenic organisms tend to colonize the epithelial cells of mucosal surfaces. These
+normal flora generally outcompete pathogens for attachment sites on the epithelial cell surface and for
+necessary nutrients.
+
+• Some organisms have evolved ways of escaping these defense mechanisms and
+thus are able to invade the body through mucous membranes.
+• For example, influenza virus (the agent that causes flu) has a surface molecule
+that enables it to attach firmly to cells in mucous membranes of the respiratory
+tract, preventing the virus from being swept out by the ciliated epithelial cells.
+• Similarly, the organism that causes gonorrhea has surface projections that
+allow it to bind to epithelial cells in the mucous membrane of the urogenital
+tract.
+
+

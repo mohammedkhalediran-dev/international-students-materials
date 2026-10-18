@@ -13,10 +13,11 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=p3-17">
+  <link rel="stylesheet" href="css/style.css?v=step44">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
   </script>
 </head>
 <body>
@@ -27,28 +28,14 @@
 
   <div class="notice" id="notice" hidden></div>
 
-  <!-- ===== القائمة الجانبية والرأس (نفسهما في كل الصفحات) ===== -->
-  <aside class="sidebar" id="sidebar">
-    <a class="brand" href="index.html">
-      <img class="brand-mark" src="assets/logo.png" width="36" height="36" alt="">
-      <span data-site-title></span>
-    </a>
-    <nav class="nav" id="nav" aria-label="التنقل الرئيسي">
-        <a href="index.html#home" data-ico="home"><span>الرئيسية</span></a>
-        <a href="index.html#semesters" data-ico="grid" aria-current="page"><span>المواد</span></a>
-        <a href="index.html#latest" data-ico="file"><span>المحاضرات</span></a>
-        <a href="index.html#professors" data-ico="users"><span>الأساتذة</span></a>
-        <a href="index.html#favorites" data-ico="star"><span>المفضلة</span></a>
-        <a href="index.html#tools" data-ico="tools"><span>أدوات الطالب</span></a>
-        <span class="nav-soon" data-ico="help" aria-disabled="true"><span>بنك الأسئلة</span><span class="badge badge-soon">قريباً</span></span>
-        <span class="nav-soon" data-ico="calendar" aria-disabled="true"><span>التقويم الأكاديمي</span><span class="badge badge-soon">قريباً</span></span>
-    </nav>
-  </aside>
+  <!-- ===== القائمة الجانبية (تُرسم من js/nav.js) والرأس (نفسه في كل الصفحات) ===== -->
+  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
   <div class="scrim" id="scrim"></div>
 
   <header class="site-header">
     <div class="container header-inner">
       <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <a class="site-wordmark" href="index.html">Medixa</a>
       <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
         <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
@@ -82,7 +69,7 @@
     <div class="container footer-inner">
       <div>
         <a class="brand" href="index.html">
-          <img class="brand-mark" src="assets/logo.png" width="36" height="36" alt="">
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2.4" d="M6 24V8l10 10L26 8v16"/><path stroke-width="2" d="M13.5 24h5M16 21.5v5"/></g></svg>
           <span data-site-title></span>
         </a>
         <p class="foot-uni" id="footUni" hidden></p>
@@ -104,21 +91,28 @@
       <div class="viewer-title en" id="viewerTitle"></div>
       <a class="btn btn-secondary btn-sm" id="viewerOpen" target="_blank" rel="noopener">فتح في تبويب</a>
       <a class="btn btn-secondary btn-sm" id="viewerDl" download>تنزيل</a>
+      <a class="btn btn-secondary btn-sm" id="annotateLink" target="_blank" rel="noopener">✎ اكتب وظلّل على PDF</a>
       <button class="icon-btn" id="viewerClose" type="button" aria-label="إغلاق"></button>
     </div>
     <div class="viewer-stage">
       <p class="viewer-loading" id="viewerLoading" role="status">جارٍ تحميل الملف…</p>
       <iframe class="viewer-frame" id="viewerFrame" title="عارض الملف"></iframe>
+      <aside class="viewer-notes">
+        <label for="lectureNotes">ملاحظاتي</label>
+        <textarea id="lectureNotes" maxlength="20000" placeholder="اكتب ملاحظاتك عن هذا الملف…"></textarea>
+        <p>تُحفظ ملاحظاتك على هذا الجهاز فقط.</p>
+      </aside>
     </div>
     <p class="viewer-note">إن لم يظهر الملف هنا، افتحه في تبويب مستقل.</p>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-17"></script>
+  <script src="data/courses.js?v=step44"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/i18n.js?v=p3-17"></script>
-  <script src="js/app.js?v=p3-17"></script>
+  <script src="js/i18n.js?v=step44"></script>
+  <script src="js/app.js?v=step44"></script><script src="js/study-summary.js?v=step44"></script><script src="js/auth.js?v=step44"></script>
+  <script src="js/nav.js?v=step44"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -145,6 +139,10 @@
         return;
       }
 
+      if (course.image) {
+        var art = el("img", "course-art medical-art"); art.src = course.image; art.alt = "";
+        document.querySelector(".page-hero").appendChild(art);
+      }
       MS.setLast(course.id);
       document.title = course.name + " | " + SITE.title;
       $("crumbCurrent").textContent = course.name;
@@ -157,12 +155,7 @@
 
       var top = el("div", "c-top");
       var tile = el("span", "tile");
-      if (course.image) {
-        var pic = el("img", "tile-img");
-        pic.src = course.image; pic.width = 72; pic.height = 72; pic.alt = "";
-        tile.classList.add("has-img");
-        tile.appendChild(pic);
-      } else tile.appendChild(MS.icon(course.icon, 30));
+      tile.appendChild(MS.icon(course.icon, 30));
       top.appendChild(tile);
       var titles = el("div");
       titles.appendChild(el("p", "course-crumb", crumb));
@@ -278,11 +271,21 @@
 
       /* ---------- عارض الـ PDF ---------- */
       var dlg = $("viewer"), frame = $("viewerFrame");
+      var activeNoteKey = "";
+      $("lectureNotes").addEventListener("input", function () {
+        if (!activeNoteKey) return;
+        var notes = MS.load("ms.notes", {});
+        notes[activeNoteKey] = this.value;
+        MS.save("ms.notes", notes);
+      });
       $("viewerClose").appendChild(MS.icon("close", 22));
             function showViewer(url, title) {
+        activeNoteKey = course.id + "|" + url;
+        $("lectureNotes").value = MS.load("ms.notes", {})[activeNoteKey] || "";
         $("viewerTitle").textContent = title;
         $("viewerOpen").href = url;
         $("viewerDl").href = url;
+        $("annotateLink").href = "pdf-notes.html?file=" + encodeURIComponent(url);
         if (dlg.showModal) {
           $("viewerLoading").hidden = false;
           frame.src = url;
@@ -308,11 +311,65 @@
         return SITE.filesBase + path.split("/").map(encodeURIComponent).join("/");
       }
 
+      /* عنصر ملف أو رابط: المحاضرات والاختبارات وأسئلة السنوات السابقة تستعمل الشكل نفسه.
+         الرابط الخارجي يُفتح في تبويب جديد، والـ PDF في العارض. */
+      var DATE_LOCALE = MS.lang === "en" ? "en-GB" : MS.lang === "fa" ? "fa-IR-u-nu-latn" : "ar-u-nu-latn";
+      function fileItem(f) {
+        var li = el("li");
+        var a = el("a", "file-link");
+        var url = f.url || fileUrl(f.path);
+        var kind = MS.fileKind(f);
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.appendChild(el("span", "file-ico " + kind.cls, kind.ico));
+        var fm = el("span", "file-main");
+        fm.appendChild(el("span", "file-name en", f.label));
+        if (f.added) {
+          var t = el("time", "file-date", new Date(f.added + "T00:00:00").toLocaleDateString(DATE_LOCALE, { day: "numeric", month: "long", year: "numeric" }));
+          t.setAttribute("datetime", f.added);
+          fm.appendChild(t);
+        }
+        a.appendChild(fm);
+        a.appendChild(el("span", "file-open", kind.open));
+        if (!f.external) {
+          a.addEventListener("click", function (e) {
+            e.preventDefault();
+            openViewer(url, course.name + " / " + f.label);
+          });
+        }
+        li.appendChild(a);
+        // ملخص الدراسة المحلي لهذا الملف (قراءة فقط؛ js/study-summary.js)
+        if (!f.external && window.MedixaStudySummary) {
+          var sum = MedixaStudySummary.element(url, { locale: DATE_LOCALE });
+          if (sum) li.appendChild(sum);
+        }
+        return li;
+      }
+
+      /* اختبارات تفاعلية وأسئلة السنوات السابقة الخاصة بالمادة كلها (من صفحة الرفع) */
+      var extras = (course.extras || []).slice().sort(function (a, b) {
+        var order = { quiz: 0, exam: 1 };
+        return (order[a.type] - order[b.type]) || (b.added || "").localeCompare(a.added || "");
+      });
+      if (extras.length) {
+        var xHead = el("div", "list-head");
+        xHead.appendChild(el("h2", "", "الاختبارات وأسئلة السنوات السابقة"));
+        root.insertBefore(xHead, listHead);
+        var xList = el("ul", "files");
+        extras.forEach(function (f) { xList.appendChild(fileItem(f)); });
+        root.insertBefore(xList, listHead);
+      }
+
       if (!course.lectures.length) {
-        var empty = el("div", "empty");
-        empty.appendChild(el("strong", "", "لم تُرفع ملفات هذه المادة بعد"));
-        empty.appendChild(el("p", "", "ستظهر المحاضرات هنا فور رفعها."));
-        root.appendChild(empty);
+        if (!extras.length) {
+          var empty = el("div", "empty");
+          empty.appendChild(el("strong", "", "لم تُرفع ملفات هذه المادة بعد"));
+          empty.appendChild(el("p", "", "ستظهر المحاضرات هنا فور رفعها."));
+          root.appendChild(empty);
+        } else {
+          root.removeChild(listHead);
+        }
       } else {
         var sorted = course.lectures.slice().sort(function (a, b) { return a.number - b.number; });
         sorted.forEach(function (lec, i) {
@@ -378,33 +435,19 @@
             MS.toast(on ? "أُضيفت المحاضرة إلى قائمة المراجعة" : "أُزيلت من قائمة المراجعة");
           });
           tools.appendChild(rv);
+
+          // وضع الدراسة: يظهر فقط للمحاضرات التي جُهّز لها محتوى (study: true في courses.js)
+          if (lec.study) {
+            var sl = el("a", "mark-btn study-link");
+            sl.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number;
+            sl.appendChild(MS.icon("book", 18));
+            sl.appendChild(el("span", "", "ذاكرها خطوة بخطوة"));
+            tools.insertBefore(sl, tools.firstChild);
+          }
           body.appendChild(tools);
 
           var list = el("ul", "files");
-          lec.files.forEach(function (f) {
-            var li = el("li");
-            var a = el("a", "file-link");
-            var url = f.url || fileUrl(f.path);
-            a.href = url;
-            a.target = "_blank";
-            a.rel = "noopener";
-            a.appendChild(el("span", "file-ico", "PDF"));
-            var fm = el("span", "file-main");
-            fm.appendChild(el("span", "file-name en", f.label));
-            if (f.added) {
-              var t = el("time", "file-date", new Date(f.added + "T00:00:00").toLocaleDateString(MS.lang === "en" ? "en-GB" : MS.lang === "fa" ? "fa-IR-u-nu-latn" : "ar-u-nu-latn", { day: "numeric", month: "long", year: "numeric" }));
-              t.setAttribute("datetime", f.added);
-              fm.appendChild(t);
-            }
-            a.appendChild(fm);
-            a.appendChild(el("span", "file-open", "فتح الملف"));
-            a.addEventListener("click", function (e) {
-              e.preventDefault();
-              openViewer(url, course.name + " / " + f.label);
-            });
-            li.appendChild(a);
-            list.appendChild(li);
-          });
+          lec.files.forEach(function (f) { list.appendChild(fileItem(f)); });
           body.appendChild(list);
           d.appendChild(body);
           root.appendChild(d);

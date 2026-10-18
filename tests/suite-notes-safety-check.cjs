@@ -1,0 +1,1 @@
+const fs=require('fs'),assert=require('assert');const s=fs.readFileSync('site/js/study-suite-v85.js','utf8');assert(s.includes("const key=prefix+'splitNotes'"));assert(s.includes("raw===null?{}:JSON.parse(raw)"));assert(s.includes("localStorage.getItem(key)!==payload"));assert(s.includes('انسخ النص قبل مغادرة الصفحة'));console.log('PASS: notes autosave read and write guards');

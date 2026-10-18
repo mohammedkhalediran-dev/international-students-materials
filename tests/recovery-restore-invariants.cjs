@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const s=fs.readFileSync('site/js/study-recovery-v88.js','utf8');
+assert.match(s,/restoredPage=previous\.page/,'resume captures saved page');
+assert.match(s,/page:restoredPage\|\|pageNow\(\)/,'first save prefers restored page');
+assert.match(s,/addEventListener\('scroll',\(\)=>\{restoredPage=null/,'subsequent scroll clears override');
+assert.match(s,/aria-live','polite'/,'recovery announcement is accessible');
+assert.match(s,/aria-label','استعادة آخر صفحة محفوظة'/,'resume action is named');
+assert.match(s,/if\(!storageOK\|\|previous\|\|pendingResume/,'unsafe save remains blocked');
+console.log('PASS: 6 recovery restore invariants');

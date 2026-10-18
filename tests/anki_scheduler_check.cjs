@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const a=require('../site/js/anki-scheduler.js');
+const now=1760000000000;
+const fresh={id:'a'};
+assert.equal(a.grade(fresh,'again',now).due-now,60000);
+assert.equal(a.grade(fresh,'hard',now).due-now,360000);
+assert.equal(a.grade(fresh,'good',now).due-now,600000);
+assert.equal(a.grade(fresh,'easy',now).interval,4);
+const learn=a.grade(fresh,'good',now);
+assert.equal(a.grade(learn,'good',now+600000).interval,1);
+const review=a.grade(learn,'good',now+600000);
+assert.ok(a.grade(review,'good',now+86400000).interval>=2);
+assert.equal(a.grade(review,'again',now).srsState,'learning');
+assert.equal(a.isDue({due:now+1},now),false);
+assert.equal(a.isDue({due:now},now),true);
+assert.equal(a.grade({interval:10,reviews:4},'good',now).srsState,'review');
+console.log('Anki scheduler: 10 assertions passed');
