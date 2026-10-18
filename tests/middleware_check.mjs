@@ -2,6 +2,7 @@
 import { onRequest } from "../functions/_middleware.js";
 import { handleAuth } from "../functions/_lib/auth.js";
 import { createMockD1 } from "./mock_d1.mjs";
+import { mint, fakeFetch, CLIENT_ID } from "./google_token.mjs";
 
 let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log("FAIL", m); } };
@@ -20,7 +21,8 @@ ok((await text(await run(env, "/files/x/a.pdf"))).startsWith("401"), "pdf blocke
 for (const p of ["/login.html", "/css/style.css", "/js/auth.js", "/assets/icon-192.png", "/api/auth/login", "/sw.js"])
   ok((await text(await run(env, p, html))).endsWith("PASSED"), "open path " + p);
 
-const reg = await handleAuth(new Request("https://m.test/api/auth/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "s@x.com", name: "S", password: "password1" }) }), env, {});
+const envG = { ...env, GOOGLE_CLIENT_ID: CLIENT_ID };
+const reg = await handleAuth(new Request("https://m.test/api/auth/google", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ credential: await mint() }) }), envG, { fetch: fakeFetch });
 const cookie = reg.headers.get("set-cookie").split(";")[0];
 ok((await text(await run(env, "/files/x/a.pdf", { cookie }))).endsWith("PASSED"), "logged-in user passes");
 console.log(fails ? fails + " failures" : "MIDDLEWARE OK");

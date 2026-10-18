@@ -1,10 +1,10 @@
--- قاعدة بيانات Medixa (Cloudflare D1): الحسابات والجلسات وبيانات الطالب المتزامنة
+-- قاعدة بيانات Medixa (Cloudflare D1): حسابات Google وجلساتها وبيانات الطالب المتزامنة.
+-- لا نخزّن كلمات مرور: الدخول بحساب Google فقط. نخزّن الاسم والبريد فقط.
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  email TEXT NOT NULL UNIQUE,
+  google_sub TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL,
   name TEXT NOT NULL,
-  salt TEXT NOT NULL,
-  hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'student',
   active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL
@@ -21,9 +21,4 @@ CREATE TABLE IF NOT EXISTS user_data (
   v TEXT NOT NULL,
   t INTEGER NOT NULL,
   PRIMARY KEY (user_id, k)
-);
-CREATE TABLE IF NOT EXISTS attempts (
-  k TEXT PRIMARY KEY,
-  n INTEGER NOT NULL,
-  first INTEGER NOT NULL
 );

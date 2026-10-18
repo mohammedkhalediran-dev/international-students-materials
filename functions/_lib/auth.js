@@ -1,31 +1,23 @@
-// functions/_lib/auth.js — الحسابات ومزامنة بيانات الطالب على Cloudflare D1.
-// يحتاج ربط D1 باسم DB. متغيرات اختيارية: REGISTER_CODE (رمز دعوة للتسجيل)، ADMIN_EMAILS (بريد المشرفين مفصولاً بفاصلة)،
-// REQUIRE_LOGIN=1 (يقيّد الموقع كله بالدخول؛ يطبّقه functions/_middleware.js).
-// المسارات: POST /api/auth/register|login|logout، GET /api/auth/me، GET|PUT /api/sync،
+// functions/_lib/auth.js — الدخول بحساب Google ومزامنة بيانات الطالب على Cloudflare D1.
+// يحتاج ربط D1 باسم DB ومتغير GOOGLE_CLIENT_ID. اختياري: ADMIN_EMAILS (بريد المشرفين مفصولاً بفاصلة)،
+// REQUIRE_LOGIN=1 (يقيّد الموقع كله؛ يطبّقه functions/_middleware.js).
+// المسارات: GET /api/auth/config، POST /api/auth/google|logout، GET /api/auth/me، GET|PUT /api/sync،
 //           GET /api/auth/users وPOST /api/auth/user (للمشرف فقط).
 
 export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
-const ITER = 100000; // أقصى ما تسمح به Cloudflare Workers لـ PBKDF2
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const MAX_VALUE = 200 * 1024;
-const LOCK = { attempts: 8, ms: 15 * 60 * 1000 };
 const COOKIE = "ms_session";
 
 const enc = new TextEncoder();
 const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, "0")).join("");
 const unhex = (s) => Uint8Array.from(s.match(/../g) || [], (h) => parseInt(h, 16));
 async function sha(s) { return hex(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)))); }
-async function pbkdf2(password, saltHex) {
-  const key = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: unhex(saltHex), iterations: ITER }, key, 256);
-  return hex(new Uint8Array(bits));
+function b64u(str) {
+  const b = atob(str.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(str.length / 4) * 4, "="));
+  return Uint8Array.from(b, (c) => c.charCodeAt(0));
 }
-function safeEqual(a, b) {
-  if (a.length !== b.length) return false;
-  let d = 0;
-  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return d === 0;
-}
+const dec = new TextDecoder();
 const rand = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
 
 function json(body, status = 200, headers = {}) {
@@ -64,8 +56,7 @@ async function startSession(env, userId, req, now) {
 }
 
 const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role });
-const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
-const adminList = (env) => String(env.ADMIN_EMAILS || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+const adminList = (env) => String(env.ADMIN_EMAILS || "").toLowerCase().split(",").map((x) => x.trim()).filter(Boolean);
 
 async function readJson(req) {
   if (!(req.headers.get("content-type") || "").includes("application/json")) return null;
@@ -78,64 +69,63 @@ function sameOrigin(req) {
   return !o || o === new URL(req.url).origin;
 }
 
-async function lockState(env, key, now) {
-  const rec = await env.DB.prepare("SELECT n, first FROM attempts WHERE k = ?").bind(key).first();
-  return rec && now - rec.first < LOCK.ms ? rec : null;
-}
-async function bumpAttempt(env, key, now) {
-  const rec = await lockState(env, key, now);
-  if (rec) await env.DB.prepare("UPDATE attempts SET n = n + 1 WHERE k = ?").bind(key).run();
-  else await env.DB.prepare("INSERT OR REPLACE INTO attempts (k, n, first) VALUES (?, 1, ?)").bind(key, now).run();
+/* ---------- التحقق من رمز Google (ID token) ---------- */
+const CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs";
+let certCache = { keys: null, exp: 0 };
+async function googleKeys(opts, now) {
+  if (certCache.keys && certCache.exp > now) return certCache.keys;
+  const res = await (opts.fetch || fetch)(CERTS_URL);
+  if (!res.ok) throw new Error("certs_unavailable");
+  const keys = (await res.json()).keys || [];
+  certCache = { keys, exp: now + 3600 * 1000 };
+  return keys;
 }
 
-async function register(req, env, now) {
-  const b = await readJson(req);
-  if (!b) return fail("bad_request", 400);
-  const email = String(b.email || "").trim().toLowerCase();
-  const name = String(b.name || "").trim().slice(0, 60);
-  const password = String(b.password || "");
-  if (!EMAIL_RE.test(email)) return fail("bad_email", 400);
-  if (!name) return fail("bad_name", 400);
-  if (password.length < 8 || password.length > 200) return fail("weak_password", 400);
-  if (env.REGISTER_CODE) {
-    const a = await sha(String(b.code || "")), c = await sha(String(env.REGISTER_CODE));
-    if (!safeEqual(a, c)) return fail("bad_code", 403);
-  }
-  const salt = rand(16);
-  const hash = await pbkdf2(password, salt);
-  const role = adminList(env).includes(email) ? "admin" : "student";
+export async function verifyGoogleToken(token, clientId, opts = {}, now = Date.now()) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3 || !clientId) return null;
+  let header, payload;
   try {
-    const r = await env.DB.prepare("INSERT INTO users (email, name, salt, hash, role, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)")
-      .bind(email, name, salt, hash, role, now).run();
-    const id = r.meta && r.meta.last_row_id;
-    const cookie = await startSession(env, id, req, now);
-    return json({ ok: true, user: { id, email, name, role } }, 200, { "set-cookie": cookie });
-  } catch (e) {
-    if (/UNIQUE/i.test(String(e && e.message))) return fail("email_taken", 409);
-    throw e;
-  }
+    header = JSON.parse(dec.decode(b64u(parts[0])));
+    payload = JSON.parse(dec.decode(b64u(parts[1])));
+  } catch { return null; }
+  if (header.alg !== "RS256" || !header.kid) return null;
+  let keys = await googleKeys(opts, now);
+  let jwk = keys.find((k) => k.kid === header.kid);
+  if (!jwk) { certCache = { keys: null, exp: 0 }; keys = await googleKeys(opts, now); jwk = keys.find((k) => k.kid === header.kid); }
+  if (!jwk) return null;
+  const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+  const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64u(parts[2]), enc.encode(parts[0] + "." + parts[1]));
+  if (!ok) return null;
+  if (payload.iss !== "https://accounts.google.com" && payload.iss !== "accounts.google.com") return null;
+  if (payload.aud !== clientId) return null;
+  if (typeof payload.exp !== "number" || payload.exp * 1000 <= now) return null;
+  if (payload.email_verified !== true && payload.email_verified !== "true") return null;
+  if (typeof payload.sub !== "string" || !payload.sub || typeof payload.email !== "string") return null;
+  return payload;
 }
 
-async function login(req, env, ip, now) {
+async function googleLogin(req, env, now, opts) {
+  if (!env.GOOGLE_CLIENT_ID) return fail("not_configured", 503);
   const b = await readJson(req);
-  if (!b) return fail("bad_request", 400);
-  const email = String(b.email || "").trim().toLowerCase();
-  const password = String(b.password || "");
-  const key = "login/" + (await sha(email + "|" + ip)).slice(0, 32);
-  const rec = await lockState(env, key, now);
-  if (rec && rec.n >= LOCK.attempts) return fail("locked", 429);
+  if (!b || typeof b.credential !== "string") return fail("bad_request", 400);
+  let p;
+  try { p = await verifyGoogleToken(b.credential, env.GOOGLE_CLIENT_ID, opts, now); } catch { return fail("google_unavailable", 502); }
+  if (!p) return fail("bad_token", 401);
+  const email = p.email.toLowerCase();
+  const name = String(p.name || email.split("@")[0]).trim().slice(0, 60) || "Medixa";
+  const isAdmin = adminList(env).includes(email);
 
-  const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
-  // نحسب التجزئة دائماً حتى لا يُعرف من الزمن هل البريد مسجّل
-  const given = await pbkdf2(password, u ? u.salt : "00".repeat(16));
-  if (!u || !u.active || !safeEqual(given, u.hash)) {
-    await bumpAttempt(env, key, now);
-    return fail("bad_credentials", 401);
-  }
-  await env.DB.prepare("DELETE FROM attempts WHERE k = ?").bind(key).run();
-  if (adminList(env).includes(email) && u.role !== "admin") {
-    await env.DB.prepare("UPDATE users SET role = 'admin' WHERE id = ?").bind(u.id).run();
-    u.role = "admin";
+  let u = await env.DB.prepare("SELECT * FROM users WHERE google_sub = ?").bind(p.sub).first();
+  if (!u) {
+    const r = await env.DB.prepare("INSERT INTO users (google_sub, email, name, role, active, created_at) VALUES (?, ?, ?, ?, 1, ?)")
+      .bind(p.sub, email, name, isAdmin ? "admin" : "student", now).run();
+    u = { id: r.meta && r.meta.last_row_id, email, name, role: isAdmin ? "admin" : "student", active: 1 };
+  } else {
+    if (!u.active) return fail("disabled", 403);
+    const role = isAdmin ? "admin" : u.role;
+    await env.DB.prepare("UPDATE users SET email = ?, name = ?, role = ? WHERE id = ?").bind(email, name, role, u.id).run();
+    u = { ...u, email, name, role };
   }
   const cookie = await startSession(env, u.id, req, now);
   return json({ ok: true, user: publicUser(u) }, 200, { "set-cookie": cookie });
@@ -187,12 +177,6 @@ async function adminUpdate(req, env) {
     await env.DB.prepare("UPDATE users SET active = ? WHERE id = ?").bind(b.active ? 1 : 0, b.id).run();
     if (!b.active) await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(b.id).run();
   }
-  if (typeof b.password === "string") {
-    if (b.password.length < 8 || b.password.length > 200) return fail("weak_password", 400);
-    const salt = rand(16);
-    await env.DB.prepare("UPDATE users SET salt = ?, hash = ? WHERE id = ?").bind(salt, await pbkdf2(b.password, salt), b.id).run();
-    await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(b.id).run();
-  }
   return json({ ok: true });
 }
 
@@ -202,13 +186,12 @@ export async function handleAuth(req, env, opts = {}) {
   const p = url.pathname.replace(/\/+$/, "");
   if (!p.startsWith("/api/auth/") && p !== "/api/sync") return null;
   const now = (opts.now || Date.now)();
-  const ip = opts.ip || "";
+  if (p === "/api/auth/config" && req.method === "GET") return json({ ok: true, googleClientId: env.GOOGLE_CLIENT_ID || "", ready: !!(env.DB && env.GOOGLE_CLIENT_ID) });
   if (!env.DB) return fail("not_configured", 503);
 
   if (req.method !== "GET" && !sameOrigin(req)) return fail("forbidden", 403);
 
-  if (p === "/api/auth/register" && req.method === "POST") return register(req, env, now);
-  if (p === "/api/auth/login" && req.method === "POST") return login(req, env, ip, now);
+  if (p === "/api/auth/google" && req.method === "POST") return googleLogin(req, env, now, opts);
   if (p === "/api/auth/logout" && req.method === "POST") return logout(req, env);
 
   const user = await currentUser(req, env, now);

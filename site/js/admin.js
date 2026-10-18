@@ -35,16 +35,6 @@
       });
       acts.appendChild(toggle);
 
-      var reset = el("button", "btn btn-secondary btn-sm", "كلمة مرور جديدة");
-      reset.type = "button";
-      reset.addEventListener("click", function () {
-        var pw = window.prompt("اكتب كلمة المرور الجديدة (8 أحرف على الأقل) وأبلغها للطالب:");
-        if (!pw) return;
-        MSAuth.api("POST", "auth/user", { id: u.id, password: pw }).then(function (r) {
-          msg(r.status === 200 ? "تم تعيين كلمة المرور الجديدة." : "كلمة المرور قصيرة أو حدث خطأ.", r.status === 200);
-        });
-      });
-      acts.appendChild(reset);
       row.appendChild(acts);
       box.appendChild(row);
     });
