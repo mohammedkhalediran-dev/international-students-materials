@@ -128,7 +128,7 @@
   };
 
   // صفحة الدخول تدير نفسها (js/login.js)
-  if (/\/(login|admin)\.html$/.test(location.pathname)) return;
+  if (/\/(login|admin|announce)\.html$/.test(location.pathname)) return;
 
   MSAuth.me().then(function () {
     paintHeader();

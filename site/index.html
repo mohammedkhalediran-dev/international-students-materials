@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=p3-22">
+  <link rel="stylesheet" href="css/style.css?v=p3-23">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -123,6 +123,19 @@
         <div class="result-line" id="resultLine" aria-live="polite"></div>
       </div>
       <div id="groups"></div>
+    </div>
+  </section>
+
+  <!-- ===== تبليغات ممثل الدفعة (تظهر فقط إن وُجد تبليغ) ===== -->
+  <section class="section" id="announcements" hidden>
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>التبليغات</h2>
+          <p>آخر ما نشره ممثل الدفعة والمشرفون.</p>
+        </div>
+      </div>
+      <div class="ann-list" id="annList"></div>
     </div>
   </section>
 
@@ -274,12 +287,12 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-22"></script>
+  <script src="data/courses.js?v=p3-23"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/i18n.js?v=p3-22"></script>
-  <script src="js/app.js?v=p3-22"></script>
-  <script src="js/auth.js?v=p3-22"></script>
-  <script src="js/nav.js?v=p3-22"></script>
+  <script src="js/i18n.js?v=p3-23"></script>
+  <script src="js/app.js?v=p3-23"></script>
+  <script src="js/auth.js?v=p3-23"></script>
+  <script src="js/nav.js?v=p3-23"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
@@ -730,6 +743,23 @@
         var list = el("div", "latest card");
         items.slice(0, 6).forEach(function (it) { list.appendChild(lectureItem(it.c, it.l)); });
         box.appendChild(list);
+      })();
+
+      /* ---------- التبليغات: من الخادم؛ بلا قاعدة بيانات أو بلا تبليغات يبقى القسم مخفياً ---------- */
+      (function renderAnnouncements() {
+        if (!window.fetch) return;
+        fetch("api/announcements", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+          if (!d || !d.items || !d.items.length) return;
+          var box = $("annList");
+          d.items.slice(0, 5).forEach(function (a) {
+            var card = el("article", "card ann-item");
+            card.appendChild(el("h3", "ann-title", a.title));
+            if (a.body) card.appendChild(el("p", "ann-body", a.body));
+            card.appendChild(el("p", "ann-meta", a.by + " · " + fmtDate(new Date(a.at).toISOString())));
+            box.appendChild(card);
+          });
+          $("announcements").hidden = false;
+        }).catch(function () { /* بلا اتصال: لا تبليغات */ });
       })();
 
       /* ---------- التذييل ---------- */

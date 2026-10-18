@@ -70,8 +70,13 @@ export async function parseCodes(raw) {
 
 /* التحقق من الرمز مع قفل مؤقت بعد محاولات خاطئة كثيرة (حسب عنوان الجهاز) */
 async function authenticate(req, deps) {
+  // حساب مسجَّل بدور رافع أو ممثل أو مشرف (يوفّره deps.account على Cloudflare)؛ يُهمل إن أُرسل رمز رفع
+  if (deps.account && !req.headers.get("x-upload-code")) {
+    const a = await deps.account(req);
+    if (a && a.name) return { name: a.name };
+  }
   const users = await parseCodes(deps.env("UPLOAD_CODES"));
-  if (!users.length) return { res: fail("not_configured", 503) };
+  if (!users.length) return { res: deps.account ? fail("unauthorized", 401) : fail("not_configured", 503) };
 
   const now = deps.now();
   const key = "attempts/" + hex(await sha(deps.ip || "unknown")).slice(0, 32);

@@ -5,6 +5,8 @@
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
   function msg(text, ok) { var n = $("msg"); n.textContent = text || ""; n.hidden = !text; n.className = "up-msg" + (ok ? " is-ok" : ""); }
 
+  var ROLE_NAME = { student: "طالب", uploader: "رافع ملفات", rep: "ممثل الدفعة", admin: "مشرف" };
+
   function load() {
     MSAuth.api("GET", "auth/users").then(function (r) {
       if (r.status === 401) { location.href = "login.html?next=admin.html"; return; }
@@ -21,11 +23,24 @@
     users.forEach(function (u) {
       var row = el("div", "up-item");
       var main = el("div", "up-item-main");
-      main.appendChild(el("div", "up-item-name", u.name + (u.role === "admin" ? " (مشرف)" : "") + (u.active ? "" : " (موقوف)")));
+      main.appendChild(el("div", "up-item-name", u.name + (u.role !== "student" ? " (" + (ROLE_NAME[u.role] || u.role) + ")" : "") + (u.active ? "" : " (موقوف)")));
       main.appendChild(el("div", "up-item-sub up-ltr", u.email));
       row.appendChild(main);
 
       var acts = el("div", "up-actions");
+      if (u.role !== "admin") {
+        var pick = el("select", "field");
+        pick.setAttribute("aria-label", "دور " + u.name);
+        ["student", "uploader", "rep"].forEach(function (r) {
+          var o = el("option", "", ROLE_NAME[r]); o.value = r; if (u.role === r) o.selected = true; pick.appendChild(o);
+        });
+        pick.addEventListener("change", function () {
+          MSAuth.api("POST", "auth/user", { id: u.id, role: pick.value }).then(function (r) {
+            if (r.status === 200) { msg("تم تغيير الدور.", true); load(); } else { msg("تعذّر تغيير الدور."); load(); }
+          });
+        });
+        acts.appendChild(pick);
+      }
       var toggle = el("button", "btn btn-secondary btn-sm", u.active ? "إيقاف" : "تفعيل");
       toggle.type = "button";
       toggle.addEventListener("click", function () {

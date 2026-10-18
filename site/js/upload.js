@@ -20,6 +20,7 @@
 
   var ERR = {
     bad_code: "الرمز غير صحيح.",
+    unauthorized: "سجّل الدخول بحساب مصرّح له بالرفع، أو اكتب رمز الرفع.",
     locked: "محاولات خاطئة كثيرة. انتظر ربع ساعة ثم حاول مرة أخرى.",
     not_configured: "لم تُضبط رموز الرفع بعد في إعدادات Cloudflare.",
     bad_request: "تأكد من تعبئة كل الحقول بشكل صحيح.",
@@ -814,4 +815,5 @@
   renderBoard();
   var saved = stored(KEY);
   if (saved) login(saved, true);
+  else login("", true); // حساب مسجَّل بدور رافع أو ممثل أو مشرف يدخل بلا رمز
 })();

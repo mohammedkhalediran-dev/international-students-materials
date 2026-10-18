@@ -2,9 +2,16 @@
 // يحتاج ربط D1 باسم DB ومتغير GOOGLE_CLIENT_ID. اختياري: ADMIN_EMAILS (بريد المشرفين مفصولاً بفاصلة)،
 // REQUIRE_LOGIN=1 (يقيّد الموقع كله؛ يطبّقه functions/_middleware.js).
 // المسارات: GET /api/auth/config، POST /api/auth/google|logout، GET /api/auth/me، GET|PUT /api/sync،
-//           GET /api/auth/users وPOST /api/auth/user (للمشرف فقط).
+//           GET /api/auth/users وPOST /api/auth/user (للمشرف فقط: إيقاف/تفعيل وتعيين الدور).
+//           GET /api/announcements (عام)، POST /api/announcements وPOST /api/announcements/delete (ممثل الدفعة أو المشرف).
+// الأدوار: student (الأصل) | uploader (رفع الملفات) | rep (ممثل الدفعة: رفع + تبليغات) | admin (من ADMIN_EMAILS).
 
 export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
+export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
+export const UPLOAD_ROLES = ["uploader", "rep", "admin"];
+export const ANNOUNCE_ROLES = ["rep", "admin"];
+const MAX_TITLE = 120;
+const MAX_BODY = 2000;
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const MAX_VALUE = 200 * 1024;
 const COOKIE = "ms_session";
@@ -173,6 +180,13 @@ async function adminUsers(env) {
 async function adminUpdate(req, env) {
   const b = await readJson(req);
   if (!b || !Number.isInteger(b.id)) return fail("bad_request", 400);
+  if (b.role !== undefined) {
+    if (!ROLES.includes(b.role)) return fail("bad_role", 400);
+    const t = await env.DB.prepare("SELECT role FROM users WHERE id = ?").bind(b.id).first();
+    if (!t) return fail("not_found", 404);
+    if (t.role === "admin") return fail("admin_locked", 409); // المشرف يُحدَّد من ADMIN_EMAILS لا من هنا
+    await env.DB.prepare("UPDATE users SET role = ? WHERE id = ?").bind(b.role, b.id).run();
+  }
   if (typeof b.active === "boolean") {
     await env.DB.prepare("UPDATE users SET active = ? WHERE id = ?").bind(b.active ? 1 : 0, b.id).run();
     if (!b.active) await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(b.id).run();
@@ -180,12 +194,51 @@ async function adminUpdate(req, env) {
   return json({ ok: true });
 }
 
+/* ---------- التبليغات ---------- */
+async function announcementsList(env) {
+  if (!env.DB) return json({ ok: true, items: [] });
+  const rows = await env.DB.prepare("SELECT id, title, body, author_name, created_at FROM announcements ORDER BY created_at DESC, id DESC LIMIT 30").all();
+  const items = (rows.results || []).map((r) => ({ id: r.id, title: r.title, body: r.body, by: r.author_name, at: r.created_at }));
+  return json({ ok: true, items });
+}
+
+async function announcementAdd(req, user, env, now) {
+  const b = await readJson(req);
+  if (!b) return fail("bad_request", 400);
+  const title = String(b.title || "").trim();
+  const body = String(b.body || "").trim();
+  if (!title || title.length > MAX_TITLE || body.length > MAX_BODY) return fail("bad_request", 400);
+  const r = await env.DB.prepare("INSERT INTO announcements (title, body, author_id, author_name, created_at) VALUES (?, ?, ?, ?, ?)")
+    .bind(title, body, user.id, user.name, now).run();
+  return json({ ok: true, id: r.meta && r.meta.last_row_id });
+}
+
+async function announcementDelete(req, env) {
+  const b = await readJson(req);
+  if (!b || !Number.isInteger(b.id)) return fail("bad_request", 400);
+  await env.DB.prepare("DELETE FROM announcements WHERE id = ?").bind(b.id).run();
+  return json({ ok: true });
+}
+
+/* رفع بالحساب: يستعمله core.mjs عبر deps.account. الدور رافع أو ممثل أو مشرف، وطلبات POST من نفس الموقع فقط */
+export function uploadAccount(env) {
+  return async (req) => {
+    if (!env.DB) return null;
+    const o = req.headers.get("origin");
+    if (req.method !== "GET" && o && o !== new URL(req.url).origin) return null;
+    const u = await currentUser(req, env);
+    return u && UPLOAD_ROLES.includes(u.role) ? { name: u.name } : null;
+  };
+}
+
 /* نقطة الدخول: يعيد null إن لم يكن المسار من اختصاصه */
 export async function handleAuth(req, env, opts = {}) {
   const url = new URL(req.url);
   const p = url.pathname.replace(/\/+$/, "");
-  if (!p.startsWith("/api/auth/") && p !== "/api/sync") return null;
+  const isAnn = p === "/api/announcements" || p === "/api/announcements/delete";
+  if (!p.startsWith("/api/auth/") && p !== "/api/sync" && !isAnn) return null;
   const now = (opts.now || Date.now)();
+  if (p === "/api/announcements" && req.method === "GET") return announcementsList(env);
   if (p === "/api/auth/config" && req.method === "GET") return json({ ok: true, googleClientId: env.GOOGLE_CLIENT_ID || "", ready: !!(env.DB && env.GOOGLE_CLIENT_ID) });
   if (!env.DB) return fail("not_configured", 503);
 
@@ -200,6 +253,11 @@ export async function handleAuth(req, env, opts = {}) {
 
   if (p === "/api/sync" && req.method === "GET") return syncGet(user, env);
   if (p === "/api/sync" && req.method === "PUT") return syncPut(req, user, env);
+
+  if (isAnn && req.method === "POST") {
+    if (!ANNOUNCE_ROLES.includes(user.role)) return fail("forbidden", 403);
+    return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
+  }
 
   if (user.role !== "admin") return fail("forbidden", 403);
   if (p === "/api/auth/users" && req.method === "GET") return adminUsers(env);
