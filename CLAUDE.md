@@ -65,3 +65,5 @@
 - تنبيه: قد تُحجب خدمات Google على بعض الشبكات؛ الصفحة تعرض رسالة وتبقى «المتابعة كزائر» تعمل.
 - رمز الرفع (UPLOAD_CODES) ما زال منفصلاً عن الحسابات.
 - فحوص إضافية: node --no-warnings tests/auth_api_check.mjs ، node --no-warnings tests/middleware_check.mjs ، python3 -I tests/auth_e2e.py
+
+- قاعدة D1 اسمها medixa (id: 8f0191c3-bac0-4dbc-8717-61e35c3196a5) أُنشئت وطُبّق عليها المخطط (2026-10-18). المتبقي بيد محمد: ربطها بالمشروع باسم DB، وإضافة GOOGLE_CLIENT_ID وADMIN_EMAILS في Cloudflare. صفحتا privacy وterms مفتوحتان في البوابة.

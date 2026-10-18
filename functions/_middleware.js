@@ -2,7 +2,7 @@
 // بدونه يبقى الموقع مفتوحاً كما هو. يحمي الصفحات وملفات PDF لأن Cloudflare يشغّل هذا قبل الملفات الثابتة.
 import { currentUser } from "./_lib/auth.js";
 
-const OPEN = [/^\/login\.html$/, /^\/css\//, /^\/js\//, /^\/assets\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/api\/auth\//];
+const OPEN = [/^\/(login|privacy|terms)\.html$/, /^\/css\//, /^\/js\//, /^\/assets\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/api\/auth\//];
 
 export async function onRequest({ request, env, next }) {
   if (env.REQUIRE_LOGIN !== "1" || !env.DB) return next();
