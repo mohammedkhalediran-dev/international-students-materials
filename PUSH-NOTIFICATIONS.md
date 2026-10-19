@@ -29,3 +29,7 @@ Decisions by Mohammed (2026-10-19): guests and signed-in students can turn notif
 ## Tests
 - `tests/push_check.mjs` (npm test): payload decrypted by an independent RFC 8291 implementation, VAPID signature verified, validation, semester filtering, expired cleanup, which uploads notify, map freshness.
 - `tests/step49_course_push_browser.py`: picker, sidebar, enable/disable, lecture → right semester only, semester change, announcement → all, iPhone instructions. The browser push service is stubbed; real Apple/Google delivery is not tested here.
+
+
+## تفعيل تلقائي (Step 51، 2026-10-19)
+من سجّل الدخول تُفعَّل إشعاراته تلقائياً: إن كان الإذن ممنوحاً يُشترك بصمت، وإلا تظهر نافذة الإذن عند أول لمسة بعد الدخول (المتصفحات وiOS تشترط لمسة)، مرة واحدة لكل جهاز (ms.push.asked). من أوقفها بنفسه لا تعود (ms.push.off). الزائر يفعّلها بزر القائمة. الرفض لا يُكرَّر.

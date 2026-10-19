@@ -96,11 +96,41 @@
     if (!serverKey) return setRow("hidden");
     if (!supported) return setRow(isIOS && !standalone ? "ios" : "hidden");
     if (Notification.permission === "denied") return setRow("denied");
-    currentSub().then(function (s) { setRow(s ? "on" : "off"); });
+    currentSub().then(function (s) { setRow(s ? "on" : "off"); autoEnable(s); });
+  }
+  /* تفعيل تلقائي لمن سجّل الدخول (بطلب محمد 2026-10-19): بلا ضغط زر الإشعارات.
+     المتصفحات (وiOS خصوصاً) تشترط لمسة من المستخدم لإظهار نافذة الإذن، فنطلبها عند أول لمسة بعد الدخول، مرة واحدة لكل جهاز.
+     إن كان الإذن ممنوحاً سابقاً يُفعَّل بصمت، ويُربط الاشتراك الحالي بالحساب. من رفض الإذن لا نعيد إزعاجه. */
+  var armed = false;
+  function autoEnable(sub) {
+    var off = false; try { off = localStorage.getItem("ms.push.off") === "1"; } catch (e) { /* لا شيء */ }
+    if (off || armed || !window.MSAuth || !mySem() || Notification.permission === "denied") return;
+    MSAuth.me().then(function (u) {
+      if (!u || armed) return;
+      if (sub || Notification.permission === "granted") { armed = true; return silentSubscribe(sub); }
+      var asked = false; try { asked = localStorage.getItem("ms.push.asked") === "1"; } catch (e) { /* لا شيء */ }
+      if (asked) return;
+      armed = true;
+      var once = function () {
+        document.removeEventListener("pointerup", once, true);
+        try { localStorage.setItem("ms.push.asked", "1"); } catch (e) { /* لا شيء */ }
+        enable();
+      };
+      document.addEventListener("pointerup", once, true);
+    }).catch(function () { /* لا شيء */ });
+  }
+  function silentSubscribe(sub) {
+    return registration().then(function (r) {
+      return sub || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(serverKey) });
+    }).then(function (s) {
+      var j = s.toJSON(); j.semester = mySem();
+      return api("POST", "subscribe", j).then(function (res) { setRow(res.status === 200 ? "on" : "error"); });
+    }).catch(function () { /* لا شيء */ });
   }
   function enable() {
     if (!mySem()) { picker(); return; }
     if (!supported) { setRow(isIOS && !standalone ? "ios" : "hidden"); return; }
+    try { localStorage.removeItem("ms.push.off"); } catch (e) { /* لا شيء */ }
     setRow("busy");
     Notification.requestPermission().then(function (p) {
       if (p !== "granted") return setRow(p === "denied" ? "denied" : "off");
@@ -113,6 +143,7 @@
     }).catch(function () { setRow("error"); });
   }
   function disable() {
+    try { localStorage.setItem("ms.push.off", "1"); } catch (e) { /* لا شيء */ } // اختيار المستخدم: لا نعيد التفعيل تلقائياً
     setRow("busy");
     currentSub().then(function (s) {
       if (!s) return setRow("off");

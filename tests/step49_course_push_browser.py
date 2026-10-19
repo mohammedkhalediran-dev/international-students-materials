@@ -121,6 +121,28 @@ try:
         ip = ios.new_page(); ip.goto(BASE + 'index.html'); ip.wait_for_timeout(1200)
         chk(ip.locator('.sb-push').get_attribute('data-state') == 'ios', 'iPhone in Safari: home-screen instructions state')
         chk('الشاشة الرئيسية' in ip.locator('.sb-push .push-note').text_content(), 'instructions mention Add to Home Screen')
+
+        # 8. signed-in student: notifications turn on by themselves (first tap), not for guests, and not again after turning off
+        def signed(name, sub):
+            c = b.new_context(); c.route('https://fonts.googleapis.com/**', lambda r: r.abort()); c.route('https://accounts.google.com/**', lambda r: r.abort())
+            c.add_init_script(STUB % json.dumps(name)); c.add_init_script("localStorage.setItem('ms.sem', '3');")
+            p = c.new_page(); p.goto(BASE + 'index.html')
+            p.evaluate("""async (s) => { const t = await (await fetch('/__test/token?email=' + s + '%40x.com&sub=sub-' + s + '&name=' + s)).text();
+                await fetch('/api/auth/google', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({credential: t})}); }""", sub)
+            p.goto(BASE + 'index.html'); p.wait_for_timeout(1500)
+            return c, p
+        c1, p1 = signed('auto1', 'auto1')
+        chk(p1.locator('.sb-push').get_attribute('data-state') == 'off', 'signed-in: not subscribed before any tap')
+        p1.mouse.click(600, 400); p1.wait_for_function("document.querySelector('.sb-push').getAttribute('data-state') === 'on'", timeout=8000)
+        chk(p1.evaluate("localStorage.getItem('ms.push.asked')") == '1', 'asked once on this device')
+        p1.reload(); p1.wait_for_timeout(1500)
+        chk(p1.locator('.sb-push').get_attribute('data-state') == 'on', 'stays on after reload')
+        p1.click('.sb-push .push-btn'); p1.wait_for_function("document.querySelector('.sb-push').getAttribute('data-state') === 'off'", timeout=8000)
+        p1.reload(); p1.wait_for_timeout(1500); p1.mouse.click(600, 400); p1.wait_for_timeout(800)
+        chk(p1.locator('.sb-push').get_attribute('data-state') == 'off', 'turned off by the student: not switched on again automatically')
+        g = b.new_context(); g.route('https://fonts.googleapis.com/**', lambda r: r.abort()); g.add_init_script(STUB % json.dumps('guest1')); g.add_init_script("localStorage.setItem('ms.sem', '3');")
+        gp = g.new_page(); gp.goto(BASE + 'index.html'); gp.wait_for_timeout(1500); gp.mouse.click(600, 400); gp.wait_for_timeout(800)
+        chk(gp.locator('.sb-push').get_attribute('data-state') == 'off', 'guest: no automatic subscription')
         b.close()
 finally:
     srv.terminate()
