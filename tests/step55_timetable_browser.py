@@ -59,7 +59,7 @@ try:
             cards = ps.locator('#ttHome .tt-card')
             chk(cards.count() == 3, f'{w}: three lectures tomorrow (draft hidden)')
             txt = ps.inner_text('#ttHome')
-            chk(all(x in txt for x in ['Pediatrics', '09:00 – 10:30', 'Neonatal Medicine', 'القاعة A', 'د. أحمد', 'Surgery', 'الجدول الجامعي', 'رسمي', 'محاضرات غداً', 'عرض الأسبوع كامل']) and 'Secret Draft' not in txt, f'{w}: subject, time, lecturer, room, header')
+            chk(all(x in txt for x in ['Pediatrics', '09:00 – 10:30', 'Neonatal Medicine', 'القاعة A', 'د. أحمد', 'Surgery', 'الجدول الجامعي', 'محاضرات غداً', 'عرض الأسبوع كامل']) and (w <= 430 or 'رسمي' in txt) and 'Secret Draft' not in txt, f'{w}: subject, time, lecturer, room, header')
             xs = [cards.nth(i).bounding_box()['x'] for i in range(3)]
             chk(xs[0] < xs[1] < xs[2], f'{w}: earliest lecture first, left to right as in the reference')
             chk(ps.evaluate("document.documentElement.scrollWidth <= innerWidth"), f'{w}: no horizontal page scroll')
@@ -68,8 +68,10 @@ try:
                 bg = ps.evaluate("getComputedStyle(document.querySelector('#ttHome .tt-panel')).borderTopColor")
                 chk(bg == 'rgb(30, 123, 215)', 'dark: blue panel border as the reference ' + bg)
             if w == 390:
-                chk(ps.locator('#ttWeekLink').bounding_box()['width'] > 300, '390: full-width week button')
-                chk(min(cards.nth(0).bounding_box()['height'], 999) >= 140, '390: readable card height')
+                hb = ps.locator('#ttHome .tt-panel').bounding_box()['height']
+                chk(hb < 240, f'390: compact section height ({hb:.0f}px)')
+                chk(ps.locator('#ttWeekLink').is_visible() and ps.locator('#ttWeekLink').bounding_box()['height'] >= 34, '390: week button visible and tappable')
+                chk(cards.nth(0).bounding_box()['height'] >= 90, '390: card still readable')
             shot(ps, f'home-dark-{w}.png')
             if w == 1440:
                 ps.locator('#ttHome .tt-card').first.click(); ps.wait_for_url('**/timetable.html?date=*'); ps.wait_for_selector('.tt-col .tt-card')
