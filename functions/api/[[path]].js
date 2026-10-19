@@ -6,6 +6,7 @@ import { handleAuth, uploadAccount, currentUser } from "../_lib/auth.js";
 import { handlePush, notify, lectureNotice } from "../_lib/push.js";
 import { handleTimetable } from "../_lib/timetable.js";
 import { handleGrades } from "../_lib/grades.js";
+import { handlePdfNotes } from "../_lib/pdfnotes.js";
 
 export async function onRequest({ request, env, waitUntil }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "", waitUntil });
@@ -14,6 +15,8 @@ export async function onRequest({ request, env, waitUntil }) {
   if (ttRes) return ttRes;
   const grRes = await handleGrades(request, env); // درجاتي الجامعية: كل طالب درجاته فقط، والرفع للمشرف (رقم الجواز لا يُخزَّن)
   if (grRes) return grRes;
+  const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط (Step 63)
+  if (pnRes) return pnRes;
   const pushRes = await handlePush(request, env, { currentUser });
   if (pushRes) return pushRes;
   if (!env.LECTURES) {
