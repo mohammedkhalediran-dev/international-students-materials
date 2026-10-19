@@ -30,6 +30,7 @@ function keysFor(loc){
     list.push({key:'medixa.reader.v1:'+abs,group:'reader',mode:'replace'});
     list.push({key:'medixa.occlusion.v1:'+abs,group:'masks',mode:'replace'});
     list.push({key:'medixa.pdf.annotations.v1:'+abs,group:'ink',mode:'merge'});
+    list.push({key:'medixa.studio.layout.v1:'+abs,group:'layout',mode:'replace'});
   }
   return {raw,abs,list,byKey:new Map(list.map(x=>[x.key,x]))};
 }

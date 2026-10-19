@@ -26,7 +26,7 @@ try:
         url = BASE + 'pdf-notes.html?file=' + urllib.parse.quote(PDF)
         pg.goto(url); pg.wait_for_timeout(2500)
         keys = pg.evaluate("() => MedixaBackup.keysFor(location).list.map(x => x.key)")
-        chk(len(keys) == 11, f'11 study keys covered (got {len(keys)})')
+        chk(len(keys) == 12, f'12 study keys covered (got {len(keys)})')
         seed = {}
         for k in keys:
             seed[k] = json.dumps([{'page': 1, 'tool': 'pen', 'points': [[1, 2], [3, 4]]}], separators=(',', ':')) if 'annotations' in k else json.dumps({'k': k[-12:]})
@@ -35,12 +35,12 @@ try:
         with pg.expect_download() as dl:
             pg.click('#mx87-export')
         path = dl.value.path(); data = json.load(open(path, encoding='utf-8'))
-        chk(data['format'] == 'medixa-local-backup-v40' and len(data['entries']) == 11, 'export file has 11 entries')
+        chk(data['format'] == 'medixa-local-backup-v40' and len(data['entries']) == 12, 'export file has 12 entries')
         pg.evaluate("ks => ks.forEach(k => localStorage.removeItem(k))", keys)
         pg.set_input_files('#mx87-import', path); pg.wait_for_timeout(800)
         chk('اكتمل' in pg.inner_text('#mx87-status'), 'import reports success: ' + pg.inner_text('#mx87-status'))
         got = pg.evaluate("ks => Object.fromEntries(ks.map(k => [k, localStorage.getItem(k)]))", keys)
-        chk(got == seed, 'all 11 keys restored byte-identical ' + str({k: (seed[k], got[k]) for k in seed if seed[k] != got[k]}))
+        chk(got == seed, 'all 12 keys restored byte-identical ' + str({k: (seed[k], got[k]) for k in seed if seed[k] != got[k]}))
         chk(pg.evaluate("localStorage.getItem('medixa.study.v1:other')") == 'OTHER', 'other document untouched')
         chk(not errs, f'no JS errors {errs[:2]}')
         b.close()

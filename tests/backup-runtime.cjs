@@ -10,7 +10,7 @@ const absOf = f => ORIGIN + '/' + f;
 const keysOf = f => ({
   notes: `medixa.v85.${f}.splitNotes`, page: `medixa.v85.${f}.splitPage`, quiz: `medixa.v85.${f}.imageQuiz`, reviews: `medixa.v85.${f}.imageQuizReviews`,
   workspace: `medixa.v86.workspace:${f}`, timer: `medixa.timer.v83:${f}`, goals: `medixa.study.goals.v84:${f}`,
-  cards: `medixa.study.v1:${absOf(f)}`, reader: `medixa.reader.v1:${absOf(f)}`, masks: `medixa.occlusion.v1:${absOf(f)}`, ink: `medixa.pdf.annotations.v1:${absOf(f)}`,
+  cards: `medixa.study.v1:${absOf(f)}`, reader: `medixa.reader.v1:${absOf(f)}`, masks: `medixa.occlusion.v1:${absOf(f)}`, ink: `medixa.pdf.annotations.v1:${absOf(f)}`, layout: `medixa.studio.layout.v1:${absOf(f)}`,
 });
 const K = keysOf(FILE), KO = keysOf(OTHER);
 const stroke = (page, x) => ({page, tool: 'pen', color: '#e43d56', width: 3, points: [[x, 1], [x + 1, 2]]});
@@ -22,6 +22,7 @@ function fullData(f, tag = 'A') {
     [k.goals]: JSON.stringify({goals: ['finish ' + tag], logs: []}), [k.cards]: JSON.stringify({cards: [{front: tag}]}),
     [k.reader]: JSON.stringify({bookmarks: [1], lastPage: 1, dark: false}), [k.masks]: JSON.stringify([{page: 1, x: 0.1, y: 0.1, w: 0.2, h: 0.1}]),
     [k.ink]: JSON.stringify([stroke(1, 5)]),
+    [k.layout]: JSON.stringify({v: 1, margins: {1: {l: 0, t: 0, r: 0.5, b: 0}}}),
   };
 }
 const UNRELATED = {'medixa.penOnly': 'true', [`medixa.v88.session:${absOf(FILE)}`]: '{"page":4}', 'ms.fav': '["x"]', 'ms.study': '{"a":1}'};
@@ -80,7 +81,7 @@ test('coverage: exact key list for a document, no prefix match into another docu
   assert.equal(scope.byKey.get(K.ink).mode, 'merge');
 });
 
-test('round trip: export all 11 study keys of this document and restore them byte-identical', async () => {
+test('round trip: export all 12 study keys of this document and restore them byte-identical', async () => {
   const seed = {...fullData(FILE), ...fullData(OTHER, 'B'), ...UNRELATED};
   const a = harness({initial: seed});
   const backup = await a.exportFile();
