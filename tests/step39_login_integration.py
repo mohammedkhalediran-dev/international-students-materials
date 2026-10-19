@@ -3,6 +3,7 @@
 # Real Google Sign-In, real Cloudflare D1 and physical devices are NOT exercised here.
 # Checks: login screen renders at phone/tablet/desktop without horizontal scroll, login -> next page,
 # Study Mode / PDF reader reachable while signed in, logout, and that Step 38 study storage keys survive.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, json, urllib.parse
 from playwright.sync_api import sync_playwright
 # Since Step 45 the service worker fetches the pinned CDN files itself; let routing see those requests (Chromium).

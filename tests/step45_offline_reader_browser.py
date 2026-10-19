@@ -1,6 +1,7 @@
 # python3 -I tests/step45_offline_reader_browser.py — Step 45: the service worker keeps the pinned pdf.js / pdf-lib files,
 # so a lecture opened once online still renders with pdf.js offline. Headless Chromium with a real service worker;
 # the CDN is served from local npm copies (MEDIXA_CDN_DIR) through Playwright routing. Not a real device.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, urllib.parse
 from playwright.sync_api import sync_playwright
 # Lets Playwright routing see requests made by the service worker (Chromium).

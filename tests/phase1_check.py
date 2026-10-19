@@ -1,4 +1,5 @@
 # python3 -I phase1_check.py — فحوص المرحلة الأولى: البحث والتصفية، الاتجاه لكل لغة، العروض، لوحة المفاتيح، الحالات الفارغة والمسودات
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import re,sys,subprocess,time,json
 from playwright.sync_api import sync_playwright
 BASE='http://localhost:8771/'

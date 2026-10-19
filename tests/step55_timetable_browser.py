@@ -3,6 +3,7 @@
 # (UI + API), weekly view (day/week navigation, details dialog, cancel/reschedule indicators), admin page (add, conflict
 # warning, publish, cancel a date), import (pasted text and a text PDF → preview → check → approve), 390/768/1440, dark/light.
 # MEDIXA_CDN_DIR (optional): local pdfjs-dist-3.11.174 for the PDF import step without internet. SHOTS=dir saves screenshots.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, datetime
 from playwright.sync_api import sync_playwright
 os.environ.setdefault('PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS', '1')

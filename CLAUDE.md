@@ -143,3 +143,10 @@
 - transform وopacity فقط، وتتوقف تلقائياً مع prefers-reduced-motion ومع .reduced-motion (قواعد style.css العامة).
 - Step 59b (محمد: «لا تكاد تُرى»): js/motion.js بعد nav.js في الصفحات التسع. يضيف مستمع touchstart فارغاً (سفاري iOS لا يطبّق :active بدونه)، ويُظهر العناصر عند الوصول إليها بالتمرير (.mr ← .mr-in عبر IntersectionObserver، ومعه MutationObserver للقوائم المرسومة لاحقاً، ثم تُزال الأصناف). لا يُخفى شيء دون JS أو مع تقليل الحركة. الضغط صار scale(.94)/(.96).
 - الإصدار: motion.css وmotion.js ?v=step59b، وgrades.js ?v=step59، وV = "medixa-step59b" (بقية الملفات step58).
+
+## Step 60 (2026-10-19): صفحة الدخول أولاً (بطلب محمد، مع بقاء «المتابعة كزائر»)
+- من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يُحوَّل إلى login.html?gate=1&next=<الصفحة>. فحص سريع في رأس الصفحات التسع (ms.authed / ms.guest في localStorage) ثم تأكيد من الخادم في auth.js بعد auth/me (يمسح ms.authed القديم إن انتهت الجلسة).
+- «المتابعة كزائر» تحفظ ms.guest فلا تظهر صفحة الدخول له مرة أخرى على الجهاز. الدخول يحفظ ms.authed. الخروج يمسح الاثنين. جلسة قائمة تمر من صفحة الدخول تلقائياً (gate=1). privacy وterms مفتوحتان.
+- ليس حماية: الزائر مسموح بقرار محمد. للمنع الحقيقي (ومنه ملفات PDF) يوجد REQUIRE_LOGIN=1 في Cloudflare (functions/_middleware.js).
+- الفحوص المتصفحية القديمة تستورد tests/guest_mode.py (تعمل كزائر)؛ فحص البوابة tests/step60_login_first.py.
+- الإصدار: auth.js وlogin.js ?v=step60، وV = "medixa-step60".

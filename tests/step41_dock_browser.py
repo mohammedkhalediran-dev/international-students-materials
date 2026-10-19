@@ -1,6 +1,7 @@
 # python3 -I tests/step41_dock_browser.py — Step 41 reader dock in headless Chromium (simulated server; not a real phone/iPad).
 # At 390, 820 and 1280 px: every dock control is the top element at its centre (nothing covers it), popups open above
 # the dock without covering it, the last PDF page can scroll fully above the dock, and no JS errors.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, urllib.parse
 from playwright.sync_api import sync_playwright
 # Since Step 45 the service worker fetches the pinned CDN files itself; let routing see those requests (Chromium).

@@ -19,6 +19,7 @@
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
     try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+    try { if (!localStorage.getItem("ms.authed") && !localStorage.getItem("ms.guest")) location.replace("login.html?gate=1&next=" + encodeURIComponent((location.pathname.split("/").pop() || "index.html") + location.search + location.hash)); } catch (e) {}
   </script>
 </head>
 <body>
@@ -113,7 +114,7 @@
   <script src="data/courses.js?v=step58"></script>
   <script src="api/uploads.js"></script>
   <script src="js/i18n.js?v=step58"></script>
-  <script src="js/app.js?v=step58"></script><script src="js/study-summary.js?v=step58"></script><script src="js/auth.js?v=step58"></script>
+  <script src="js/app.js?v=step58"></script><script src="js/study-summary.js?v=step58"></script><script src="js/auth.js?v=step60"></script>
   <script src="js/nav.js?v=step58"></script><script src="js/motion.js?v=step59b"></script><script src="js/my-course.js?v=step58"></script><script src="js/pdf-viewer.js?v=step58"></script>
   <script>
     (function () {

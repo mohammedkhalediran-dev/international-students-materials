@@ -2,6 +2,7 @@
 # The browser's push service is stubbed (no network): PushManager.subscribe returns a subscription with real P-256 keys
 # generated in the page, and the dev server captures what the site would send to https://push.test/... .
 # Real Apple/Google push delivery and real devices are NOT exercised here.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, json, urllib.request
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

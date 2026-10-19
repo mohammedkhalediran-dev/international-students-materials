@@ -1,6 +1,7 @@
 # python3 -I tests/step52_notify_browser.py — Step 52: notification preferences + real service-worker push display (headless Chromium).
 # The push service is stubbed like tests/step49_course_push_browser.py; a real push is delivered to the real sw.js through
 # the Chrome DevTools Protocol (ServiceWorker.deliverPushMessage). Real phones/lock screens are NOT exercised here.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, json, urllib.request
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

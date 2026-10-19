@@ -1,5 +1,6 @@
 # python3 -I tests/upload_e2e.py — فحص صفحة الرفع من المتصفح: الدخول، رفع ملف كبير على قطع، ظهوره في المادة، الحذف
 # يشغّل tests/dev_server.mjs (دالة الرفع بمخزن في الذاكرة) ويقدّم مجلد site.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import os, sys, subprocess, time, tempfile
 from playwright.sync_api import sync_playwright
 
