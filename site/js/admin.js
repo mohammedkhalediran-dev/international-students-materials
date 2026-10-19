@@ -22,7 +22,7 @@
       can: ["رفع الملفات من upload.html بلا رمز", "نشر التبليغات وحذفها من announce.html (تصل كإشعار)", "كل ما يستطيعه الطالب"], cannot: ["لا إدارة حسابات"] }
   };
   var SEM = { 1: "الكورس الأول", 2: "الكورس الثاني", 3: "الكورس الثالث" };
-  var ACTION = { role: "تغيير الدور", status: "تغيير الحالة", semester: "تغيير الكورس", export: "تصدير CSV", push_test: "إشعار اختبار" };
+  var ACTION = { role: "تغيير الدور", status: "تغيير الحالة", semester: "تغيير الكورس", export: "تصدير CSV", push_test: "إشعار اختبار", timetable_add: "إضافة محاضرة للجدول", timetable_edit: "تعديل محاضرة في الجدول", timetable_delete: "حذف محاضرة من الجدول", timetable_publish: "نشر الجدول", timetable_unpublish: "إخفاء محاضرة من الجدول", timetable_cancel: "إلغاء محاضرة بتاريخ", timetable_move: "نقل محاضرة", timetable_restore: "إرجاع موعد محاضرة", timetable_import: "استيراد الجدول" };
   var ERR = {
     self_locked: "لا يمكنك إيقاف حسابك أنت من هذه الصفحة.", last_admin: "هذا آخر مشرف فعّال؛ لا يمكن إيقافه.",
     admin_locked: "دور المشرف مقفل: يُحدَّد من ADMIN_EMAILS في Cloudflare.", bad_role: "هذا الدور غير مسموح.",
@@ -381,6 +381,7 @@
     if (i.action === "semester") return "تغيير كورس " + who + " إلى " + (SEM[d.to] || "—");
     if (i.action === "export") return "تصدير " + NUM.format(d.rows || 0) + " حساباً بصيغة CSV";
     if (i.action === "push_test") return "إشعار اختبار إلى أجهزة المشرف (" + NUM.format(d.sent || 0) + "/" + NUM.format(d.devices || 0) + ")";
+    if (/^timetable_/.test(i.action)) return (ACTION[i.action] || i.action) + (d.subject ? " «" + d.subject + "»" : "") + (d.date ? " " + d.date : "") + (d.count != null ? " (" + NUM.format(d.count) + ")" : "");
     return i.action;
   }
   var RESULT = { ok: ["green", "تم"], refused: ["red", "مرفوض"], no_delivery: ["amber", "لم يُسلَّم"] };

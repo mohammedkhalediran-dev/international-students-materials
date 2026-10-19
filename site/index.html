@@ -13,9 +13,10 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=step54">
-  <link rel="stylesheet" href="css/workspace.css?v=step54">
-  <link rel="stylesheet" href="css/medical-banner.css?v=step54">
+  <link rel="stylesheet" href="css/style.css?v=step55">
+  <link rel="stylesheet" href="css/workspace.css?v=step55">
+  <link rel="stylesheet" href="css/medical-banner.css?v=step55">
+  <link rel="stylesheet" href="css/timetable.css?v=step55">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
@@ -88,12 +89,13 @@
   <div class="mm-bottom-line" aria-hidden="true"></div>
 </div>
 </section>
+<section class="section tt" id="ttHome" aria-labelledby="ttTitle" hidden><div class="tt-panel"><div class="tt-head"><div class="tt-title"><span class="tt-tile" data-tt-ico="calendar"></span><div><h2 id="ttTitle">الجدول الجامعي <span class="tt-pill">رسمي</span></h2><p class="tt-sub" id="ttSub"><span data-when>محاضرات غداً</span> • <span>الكورس الثالث</span> · <span>طب عام</span></p></div></div><div class="tt-toolbar"><a class="tt-btn" id="ttManage" href="timetable-admin.html" hidden>إدارة الجدول</a><a class="tt-btn tt-arrow" id="ttWeekLink" href="timetable.html"><span data-tt-ico="arrow"></span>عرض الأسبوع كامل</a></div></div><p class="tt-note" id="ttNote" hidden></p><div class="tt-cards" aria-live="polite"></div></div></section>
 <section class="section" id="semesters"><div class="section-head"><h2>كورساتك الدراسية</h2><a class="section-link" href="workspace.html?view=search">البحث في المواد <span data-ico="search"></span></a></div><div class="semester-tiles" id="semGrid"></div></section>
 <section class="section" id="resumeSection" hidden><div class="resume-card card" id="resumeCard"></div></section>
 <section class="section" id="announcements" hidden><div class="section-head"><div><h2>التبليغات</h2><p>آخر ما نشره ممثل الدفعة والمشرفون.</p></div></div><div class="ann-list" id="annList"></div></section>
 <section class="section" id="latest"><div class="section-head"><h2>أحدث المحاضرات</h2><a class="section-link" href="workspace.html?view=lectures">عرض الكل <span data-ico="arrow"></span></a></div><div class="latest-stack" id="latestList"></div></section>
 <section class="section" id="tools"><div class="section-head"><h2>أدوات الدراسة</h2><p>تقدّمك محفوظ على هذا الجهاز</p></div><div class="tool-tiles"><a class="tool-tile card" href="workspace.html?view=planner"><span class="tile" data-ico="calendar"></span><div><h3>مخطط الدراسة</h3><p>نظّم دراستك خطوة بخطوة</p></div></a><a class="tool-tile card" href="workspace.html?view=questions"><span class="tile" data-ico="help"></span><div><h3>بنك الأسئلة</h3><p>تدرّب على أسئلة محاضراتك</p></div></a><a class="tool-tile card" href="workspace.html?view=favorites"><span class="tile" data-ico="star"></span><div><h3>المفضلة</h3><p>موادك المحفوظة</p></div></a></div></section>
-</main><footer class="footer"><div class="container footer-inner"><a class="brand" href="index.html">Medixa</a><nav class="footer-links" aria-label="روابط التذييل"><a href="workspace.html?view=help">المساعدة</a><a href="workspace.html?view=settings">الإعدادات</a><a href="upload.html">رفع المحاضرات</a></nav></div></footer><div class="toast" id="toast" role="status" aria-live="polite"></div><script src="data/courses.js?v=step54"></script><script src="api/uploads.js"></script><script src="js/i18n.js?v=step54"></script><script src="js/app.js?v=step54"></script><script src="js/auth.js?v=step54"></script><script src="js/nav.js?v=step54"></script><script src="js/my-course.js?v=step54"></script><script src="js/home.js?v=step54"></script><script src="js/medical-banner.js?v=step54"></script><script>
+</main><footer class="footer"><div class="container footer-inner"><a class="brand" href="index.html">Medixa</a><nav class="footer-links" aria-label="روابط التذييل"><a href="workspace.html?view=help">المساعدة</a><a href="workspace.html?view=settings">الإعدادات</a><a href="upload.html">رفع المحاضرات</a></nav></div></footer><div class="toast" id="toast" role="status" aria-live="polite"></div><script src="data/courses.js?v=step55"></script><script src="api/uploads.js"></script><script src="js/i18n.js?v=step55"></script><script src="js/app.js?v=step55"></script><script src="js/auth.js?v=step55"></script><script src="js/nav.js?v=step55"></script><script src="js/my-course.js?v=step55"></script><script src="js/home.js?v=step55"></script><script src="js/medical-banner.js?v=step55"></script><script src="js/timetable.js?v=step55"></script><script>
 (function () {
   if (!window.fetch || !window.MS) return;
   var el = MS.el;

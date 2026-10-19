@@ -9,6 +9,7 @@ import { createMockStore } from "./mock_store.mjs";
 import { handleAuth, uploadAccount, currentUser } from "../functions/_lib/auth.js";
 import { handlePush, notify, lectureNotice, b64u } from "../functions/_lib/push.js";
 import { createMockD1 } from "./mock_d1.mjs";
+import { handleTimetable } from "../functions/_lib/timetable.js";
 import { mint, fakeFetch, CLIENT_ID } from "./google_token.mjs";
 
 const SITE = join(fileURLToPath(new URL(".", import.meta.url)), "..", "site");
@@ -46,7 +47,7 @@ http.createServer(async (req, res) => {
     for await (const c of req) parts.push(c);
     const body = Buffer.concat(parts);
     const rq = new Request(url, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : body });
-    let r = (await handleAuth(rq, authEnv, { fetch: fakeFetch, pushFetch })) || (await handlePush(rq, authEnv, { currentUser }));
+    let r = (await handleAuth(rq, authEnv, { fetch: fakeFetch, pushFetch })) || (await handleTimetable(rq, authEnv)) || (await handlePush(rq, authEnv, { currentUser }));
     if (!r) {
       r = await handle(rq, deps(req));
       if (req.method === "POST" && /\/api\/(finish|link)$/.test(url.pathname) && r.status === 200) {
