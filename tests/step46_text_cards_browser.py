@@ -1,4 +1,5 @@
 # python3 -I tests/step46_text_cards_browser.py — Step 46 text-to-flashcard in headless Chromium (simulated server).
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, json, urllib.parse
 from playwright.sync_api import sync_playwright
 os.environ.setdefault('PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS', '1')

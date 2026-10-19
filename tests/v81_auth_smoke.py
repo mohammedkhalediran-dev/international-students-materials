@@ -1,5 +1,6 @@
 # python3 -I tests/v81_auth_smoke.py — فحص دخان لدمج MEDIXA v8.1 مع نظام الدخول:
 # كل الصفحات تُحمَّل بلا أخطاء JavaScript، زر الحساب في الرأس، التبليغات، صفحة الكتابة على PDF (احتياطي الصور)، أدوات الدراسة.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, urllib.parse
 # MEDIXA_CDN_DIR (اختياري): مجلد فيه pdfjs-dist-3.11.174/package و pdf-lib-1.17.1/package ليعمل الفحص بلا إنترنت (npm pack pdfjs-dist@3.11.174 pdf-lib@1.17.1)
 CDN = os.environ.get('MEDIXA_CDN_DIR')

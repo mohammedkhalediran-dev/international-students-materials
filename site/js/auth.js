@@ -156,16 +156,25 @@
     afterLogin: function (u) { user = u; },
     logout: function () {
       return flush().then(function () { return api("POST", "auth/logout"); }).then(function () {
-        SYNC.concat([TKEY]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
+        SYNC.concat([TKEY, "ms.authed", "ms.guest"]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
         user = null;
       });
     }
   };
 
   // صفحة الدخول تدير نفسها (js/login.js)
-  if (/\/(login|admin|announce)\.html$/.test(location.pathname)) return;
+  if (/\/(login|admin|announce)(\.html)?$/.test(location.pathname)) return; // Cloudflare يختصر login.html إلى /login
 
   MSAuth.me().then(function () {
+    // صفحة الدخول أولاً (بطلب محمد 2026-10-19): من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يذهب إليها
+    if (user) lsSet("ms.authed", "1");
+    else {
+      lsDel("ms.authed");
+      if (!lsGet("ms.guest") && !/\/(login|privacy|terms)(\.html)?$/.test(location.pathname)) {
+        location.replace("login.html?gate=1&next=" + encodeURIComponent((location.pathname.split("/").pop() || "index.html") + location.search + location.hash));
+        return;
+      }
+    }
     try { document.dispatchEvent(new CustomEvent("ms:user", { detail: user })); } catch (e) { /* متصفح قديم */ } // يقرؤه بانر الرئيسية للترحيب بالاسم
     paintHeader();
     paintSidebar();

@@ -1,5 +1,6 @@
 # python3 -I tests/step48_account_sidebar.py — Step 48: after signing in, the sidebar shows the student's name and a
 # sign-out button instead of the fixed «زائر» (guest). Headless Chromium + simulated server and test Google token.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

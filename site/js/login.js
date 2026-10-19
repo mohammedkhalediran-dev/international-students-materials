@@ -24,7 +24,11 @@
   }
 
   /* ---------- الزائر ---------- */
-  $("actions").querySelector('[data-auth="guest"]').addEventListener("click", function () { location.href = nextUrl(); });
+  $("actions").querySelector('[data-auth="guest"]').addEventListener("click", function () {
+    try { localStorage.setItem("ms.guest", "1"); } catch (e) { /* لا شيء */ } // لا تظهر صفحة الدخول له مرة أخرى على هذا الجهاز
+    location.href = nextUrl();
+  });
+  function markAuthed() { try { localStorage.setItem("ms.authed", "1"); } catch (e) { /* لا شيء */ } }
 
   /* ---------- حالة: مسجّل الدخول ---------- */
   function row(label, glyphHtml) {
@@ -80,6 +84,7 @@
     MSAuth.api("POST", "auth/google", { credential: resp.credential }).then(function (r) {
       if (r.status === 200 && r.data.ok) {
         MSAuth.afterLogin(r.data.user);
+        markAuthed();
         try { sessionStorage.removeItem("ms.sync.reloaded"); } catch (e) { /* لا شيء */ }
         location.href = nextUrl();
         return;
@@ -118,7 +123,12 @@
   $("googleBtn").addEventListener("click", function () { say("تسجيل الدخول بحساب Google غير مفعّل بعد."); });
 
   MSAuth.me().then(function (u) {
-    if (u) { showUser(u); return; }
+    if (u) {
+      markAuthed();
+      // جاء من بوابة الدخول وهو مسجّل أصلاً (جلسة قديمة): يكمل مباشرة
+      if (new URLSearchParams(location.search).get("gate") === "1") { location.replace(nextUrl()); return; }
+      showUser(u); return;
+    }
     MSAuth.api("GET", "auth/config").then(function (r) {
       if (r.status === 200 && r.data.ready && r.data.googleClientId) setupGoogle(r.data.googleClientId);
     });
