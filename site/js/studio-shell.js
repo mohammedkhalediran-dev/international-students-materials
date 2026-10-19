@@ -4,6 +4,14 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const hdr = document.querySelector('header'); if (!hdr) return;
+  /* way back to the site (iPad home-screen app has no browser back button): the page that opened the reader, else home */
+  if (!$('st-back')) {
+    let back = 'index.html', label = 'الرئيسية';
+    try { const r = document.referrer && new URL(document.referrer); if (r && r.origin === location.origin && !/pdf-notes/.test(r.pathname)) { back = r.pathname + r.search + r.hash; label = 'رجوع'; } } catch {}
+    const a = document.createElement('a'); a.id = 'st-back'; a.className = 'st-hdr-btn st-back'; a.href = back; a.setAttribute('aria-label', label === 'رجوع' ? 'رجوع إلى المادة' : 'الصفحة الرئيسية');
+    a.textContent = '‹ ' + label; hdr.prepend(a);
+    if (label === 'رجوع') { const h = document.createElement('a'); h.id = 'st-home'; h.className = 'st-hdr-btn st-back'; h.href = 'index.html'; h.setAttribute('aria-label', 'الصفحة الرئيسية'); h.textContent = '⌂'; a.after(h); }
+  }
   let acts = $('studio-hdr-actions');
   if (!acts) { acts = document.createElement('div'); acts.id = 'studio-hdr-actions'; acts.className = 'st-hdr-actions'; $('download').before(acts); }
   const MOVE = [['medixa-thumbs-toggle', 'الصفحات'], ['medixa-bookmark', 'حفظ الصفحة'], ['medixa-dark', 'الوضع الليلي'], ['medixa-focus', 'وضع التركيز'], ['medixa-split-toggle', 'تقسيم الشاشة']];

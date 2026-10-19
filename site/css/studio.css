@@ -9,6 +9,7 @@ header{padding:8px 12px;gap:8px;flex-wrap:wrap;min-height:56px}
 header strong{white-space:nowrap}
 #status{font-size:12px}
 .st-hdr-actions{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.st-back{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:600;font-size:14px!important}
 .st-hdr-btn{min-width:44px;min-height:44px;padding:4px 8px;border:1px solid #bacbd1;border-radius:10px;background:#fff;color:#16394e;cursor:pointer;font:inherit;font-size:12px}
 #medixa-reader-bar[hidden]{display:none!important}
 main#pages{padding-top:calc(var(--st-tb-h,0px) + 12px)}
