@@ -1,4 +1,4 @@
-# python3 -I tests/step60_login_first.py — Step 60: صفحة الدخول أولاً، مع بقاء «المتابعة كزائر» (حسابات اختبار فقط).
+# python3 -I tests/step60_login_first.py — Step 61 (أُنشئ باسم Step 60): صفحة الدخول أولاً، مع بقاء «المتابعة كزائر» (حسابات اختبار فقط).
 import subprocess, time, os, sys
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
