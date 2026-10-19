@@ -1,6 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-step54";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "assets/brain-pearl.webp", "css/medical-banner.css?v=step54", "js/medical-banner.js?v=step54", "assets/icon-192.png", "assets/notify-badge.png", "css/style.css?v=step54", "css/semester.css?v=step54", "css/workspace.css?v=step54", "js/app.js?v=step54", "js/nav.js?v=step54", "js/home.js?v=step54", "js/workspace.js?v=step54", "js/planner.js?v=step54", "js/questions.js?v=step54", "js/i18n.js?v=step54", "data/courses.js?v=step54", "data/study/medical-immunology-1.js?v=step54"];
+var V = "medixa-step55";
+var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "assets/brain-pearl.webp", "css/medical-banner.css?v=step55", "js/medical-banner.js?v=step55", "assets/icon-192.png", "assets/notify-badge.png", "css/style.css?v=step54", "css/semester.css?v=step54", "css/workspace.css?v=step54", "js/app.js?v=step54", "js/nav.js?v=step54", "js/home.js?v=step54", "js/workspace.js?v=step54", "js/planner.js?v=step54", "js/questions.js?v=step54", "js/i18n.js?v=step54", "data/courses.js?v=step54", "data/study/medical-immunology-1.js?v=step54"];
 var CDN = [
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
