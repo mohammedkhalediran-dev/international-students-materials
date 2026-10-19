@@ -133,6 +133,7 @@
     return Math.max(0.04, (pad * 2 + lines * size * 1.35) / H);
   }
   function sizePage(pg) {
+    if (!pg.on) { if (pg.ink.width !== 1) { pg.ink.width = 1; pg.ink.height = 1; pg.base.width = 1; pg.base.height = 1; } pg.dirty = true; return; }   /* off-screen pages hold no pixels */
     const r = pg.ink.getBoundingClientRect(), d = DPR();
     pg.cssW = Math.max(1, r.width); pg.cssH = Math.max(1, r.height);
     const W = Math.round(pg.cssW * d), H = Math.round(pg.cssH * d);
@@ -146,6 +147,7 @@
   function frame() {
     S.raf = 0;
     for (const pg of S.pages.values()) {
+      if (!pg.on) continue;
       if (pg.dirty) renderBase(pg);
       if (!pg.needsPaint) continue;
       pg.needsPaint = false;
@@ -155,6 +157,7 @@
     }
   }
   function paint(pg) { pg.needsPaint = true; if (!S.raf) S.raf = requestAnimationFrame(frame); }
+  function setPageActive(n, on) { const pg = S.pages.get(n); if (!pg || pg.on === !!on) return; if (!on && pg.active) return; pg.on = !!on; sizePage(pg); if (on) { pg.dirty = true; paint(pg); } }
   function invalidate(n) { const pg = S.pages.get(n); if (pg) { pg.dirty = true; paint(pg); } }
   function rebuildAll() { S.pages.forEach(pg => { pg.dirty = true; paint(pg); }); rebuildIndex(); }
   function rebuildIndex() { S.index = new Map(); for (const s of S.items) { if (s && s.id && C.validStroke(s)) { let ix = S.index.get(s.page); if (!ix) S.index.set(s.page, ix = new C.SpatialIndex()); ix.insert(s); } } }
@@ -174,7 +177,7 @@
     return [C.clamp01(a[0] + Math.sign(dx || 1) * m / pg.cssW), C.clamp01(a[1] + Math.sign(dy || 1) * m / pg.cssH)];
   }
   function attachPage(o) {
-    const pg = { n: o.pageNumber, wrap: o.wrap, ink: o.ink, base: document.createElement('canvas'), dirty: true, needsPaint: true, live: null, active: null, cssW: 1, cssH: 1 };
+    const pg = { n: o.pageNumber, wrap: o.wrap, ink: o.ink, pdf: o.pdf || null, base: document.createElement('canvas'), dirty: true, needsPaint: true, live: null, active: null, cssW: 1, cssH: 1, on: !o.lazy && !o.pdf };
     S.pages.set(pg.n, pg);
     o.ink.style.touchAction = 'none';
     sizePage(pg); paint(pg);
@@ -387,7 +390,7 @@
   function patchItem(id, props) { const i = S.items.findIndex(x => x && x.id === id); if (i < 0) return null; const before = {}; for (const k of Object.keys(props)) before[k] = S.items[i][k]; S.items[i] = Object.assign({}, S.items[i], props); rebuildIndexPage(S.items[i].page); invalidate(S.items[i].page); return { k: 'edit', id, before, after: props }; }
   function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   const api = {
-    S, C, init, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
+    S, C, init, setPageActive, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
     page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox,
     setPenOnly(v) { S.penOnly = !!v; try { localStorage.setItem('medixa.penOnly', String(S.penOnly)); } catch {} emit('penonly', S.penOnly); },
     setSnap(v) { S.snap = !!v; },

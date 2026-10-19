@@ -12,5 +12,15 @@
     for (const [id, name] of MOVE) { const b = $(id); if (b && b.parentElement !== acts) { b.classList.add('st-hdr-btn'); b.setAttribute('aria-label', name); acts.append(b); } }
     bar.hidden = true; document.body.classList.add('studio-shell'); return true;
   }
+  /* zoom cluster (CSS-only zoom; stored coordinates never change) */
+  const M = window.MedixaStudio;
+  function zoomUi() {
+    if ($('st-zoom') || !M || !M.reader) return;
+    const z = document.createElement('div'); z.id = 'st-zoom'; z.setAttribute('role', 'group'); z.setAttribute('aria-label', 'التكبير');
+    const mk = (id, label, text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.setAttribute('aria-label', label); b.title = label; b.textContent = text; b.onclick = fn; z.append(b); return b; };
+    mk('st-zoom-out', 'تصغير', '−', () => M.reader.zoomBy(1 / 1.15)); const lab = mk('st-zoom-label', 'ملاءمة العرض', '100%', () => M.reader.fit()); mk('st-zoom-in', 'تكبير', '+', () => M.reader.zoomBy(1.15));
+    document.body.append(z); M.reader.on('zoom', v => { lab.textContent = Math.round(v * 100) + '%'; });
+  }
+  zoomUi();
   if (!adopt()) { const mo = new MutationObserver(() => { if (adopt()) mo.disconnect(); }); mo.observe(document.body, { childList: true }); setTimeout(() => mo.disconnect(), 8000); }
 })();
