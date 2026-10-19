@@ -95,15 +95,15 @@
 - يلزم: جدول push_subs (migrations/0003_push.sql) في D1، ومتغيرا VAPID_PUBLIC_KEY وVAPID_PRIVATE_KEY (سرّي) يولّدهما محمد من admin.html ويضعهما بنفسه في Cloudflare. بدونهما يبقى الزر مخفياً.
 - بعد تعديل courses.js شغّل node scripts/gen-course-semesters.cjs.
 
-## Step 52 (2026-10-19): تجربة الإشعارات (فرع محلي، لم يُنشر)
+## Step 52 (2026-10-19): تجربة الإشعارات (منشور؛ 0004 طُبّق على D1)
 - آلية الإرسال لم تتغير. تغيّرت الرسائل (functions/_lib/push.js: lectureMessage/lectureNotice/announcementMessage)، وعرضها في sw.js (أيقونة، شارة assets/notify-badge.png، أزرار حيث تُدعم، فتح المحاضرة مباشرة).
 - وسم واحد لكل مادة (course-<id>) + منع تكرار وتجميع عبر KV (push/recent/<id>). الاختبارات وأسئلة السنوات السابقة صارت ترسل إشعاراً (الفئة resource).
 - تفضيلات لكل جهاز (ms.push.prefs) من زر «تخصيص» في القائمة الجانبية؛ الخادم يقرأ push_subs.prefs (migrations/0004_push_prefs.sql — يلزم تطبيقه على D1 الحقيقي بموافقة محمد؛ بدونه يعمل كل شيء كـStep 51).
 - التبليغ يعيد reach (عدد الأجهزة) ويظهر في announce.html.
 - فحوص: tests/sw_notify_check.cjs (ضمن npm test)، tests/step52_notify_browser.py (يستعمل Chromium الكامل channel='chromium' لأن headless shell لا يدعم الإشعارات).
-## Step 53 (2026-10-19): بانر الرئيسية الطبي المتحرك (بطلب محمد)
-- المرجع المعتمد ملف أرسله محمد: MEDIXA-Medical-Banner.html (دماغ لؤلؤي + بطاقات طبية). حلّ محل .welcome وصورة medical-thorax في الرئيسية فقط (الصورة ما زالت مستخدمة في صفحات أخرى).
-- الملفات: الهيكل في site/index.html (section.mm-banner#home)، الأنماط site/css/medical-banner.css (مكوّن مستقل بنطاق .mm-banner وألوانه --mm-* في أول الملف، فاتح وداكن)، الحركة site/js/medical-banner.js، الصورة site/assets/brain-pearl.webp (مستخرجة من المرجع).
-- العنوان والزر ثابتان يميناً والمشهد يساراً بنسبة 2.28:1 (أقل ارتفاع 196px على الهاتف). زر «استكشف الكورسات» رابط إلى #semesters. لا شريط مراحل؛ زر صغير لإيقاف الحركة (تفضيله في ms.bannerMotion).
-- الدورة 18 ثانية: استكشف ← افهم ← طبّق ← اربط ← عودة. كل عنصر خط زمني من إطارات مفتاحية (أول إطار = آخر إطار)؛ الدماغ يميل ±14° فقط ولا يدور دورة كاملة. حلقة رسم واحدة تتوقف خارج الشاشة وعند إخفاء الصفحة؛ prefers-reduced-motion يعرض تكوين «اربط» ثابتاً. MedixaBanner.seek(t) للفحص وdestroy() للتنظيف.
-- نصوص البطاقات إنجليزية طبية عامة (لا أرقام ولا تقدّم يوحي ببيانات الطالب). النصوص العربية الجديدة لها سطر في EN وFA في i18n.js.
+
+## Step 53 (2026-10-19): مركز الإدارة (فرع feature/admin-center، لم يُنشر)
+- admin.html بتصميم MEDIXA-Admin-Preview.html: css/admin.css مستقلة (استثناء من نظام style.css مثل login)، وjs/admin.js على بيانات حقيقية فقط.
+- الخادم: functions/_lib/admin.js (/api/auth/admin/stats|users|user|export|audit|push|push-test) وPOST /api/auth/user صار فيه حماية المشرف الحالي وآخر مشرف وسجل التغييرات.
+- لا أرقام هوية (الاسم والبريد فقط)؛ لا إضافة مستخدم يدوياً (Google عند أول دخول)؛ المشرف من ADMIN_EMAILS فقط.
+- migrations/0005_admin.sql (audit_log + users.last_login_at) لم يُطبَّق على D1 بعد؛ الكود يعمل بدونه. التفاصيل في ADMIN-CENTER.md.

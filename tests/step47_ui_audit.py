@@ -14,7 +14,7 @@ PAGES = ['index.html', 'semester.html?id=3', 'course.html?id=medical-immunology'
 PROBE = r"""() => {
   const vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
   const tiny = []; const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let t;
-  while (t = w.nextNode()) { const e = t.parentElement; if (!t.textContent.trim() || !e || !vis(e)) continue; if (e.closest('.mm-world')) continue; /* Step 53: نصوص الرسم التوضيحي داخل بانر الرئيسية (مخفية عن قارئ الشاشة وتُصغَّر مع الرسم كصورة) */ const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 12) tiny.push(t.textContent.trim().slice(0, 20) + ' ' + fs); }
+  while (t = w.nextNode()) { const e = t.parentElement; if (!t.textContent.trim() || !e || !vis(e)) continue; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 12) tiny.push(t.textContent.trim().slice(0, 20) + ' ' + fs); }
   const small = [...document.querySelectorAll('.site-header button, .site-header a, .site-header select, .footer-links a')].filter(vis)
     .map(e => [e.id || e.className || e.tagName, e.getBoundingClientRect()]).filter(([, r]) => r.height < 43.5 || r.width < 24).map(([k, r]) => k + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
   return {h: document.documentElement.scrollWidth - document.documentElement.clientWidth, tiny: [...new Set(tiny)].slice(0, 5), small};

@@ -115,9 +115,18 @@ export async function audience(env, msg) {
 
 /* إرسال لكل المشتركين (semester = null) أو لطلاب كورس واحد. يحذف الاشتراكات المنتهية (404/410). */
 export async function notify(env, msg, fetchImpl = fetch) {
-  const { semester = null, title, body, url, tag } = msg;
   if (!env.DB || !vapidReady(env)) return { sent: 0, failed: 0, removed: 0, skipped: true };
-  const rows = (await targets(env, semester)).filter((s) => wants(s.prefs, msg));
+  const rows = (await targets(env, msg.semester || null)).filter((s) => wants(s.prefs, msg));
+  return deliver(env, rows, msg, fetchImpl);
+}
+/* إرسال إلى أجهزة حساب واحد فقط (اختبار المشرف من لوحة الإدارة؛ لا يصل لأي طالب) */
+export async function notifyUser(env, userId, msg, fetchImpl = fetch) {
+  if (!env.DB || !vapidReady(env)) return { sent: 0, failed: 0, removed: 0, devices: 0, skipped: true };
+  const rows = (await env.DB.prepare("SELECT endpoint, p256dh, auth FROM push_subs WHERE user_id = ?").bind(userId).all()).results || [];
+  return { ...(await deliver(env, rows, msg, fetchImpl)), devices: rows.length };
+}
+async function deliver(env, rows, msg, fetchImpl) {
+  const { title, body, url, tag } = msg;
   // الحقول القديمة (title/body/url/tag) كما هي ليفهمها أي sw.js قديم على الأجهزة؛ والجديدة اختيارية
   const message = { title: String(title).slice(0, 120), body: String(body || "").slice(0, 240), url: url || "index.html", tag: tag || "medixa" };
   if (msg.category) message.category = msg.category;
