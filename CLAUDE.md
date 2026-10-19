@@ -133,7 +133,7 @@
 - رقم الجواز لا يُخزَّن أبداً: functions/_lib/grades.js يحوّله إلى بصمة HMAC-SHA256 بمفتاح GRADES_SECRET (سرّ في Cloudflare، 16 حرفاً فأكثر؛ بدونه 503). لا تغيّر المفتاح بعد الرفع (تبطل البصمات). لا تطلب الملف في المحادثة ولا تضعه في المستودع.
 - الطالب: site/grades.html + js/grades.js (رابط «درجاتي الجامعية» في القائمة صار فعّالاً). يكتب رقم جوازه مرة واحدة فيُربط حسابه بشخص واحد (grade_people.user_id UNIQUE) ويرى درجاته فقط. محاولات خاطئة: 5/ساعة و10/يوم (grade_attempts). الرقم مربوط بحساب آخر ← claimed + سجل grades_claim_conflict.
 - المشرف: site/grades-admin.html + js/grades-admin.js (رابط «إدارة الدرجات» في admin.html). لصق من Excel/Numbers (Tab) أو CSV، تخمين الأعمدة من العناوين، معاينة بأرقام مقنّعة، رفع دفعة باسم. الدفعات الجديدة تظهر تلقائياً للمربوطين. حذف دفعة، فك ربط. كل ذلك في audit_log بلا أرقام جواز.
-- الجداول: migrations/0007_grades.sql (grade_people، grade_batches، grade_entries، grade_attempts) — لم يُطبَّق على D1 بعد. الإدخال الجماعي بـjson_each في استعلامات قليلة (حد استعلامات الخطة المجانية).
+- الجداول: migrations/0007_grades.sql (grade_people، grade_batches، grade_entries، grade_attempts) — طُبّق على D1 الحقيقي (2026-10-19، بطلب محمد). الإدخال الجماعي بـjson_each في استعلامات قليلة (حد استعلامات الخطة المجانية).
 - css/grades.css يبني على مكوّن .tt من timetable.css. مفاتيح الترجمة جمل كاملة (لا كلمات قصيرة مثل «صف» لأن tr() يستبدل الأجزاء).
 - فحوص: tests/grades_api_check.mjs (ضمن npm test) وtests/step57_grades_browser.py. خطوات التفعيل لمحمد في GRADES-SETUP.md
 - الإصدار: ?v=step57 لـ i18n.js وnav.js في كل الصفحات، وV = "medixa-step57" في sw.js (style.css بقي step56p)..
@@ -159,7 +159,7 @@
 ## Step 62 (2026-10-19): الملف الشخصي (بطلب محمد)
 - site/profile.html + js/profile.js + js/profile-form.js (النموذج مشترك مع «درجاتي»). رابط «الملف الشخصي» في القائمة صار فعّالاً.
 - تلقائياً: الاسم والبريد من Google (/api/auth/me)، الكورس من ms.sem، رمز الطالب M<user id>. يكتبه الطالب: الاسم الكامل كما في الجامعة (جزءان فأكثر، بلا أرقام) + رقم الجواز مرة واحدة.
-- الخادم في functions/_lib/grades.js: POST /api/grades/profile. الجواز بصمة فقط؛ إن لم تُرفع درجاته بعد يُنشأ سجل grade_people مربوط بلا درجات (name فارغ) فتلحقه الدرجات عند الرفع. الاسم في جدول profiles (migrations/0008_profile.sql — لم يُطبَّق على D1 بعد؛ بدونه 503 not_migrated لصفحتي الملف والدرجات).
+- الخادم في functions/_lib/grades.js: POST /api/grades/profile. الجواز بصمة فقط؛ إن لم تُرفع درجاته بعد يُنشأ سجل grade_people مربوط بلا درجات (name فارغ) فتلحقه الدرجات عند الرفع. الاسم في جدول profiles (migrations/0008_profile.sql — طُبّق على D1 الحقيقي 2026-10-19 بطلب محمد؛ بدونه 503 not_migrated).
 - «درجاتي» لا تعرض الدرجات قبل profile.complete (الاسم + الجواز). /api/grades/claim بقي للتوافق.
 - المشرف: GET /api/grades/admin/roster + زر «تحميل قائمة الطلاب (CSV)» (Student code, Full name, Email, Semester, Subject, Grade؛ BOM). الرفع يقبل رمز الطالب M123 في عمود الجواز؛ صف الرمز بلا مادة ولا درجة يُتجاهل؛ رمز غير معروف ← unknown_code. الملخص يُظهر اسم الملف الشخصي وتنبيه اختلاف الاسم.
 - الإصدار: nav.js وi18n.js ?v=step62 في كل الصفحات، وgrades.css وgrades.js وgrades-admin.js وprofile*.js ?v=step62، وV = "medixa-step62" (step61 استعملته الجلسة الأخرى لصفحة الدخول). الفحوص: grades_api_check (70) وstep57_grades_browser.
