@@ -228,7 +228,7 @@
   }
   function move(pg, e) {
     const a = pg.active; if (!a || a.id !== e.pointerId) return;
-    if (a.pan) { window.scrollBy(0, a.y - e.clientY); a.y = e.clientY; return; }
+    if (a.pan) { window.scrollBy(0, a.y - e.clientY); const col = pg.wrap && pg.wrap.parentElement; if (col) col.scrollBy(a.x - e.clientX, 0); a.y = e.clientY; a.x = e.clientX; return; }   /* zoomed pages pan sideways inside their column */
     const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
     for (const ev of (evs.length ? evs : [e])) {
       const p = posOf(pg, ev);

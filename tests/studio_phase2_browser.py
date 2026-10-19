@@ -98,6 +98,7 @@ try:
             b2 = box(pg, i); pg.mouse.click(*at(pg, i, 0.3, 0.3)); pg.fill('.st-editor textarea', 'اختبار Rotated'); pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(250)
         pg.reload(); pg.wait_for_function("document.querySelectorAll('section.page').length===5", timeout=15000); pg.wait_for_timeout(600)
         chk(len([x for x in stored(pg) if x['tool'] in ('text', 'sticky')]) >= 5, 'notes survive reload')
+        pg.click('#st-docmenu-btn')
         with pg.expect_download() as dl: pg.click('#download')
         path = os.path.join(FX, 'p2.pdf'); dl.value.save_as(path); data = open(path, 'rb').read(); chk(data[:5] == b'%PDF-', 'export with text, shapes and lasso moves')
         v = ctx.new_page(); v.goto(BASE + 'privacy.html'); v.add_script_tag(url='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js')
@@ -109,7 +110,7 @@ try:
         v.close()
         # ---------- Zoom Writing ----------
         pg.evaluate("localStorage.removeItem(MedixaStudio.S.key)"); pg.reload(); pg.wait_for_function("document.querySelectorAll('section.page').length===5", timeout=15000); pg.wait_for_timeout(500)
-        pg.click('#studio-toolbar [data-tool=zoom]'); pg.wait_for_selector('#zw:not([hidden])'); pg.wait_for_timeout(300)
+        pg.click('#studio-settings'); pg.click('#studio-toolbar [data-tool=zoom]'); pg.wait_for_selector('#zw:not([hidden])'); pg.wait_for_timeout(300)
         chk(pg.locator('#zw-canvas').count() == 1 and pg.is_visible('#zw-canvas'), 'zoom writing strip opens')
         for mag in (2, 4, 6):
             pg.select_option('#zw-mag', str(mag)); pg.wait_for_timeout(250); n0 = len(stored(pg))
@@ -126,7 +127,7 @@ try:
         R = pg.evaluate("(()=>{const z=MedixaStudio.zoomWriting.zw;return z.R(MedixaStudio.page(z.page))})()"); chk(R['u0'] + R['wU'] <= 1.0001 and R['v0'] + R['hV'] <= 1.0001 and R['u0'] >= 0, f'region clamped inside page {R}')
         pg.click('#zw-newline'); pg.click('#zw-close'); pg.wait_for_timeout(200); chk(pg.is_hidden('#zw'), 'zoom writing closes'); chk(pg.evaluate("MedixaStudio.S.tool") != 'zoom', 'tool restored after close')
         # rotation / resize keeps the region on the page
-        pg.click('#studio-toolbar [data-tool=zoom]'); pg.set_viewport_size({'width': 700, 'height': 1000}); pg.wait_for_timeout(500)
+        pg.click('#studio-settings'); pg.click('#studio-toolbar [data-tool=zoom]'); pg.set_viewport_size({'width': 700, 'height': 1000}); pg.wait_for_timeout(500)
         R = pg.evaluate("(()=>{const z=MedixaStudio.zoomWriting.zw;return z.R(MedixaStudio.page(z.page))})()"); chk(R['u0'] >= 0 and R['u0'] + R['wU'] <= 1.0001, 'region restored inside page after viewport change'); pg.click('#zw-close')
         # ---------- toolbar customization persists ----------
         pg.set_viewport_size({'width': 900, 'height': 1000}); pg.click('#studio-settings'); pg.click('#studio-customize'); pg.wait_for_selector('#studio-cust[open]')

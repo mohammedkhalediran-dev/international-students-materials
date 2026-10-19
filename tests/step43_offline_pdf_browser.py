@@ -44,7 +44,7 @@ try:
         ink = pg.evaluate("k => localStorage.getItem(k)", 'medixa.pdf.annotations.v1:' + BASE + urllib.parse.quote(BUNDLED))
         chk(ink and len(json.loads(ink)) == 1, 'offline bundled: drawing is saved')
         chk(pg.locator('#study-launch').count() == 1 and pg.locator('#mx-dock').count() == 1, 'offline bundled: study tools and dock present')
-        pg.click('#download'); pg.wait_for_timeout(300)
+        pg.click('#st-docmenu-btn'); pg.click('#download'); pg.wait_for_timeout(300)
         chk(any('غير متاحة' in d for d in dialogs), 'offline bundled: annotated-PDF download explains it is unavailable')
         chk(not errs, f'offline bundled: no JS errors {errs[:2]}')
         # 2. CDN blocked, lecture uploaded later (no page images): clear message + open directly + retry

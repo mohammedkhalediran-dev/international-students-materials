@@ -6,20 +6,26 @@
   const $ = id => document.getElementById(id);
   const norm = s => (window.MS && MS.norm) ? MS.norm(s) : String(s || '').toLowerCase();
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const close = (name) => { document.body.classList.remove('st-' + name + '-open'); const p = $('st-' + name); if (p) p.classList.remove('open'); };
-  function toggle(name) {
-    const p = $('st-' + name), open = !p.classList.contains('open');
+  /* wide screens remember which panels are open (a device setting, like the toolbar layout) */
+  const PREF = 'medixa.studio.panels.v1', WIDE = '(min-width:1360px)';
+  const pref = () => { try { const v = JSON.parse(localStorage.getItem(PREF)); return v && typeof v === 'object' ? v : null; } catch { return null; } };
+  const remember = () => { if (!matchMedia(WIDE).matches) return; try { localStorage.setItem(PREF, JSON.stringify({ pages: !!(pg && pg.classList.contains('open')), notes: !!(np && np.classList.contains('open')) })); } catch {} };
+  const mark = (name, open) => { const b = $(name === 'pages' ? 'medixa-thumbs-toggle' : 'st-notes-toggle'); if (b) b.setAttribute('aria-expanded', String(open)); };
+  const close = (name) => { document.body.classList.remove('st-' + name + '-open'); const p = $('st-' + name); if (p) p.classList.remove('open'); mark(name, false); };
+  function toggle(name, force) {
+    const p = $('st-' + name), open = typeof force === 'boolean' ? force : !p.classList.contains('open');
     const wide = matchMedia('(min-width:1100px)').matches;
     ['pages', 'notes'].forEach(n => { if (n !== name && open && !wide) close(n); });
-    p.classList.toggle('open', open); document.body.classList.toggle('st-' + name + '-open', open);
+    p.classList.toggle('open', open); document.body.classList.toggle('st-' + name + '-open', open); mark(name, open);
     if (open && name === 'pages') pagesRefresh(); if (open && name === 'notes') notesRender();
+    if (typeof force !== 'boolean') remember();
   }
 
   /* ================= pages ================= */
   let pg = null, thumbIO = null, thumbs = [];
   function buildPages() {
     pg = el('aside', 'st-panel'); pg.id = 'st-pages'; pg.setAttribute('aria-label', 'الصفحات والإشارات المرجعية');
-    const head = el('div', 'st-panel-head'); head.append(el('strong', '', 'الصفحات')); const x = el('button', 'st-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'إغلاق لوحة الصفحات'); x.onclick = () => close('pages'); head.append(x);
+    const head = el('div', 'st-panel-head'); head.append(el('strong', '', 'الصفحات')); const x = el('button', 'st-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'إغلاق لوحة الصفحات'); x.onclick = () => { close('pages'); remember(); }; head.append(x);
     const add = el('div', 'st-add'); const tpl = document.createElement('select'); tpl.id = 'st-blank-tpl'; tpl.setAttribute('aria-label', 'نوع الصفحة الفارغة');
     for (const [v, l] of [['lined', 'مسطّرة'], ['blank', 'فارغة'], ['grid', 'مربعات'], ['dots', 'نقاط']]) { const o = document.createElement('option'); o.value = v; o.textContent = l; tpl.append(o); }
     const ab = el('button', 'st-add-btn', '＋ صفحة بعد الحالية'); ab.type = 'button'; ab.id = 'st-add-blank'; ab.onclick = addBlankHere; add.append(tpl, ab);
@@ -62,7 +68,7 @@
   let np = null, filter = 'all', q = '';
   function buildNotes() {
     np = el('aside', 'st-panel st-notes'); np.id = 'st-notes'; np.setAttribute('aria-label', 'ملاحظاتي');
-    const head = el('div', 'st-panel-head'); head.append(el('strong', '', 'ملاحظاتي')); const x = el('button', 'st-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'إغلاق ملاحظاتي'); x.onclick = () => close('notes'); head.append(x);
+    const head = el('div', 'st-panel-head'); head.append(el('strong', '', 'ملاحظاتي')); const x = el('button', 'st-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'إغلاق ملاحظاتي'); x.onclick = () => { close('notes'); remember(); }; head.append(x);
     const search = document.createElement('input'); search.type = 'search'; search.id = 'st-notes-q'; search.placeholder = 'ابحث في الملاحظات…'; search.setAttribute('aria-label', 'البحث في الملاحظات'); search.oninput = () => { q = norm(search.value); notesRender(); };
     const chips = el('div', 'st-chips'); chips.setAttribute('role', 'group'); chips.setAttribute('aria-label', 'تصفية الملاحظات');
     for (const [k, label] of [['all', 'الكل'], ['sticky', 'لاصقة'], ['text', 'نصوص']]) { const c = el('button', 'st-chip', label); c.type = 'button'; c.dataset.f = k; c.setAttribute('aria-pressed', String(k === filter)); c.onclick = () => { filter = k; chips.querySelectorAll('.st-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === k))); notesRender(); }; chips.append(c); }
@@ -85,13 +91,17 @@
 
   /* ================= header buttons ================= */
   function addButtons() {
-    const acts = $('studio-hdr-actions'); if (!acts || $('st-notes-toggle')) return false;
-    const b = el('button', 'st-hdr-btn', '✎ ملاحظاتي'); b.type = 'button'; b.id = 'st-notes-toggle'; b.setAttribute('aria-controls', 'st-notes'); b.onclick = () => toggle('notes'); acts.prepend(b);
-    const t = $('medixa-thumbs-toggle'); if (t) t.addEventListener('click', () => toggle('pages'), true);
+    const dock = $('mx-dock'); if (!dock || $('st-notes-toggle')) return false;
+    const b = el('button', 'st-dock-btn'); b.type = 'button'; b.id = 'st-notes-toggle'; b.setAttribute('aria-controls', 'st-notes'); b.setAttribute('aria-label', 'ملاحظاتي'); b.title = 'ملاحظاتي';
+    b.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/><path d="M7 13h8M7 17h5"/></svg><span class="st-lab">ملاحظاتي</span>';
+    b.onclick = () => toggle('notes'); dock.append(b);
+    const t = $('medixa-thumbs-toggle'); if (t) { t.setAttribute('aria-controls', 'st-pages'); t.addEventListener('click', () => toggle('pages'), true); }
+    mark('pages', false); mark('notes', false);
+    const p = pref(); if (matchMedia(WIDE).matches && !document.documentElement.classList.contains('st-embed')) { if (!p || p.pages) toggle('pages', true); if (!p || p.notes) toggle('notes', true); }
     return true;
   }
   buildPages(); buildNotes();
-  if (M.reader) { M.reader.on('opened', pagesRefresh); M.reader.on('pages', () => { sig = ''; pagesRefresh(); }); }
+  if (M.reader) { M.reader.on('opened', () => { pagesRefresh(); if (np && np.classList.contains('open')) notesRender(); }); M.reader.on('pages', () => { sig = ''; pagesRefresh(); }); }
   if (!addButtons()) { const mo = new MutationObserver(() => { if (addButtons()) { mo.disconnect(); } }); mo.observe(document.body, { childList: true, subtree: true }); setTimeout(() => mo.disconnect(), 10000); }
   addEventListener('keydown', e => { if (e.key === 'Escape') { close('pages'); close('notes'); } });
   M.panels = { toggle, close, pagesRefresh, notesRender };
