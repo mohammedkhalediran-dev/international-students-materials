@@ -56,7 +56,7 @@ try:
         pg.mouse.move(bb[0] + bb[2] * 0.75, bb[1] + 250); pg.mouse.down(); pg.mouse.move(bb[0] + bb[2] * 0.9, bb[1] + 280, steps=6); pg.mouse.up(); pg.wait_for_timeout(400)
         e1 = pg.evaluate('MedixaStudio.marginsOf(1)')
         # export: choose clipped
-        pg.click('#download'); pg.wait_for_selector('#studio-export-dlg[open]'); chk('عنصراً مكتوباً في الهوامش' in pg.inner_text('#studio-export-dlg p'), 'export warns about writing in margins')
+        pg.click('#st-docmenu-btn'); pg.click('#download'); pg.wait_for_selector('#studio-export-dlg[open]'); chk('عنصراً مكتوباً في الهوامش' in pg.inner_text('#studio-export-dlg p'), 'export warns about writing in margins')
         with pg.expect_download() as dl: pg.click('#exp-go')
         clip = os.path.join(FX, 'clip.pdf'); dl.value.save_as(clip)
         pg.evaluate("document.getElementById('download').click()"); pg.wait_for_selector('#studio-export-dlg[open]'); pg.check('input[value=expand]')

@@ -30,71 +30,79 @@
   }
   let cfg = load();
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch {} };
-  const mq = window.matchMedia ? matchMedia('(max-width: 720px)') : { matches: false, addEventListener() {} };
-  const mqStyle = window.matchMedia ? matchMedia('(max-width: 1400px)') : { matches: false, addEventListener() {} };
-  const MAX_COMPACT = 5;
+  const mqStyle = window.matchMedia ? matchMedia('(max-width: 899px)') : { matches: false, addEventListener() {} };
+  const PRIMARY = 3;                                       /* the first tools of the configured order stay on the bar */
+  const COLORS = [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر']];
+  const SIZES = [[2, 'خط رفيع'], [3, 'خط متوسط'], [6, 'خط عريض']];
 
   const root = $('studio-toolbar'); if (!root) return;
   const btn = (cls, label, inner, id) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.setAttribute('aria-label', label); b.title = label; b.innerHTML = inner; if (id) b.id = id; return b; };
+  const div = (cls) => { const d = document.createElement('div'); d.className = cls; return d; };
   function toolButton(t) { const b = btn('st-btn', t.name, svg(t.icon) + '<span class="st-lab">' + t.name + '</span>'); b.dataset.tool = t.id; b.setAttribute('aria-pressed', String(S.tool === t.id)); if (S.tool === t.id) b.classList.add('active'); b.onclick = () => M.setTool(t.id); return b; }
+  /* one popover pattern for the whole reader: the panel sits right after its button; one outside click closes all */
+  function closePops() { document.querySelectorAll('.st-pop').forEach(p => { if (p.hidden) return; p.hidden = true; const b = p.previousElementSibling; if (b) b.setAttribute('aria-expanded', 'false'); }); }
+  function popFor(button, cls, label) {
+    const p = div('st-pop ' + cls); p.hidden = true; p.setAttribute('role', 'group'); p.setAttribute('aria-label', label);
+    button.setAttribute('aria-haspopup', 'true'); button.setAttribute('aria-expanded', 'false');
+    button.onclick = () => { const open = p.hidden; closePops(); p.hidden = !open; button.setAttribute('aria-expanded', String(open)); };
+    return p;
+  }
   function render() {
     root.replaceChildren(); root.dataset.side = cfg.side;
-    const shown = cfg.order.filter(id => !cfg.hidden.includes(id));
-    let visible = shown, overflow = [];
-    if (mq.matches && shown.length > MAX_COMPACT) {
-      visible = shown.slice(0, MAX_COMPACT - 1); overflow = shown.slice(MAX_COMPACT - 1);
-      if (overflow.includes(S.tool)) { overflow = overflow.filter(i => i !== S.tool); visible.push(S.tool); } else visible.push(overflow.shift());   /* the active tool is never hidden */
-    }
-    const tools = document.createElement('div'); tools.className = 'st-tools'; tools.setAttribute('role', 'toolbar'); tools.setAttribute('aria-label', 'أدوات الرسم');
-    visible.forEach(id => tools.append(toolButton(byId[id])));
-    if (overflow.length) {
-      const more = btn('st-btn st-more', 'المزيد من الأدوات', svg('<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>')); more.setAttribute('aria-haspopup', 'true'); more.setAttribute('aria-expanded', 'false');
-      const pop = document.createElement('div'); pop.className = 'st-pop'; pop.hidden = true; overflow.forEach(id => pop.append(toolButton(byId[id])));
-      more.onclick = () => { pop.hidden = !pop.hidden; more.setAttribute('aria-expanded', String(!pop.hidden)); };
-      pop.addEventListener('click', () => { pop.hidden = true; });
-      tools.append(more, pop);
-    }
-    root.append(tools);
-    const style = document.createElement('div'); style.className = 'st-style';
-    const colors = document.createElement('div'); colors.className = 'st-colors'; colors.setAttribute('role', 'group'); colors.setAttribute('aria-label', 'اللون');
-    for (const [c, n] of [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر']]) {
-      const b = btn('st-swatch', n, ''); b.dataset.color = c; b.style.background = c; b.setAttribute('aria-pressed', String(S.color === c)); b.onclick = () => { S.color = c; const ci = $('color'); if (ci) ci.value = c; M.emit('style'); sync(); }; colors.append(b);
-    }
+    const shown = cfg.order.filter(id => !cfg.hidden.includes(id)), primary = shown.slice(0, PRIMARY), rest = shown.slice(PRIMARY);
+    const tools = div('st-tools'); tools.setAttribute('role', 'toolbar'); tools.setAttribute('aria-label', 'أدوات الرسم');
+    primary.forEach(id => tools.append(toolButton(byId[id])));
+    if (rest.includes(S.tool)) { const b = toolButton(byId[S.tool]); b.classList.add('st-extra'); tools.append(b); }   /* the active tool is never hidden */
+    /* colour and thickness */
+    const colors = div('st-colors'); colors.setAttribute('role', 'group'); colors.setAttribute('aria-label', 'اللون');
+    for (const [c, n] of COLORS) { const b = btn('st-swatch', n, ''); b.dataset.color = c; b.style.setProperty('--sw', c); b.onclick = () => { S.color = c; const ci = $('color'); if (ci) ci.value = c; M.emit('style'); sync(); }; colors.append(b); }
+    const sizes = div('st-sizes'); sizes.setAttribute('role', 'group'); sizes.setAttribute('aria-label', 'السُمك');
+    for (const [w, n] of SIZES) { const b = btn('st-size', n, '<span></span>'); b.dataset.w = w; b.style.setProperty('--d', (4 + w * 2) + 'px'); b.onclick = () => { S.width = w; const wi = $('width'); if (wi) wi.value = w; M.emit('style'); sync(); }; sizes.append(b); }
+    const custom = div('st-custom');
     const ci = document.createElement('input'); ci.type = 'color'; ci.id = 'color'; ci.value = S.color; ci.setAttribute('aria-label', 'لون مخصص'); ci.oninput = e => { S.color = e.target.value; M.emit('style'); sync(); };
-    const wl = document.createElement('label'); wl.className = 'st-width'; wl.append('السُمك '); const wi = document.createElement('input'); wi.type = 'range'; wi.id = 'width'; wi.min = 1; wi.max = 20; wi.value = S.width; wi.oninput = e => { S.width = +e.target.value; M.emit('style'); }; wl.append(wi);
-    style.append(colors, ci, wl);
-    let styleHost = style;
-    if (mqStyle.matches) {                                /* narrower than a laptop: colours and width live in one popover */
-      const sb = btn('st-btn st-stylebtn', 'اللون والسُمك', '<span class="st-dot"></span>'); sb.setAttribute('aria-haspopup', 'true'); sb.setAttribute('aria-expanded', 'false');
-      const pop = document.createElement('div'); pop.className = 'st-pop st-stylepop'; pop.hidden = true; pop.append(style);
-      sb.onclick = () => { pop.hidden = !pop.hidden; sb.setAttribute('aria-expanded', String(!pop.hidden)); }; const wrap = document.createElement('div'); wrap.className = 'st-stylewrap'; wrap.append(sb, pop); styleHost = wrap;
+    const wl = document.createElement('label'); wl.className = 'st-width'; wl.append('السُمك '); const wi = document.createElement('input'); wi.type = 'range'; wi.id = 'width'; wi.min = 1; wi.max = 20; wi.value = S.width; wi.oninput = e => { S.width = +e.target.value; M.emit('style'); sync(); }; wl.append(wi);
+    const cl = document.createElement('label'); cl.className = 'st-colorlab'; cl.append(ci, 'لون آخر'); custom.append(cl, wl);
+    const style = div('st-style'), wrap = div('st-stylewrap');
+    if (mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
+      const sb = btn('st-btn st-stylebtn', 'اللون والسُمك', '<span class="st-dot"></span>'), p = popFor(sb, 'st-stylepop', 'اللون والسُمك');
+      p.append(colors, sizes, custom); wrap.append(sb, p); style.append(wrap);
+    } else {
+      const sb = btn('st-btn st-stylebtn st-custombtn', 'لون وسُمك مخصصان', '<span class="st-dot st-dot-any"></span>'), p = popFor(sb, 'st-stylepop', 'لون وسُمك مخصصان');
+      p.append(custom); wrap.append(sb, p); style.append(colors, sizes, wrap);
     }
-    const hist = document.createElement('div'); hist.className = 'st-hist';
-    const un = btn('st-btn', 'تراجع', svg('<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>') + '<span class="st-lab">تراجع</span>', 'undo'), re = btn('st-btn', 'إعادة', svg('<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/>') + '<span class="st-lab">إعادة</span>', 'redo');
+    const hist = div('st-hist');
+    const un = btn('st-btn', 'تراجع', svg('<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>'), 'undo'), re = btn('st-btn', 'إعادة', svg('<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/>'), 'redo');
     un.onclick = () => M.undo(); re.onclick = () => M.redo(); hist.append(un, re);
-    const opts = document.createElement('div'); opts.className = 'st-settings';
-    const gear = btn('st-btn st-gear', 'الإعدادات', svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'), 'studio-settings'); gear.setAttribute('aria-haspopup', 'true'); gear.setAttribute('aria-expanded', 'false');
-    const gp = document.createElement('div'); gp.className = 'st-pop st-settingspop'; gp.hidden = true;
+    /* «المزيد»: the remaining tools and the settings */
+    const opts = div('st-settings');
+    const more = btn('st-btn st-more', 'المزيد من الأدوات والإعدادات', svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'), 'studio-settings');
+    const gp = popFor(more, 'st-morepop', 'المزيد من الأدوات والإعدادات');
+    if (rest.length) { const h = document.createElement('p'); h.className = 'st-pop-h'; h.textContent = 'أدوات أخرى'; const grid = div('st-grid'); rest.forEach(id => grid.append(toolButton(byId[id]))); gp.append(h, grid); }
+    const h2 = document.createElement('p'); h2.className = 'st-pop-h'; h2.textContent = 'الإعدادات';
     const po = document.createElement('label'); po.className = 'st-check'; po.innerHTML = '<input type="checkbox" id="medixa-pen-only"> قلم إلكتروني فقط'; po.querySelector('input').checked = S.penOnly; po.querySelector('input').onchange = e => M.setPenOnly(e.target.checked);
-    const sn = document.createElement('label'); sn.className = 'st-check'; sn.innerHTML = '<input type="checkbox" id="studio-snap"> محاذاة الزاوية'; sn.querySelector('input').onchange = e => M.setSnap(e.target.checked);
-    const cs = btn('st-btn', 'تخصيص الشريط', 'تخصيص الشريط', 'studio-customize'); cs.onclick = () => { gp.hidden = true; gear.setAttribute('aria-expanded', 'false'); openCustomize(); };
-    const mg = btn('st-btn', 'هوامش الكتابة', 'هوامش الكتابة', 'studio-margins-btn'); mg.onclick = () => { gp.hidden = true; gear.setAttribute('aria-expanded', 'false'); openMargins(); };
-    gp.append(po, sn, mg, cs); gear.onclick = () => { gp.hidden = !gp.hidden; gear.setAttribute('aria-expanded', String(!gp.hidden)); }; opts.append(gear, gp);
-    root.append(styleHost, hist, opts); sync(); hs();
+    const sn = document.createElement('label'); sn.className = 'st-check'; sn.innerHTML = '<input type="checkbox" id="studio-snap"> محاذاة الزاوية'; sn.querySelector('input').checked = !!S.snap; sn.querySelector('input').onchange = e => M.setSnap(e.target.checked);
+    const cs = btn('st-row-btn', 'تخصيص الشريط', 'تخصيص الشريط', 'studio-customize'); cs.onclick = () => { closePops(); openCustomize(); };
+    const mg = btn('st-row-btn', 'هوامش الكتابة', 'هوامش الكتابة', 'studio-margins-btn'); mg.onclick = () => { closePops(); openMargins(); };
+    gp.append(h2, po, sn, mg, cs); opts.append(more, gp);
+    root.append(tools, style, hist, opts); sync(); hs();
     root.dispatchEvent(new CustomEvent('st-rendered'));
   }
-  /* The toolbar floats over the page; pages reserve its measured height so nothing sits underneath. */
+  /* The toolbar floats over the page (under the header; at the bottom on phones); pages reserve its measured height. */
   function reserve() { const h = Math.ceil(root.getBoundingClientRect().height); document.documentElement.style.setProperty('--st-tb-h', h + 'px'); const hd = document.querySelector('header'); if (hd) document.documentElement.style.setProperty('--st-hdr-h', Math.ceil(hd.getBoundingClientRect().height) + 'px'); }
   if (window.ResizeObserver) { new ResizeObserver(reserve).observe(root); const hd = document.querySelector('header'); if (hd) new ResizeObserver(reserve).observe(hd); }
-  addEventListener('click', e => { if (!e.target.closest || !e.target.closest('.st-more,.st-pop,.st-stylebtn,.st-gear')) root.querySelectorAll('.st-pop').forEach(p => { p.hidden = true; }); });
+  addEventListener('click', e => { const t = e.target; if (!t.closest || t.closest('.st-pop')) return; const own = t.closest('[aria-haspopup="true"]'); if (own && own.nextElementSibling && own.nextElementSibling.classList.contains('st-pop')) return; closePops(); });
   function sync() {
     root.querySelectorAll('[data-tool]').forEach(b => { const on = b.dataset.tool === S.tool; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
     root.querySelectorAll('.st-swatch').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color === S.color)));
+    root.querySelectorAll('.st-size').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.w === S.width)));
+    root.style.setProperty('--st-cur', /^#[0-9a-f]{6}$/i.test(S.color) ? S.color : '#168c8c');
     const ci = $('color'); if (ci && ci.value !== S.color && /^#[0-9a-f]{6}$/i.test(S.color)) ci.value = S.color;
+    const wi = $('width'); if (wi && +wi.value !== S.width) wi.value = S.width;
   }
   function hs() { if (!S.hist) return; const u = $('undo'), r = $('redo'); if (u) u.disabled = !S.hist.canUndo; if (r) r.disabled = !S.hist.canRedo; }
-  M.on('tool', () => { if (mq.matches) render(); else sync(); }); M.on('history', hs); M.on('style', sync);
-  mq.addEventListener && mq.addEventListener('change', render); mqStyle.addEventListener && mqStyle.addEventListener('change', render);
+  M.on('tool', render); M.on('history', hs); M.on('style', sync);
+  mqStyle.addEventListener && mqStyle.addEventListener('change', render);
+  M.closePops = closePops;
 
   /* ---- customize dialog: order, visibility, handedness, reset ---- */
   function openCustomize() {

@@ -57,7 +57,7 @@
       const x = el('button', 'st-tab-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'إغلاق ' + t.title); x.onclick = e => { e.stopPropagation(); if (bad && !confirm('في هذا المستند تغييرات غير محفوظة (توجد مسودة احتياطية). إغلاق التبويب لن يحذفها ويمكنك إعادة فتحه. متابعة؟')) return; close(t.src); };
       row.append(b, x); list.append(row);
     }
-    const plus = el('button', 'st-tab-plus', '＋'); plus.type = 'button'; plus.id = 'st-tab-plus'; plus.setAttribute('aria-label', 'فتح مستند أو دفتر'); plus.setAttribute('aria-haspopup', 'dialog'); plus.onclick = openMenu;
+    const plus = el('button', 'st-tab-plus', '＋'); plus.type = 'button'; plus.id = 'st-tab-plus'; plus.setAttribute('aria-label', 'فتح مستند أو دفتر'); plus.setAttribute('aria-haspopup', 'dialog'); plus.onclick = openMenu; if (T.open.length > 1) plus.dataset.n = T.open.length - 1;
     nav.append(list, plus);
   }
   M.on('state', () => { clearTimeout(render.t); render.t = setTimeout(render, 120); });
@@ -73,7 +73,7 @@
     const t = load();
     const ul0 = sec('دفاتري'); item(ul0, '＋ دفتر جديد', () => newNotebook(pick), 'st-new-nb'); for (const n of notebooks()) item(ul0, n.title, () => pick('notebook:' + n.id));
     if (t.closed.length) { const ul1 = sec('أُغلقت مؤخراً (ما زالت محفوظة)'); for (const c of t.closed.slice().reverse()) item(ul1, c.title, () => pick(c.src)); }
-    const others = t.open.filter(x => x.src !== src); if (others.length && pick !== go) { const ul3 = sec('التبويبات المفتوحة'); for (const o of others) item(ul3, o.title, () => pick(o.src)); }
+    const others = t.open.filter(x => x.src !== src); if (others.length && (pick !== go || matchMedia('(max-width:720px)').matches)) {   /* phones show only the current tab in the strip */ const ul3 = sec('التبويبات المفتوحة'); for (const o of others) item(ul3, o.title, () => pick(o.src)); }
     const ul2 = sec('محاضرات الموقع'); const q = el('input'); q.type = 'search'; q.placeholder = 'ابحث عن محاضرة…'; q.setAttribute('aria-label', 'بحث في المحاضرات'); ul2.before(q);
     const fill = () => {
       ul2.replaceChildren(); const needle = q.value.trim().toLowerCase(); let n = 0;
