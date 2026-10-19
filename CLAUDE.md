@@ -137,3 +137,11 @@
 - css/grades.css يبني على مكوّن .tt من timetable.css. مفاتيح الترجمة جمل كاملة (لا كلمات قصيرة مثل «صف» لأن tr() يستبدل الأجزاء).
 - فحوص: tests/grades_api_check.mjs (ضمن npm test) وtests/step57_grades_browser.py. خطوات التفعيل لمحمد في GRADES-SETUP.md
 - الإصدار: ?v=step57 لـ i18n.js وnav.js في كل الصفحات، وV = "medixa-step57" في sw.js (style.css بقي step56p)..
+
+## قارئ PDF — Study Studio Pro (2026-10-19، بطلب محمد؛ على فرع ccr-a0fcdb08-bz6oce، لم يُنشر)
+- المرجع الكامل في docs/studio/ (FEATURE-MATRIX وARCHITECTURE-NOTES وSTORAGE-COVERAGE وACCEPTANCE). لا ترفع إلى cloudflare-upload ولا main ولا production دون موافقة محمد.
+- المحرك الوحيد للرسم: site/js/studio-ink.js (والمنطق الخالص studio-core.js). الأدوات في studio-tools.js، الشريط studio-toolbar.js، القارئ والتكبير والعرض الكسول studio-reader.js، اللوحات studio-panels.js، التبويبات studio-tabs.js، العرض المقسوم studio-split.js، الطبقة الذكية studio-smart.js، الغلاف studio-shell.js، الأنماط css/studio.css (استثناء مقصود: صفحة القارئ لها ورقة أنماط مستقلة). حُذف study-mode-v6.js.
+- مفتاح الرسم لم يتغيّر (medixa.pdf.annotations.v1:<رابط>) والصيغة القديمة تُقرأ؛ الإحداثيات (u,v) نسبة من الصفحة المعروضة (بعد التدوير وCropBox)، وقد تكون خارج 0..1 للهوامش. أرقام الصفحات المصدرية ثابتة دائماً؛ الصفحات الفارغة معرّفاتها ≥ 100001 وليست .page؛ الدفتر مستند اسمه notebook:<id>.
+- المخازن الجديدة: medixa.studio.layout.v1:<رابط> (هوامش وصفحات فارغة، ضمن النسخة الشاملة)، medixa.notebooks.v1 وmedixa.studio.tabs/split/toolbar (إعدادات جهاز). البطاقات والأسئلة تُضاف عبر MedixaStudyStore (من السكربت المضمّن) فتبقى حماية الحفظ والجدولة كما هي.
+- توليد الأسئلة بالذكاء الاصطناعي غير متاح (لا خادم)؛ الصياغة يدوية ولا يُرسل شيء من المحاضرة لأي جهة.
+- فحوص جديدة: node tests/studio_core_check.cjs (ضمن npm test) و python3 -I tests/studio_phase{1,1_robust,2,3,3_margins,3_pages,3_workspace,4}_browser.py (تحتاج MEDIXA_CDN_DIR وplaywright==1.56.0). tests/nav_check.py يفشل قبل هذا العمل ولا علاقة له به.
