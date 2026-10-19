@@ -101,41 +101,56 @@
   }
 
   /* ---------- الرئيسية: محاضرات الغد ---------- */
+  /* اليوم حتى تنتهي آخر محاضرة فيه، ثم الغد (أو أقرب يوم فيه محاضرات). يتبدّل تلقائياً والصفحة مفتوحة. */
+  function hhmm(d) { return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
+  var live = function (o) { return o.state !== "cancelled" && o.state !== "moved"; };
+  function pickDay(list, now) {
+    var today = iso(now), tomorrow = add(today, 1), nowT = hhmm(now);
+    var onDay = function (x) { return list.filter(function (o) { return o.date === x; }); };
+    var todayLive = onDay(today).filter(live);
+    var lastEnd = todayLive.reduce(function (m, o) { return o.end > m ? o.end : m; }, "");
+    if (todayLive.length && lastEnd > nowT) return { day: today, items: onDay(today), when: "محاضرات اليوم", until: lastEnd };
+    if (onDay(tomorrow).filter(live).length) return { day: tomorrow, items: onDay(tomorrow), when: "محاضرات غداً" };
+    var next = list.filter(function (o) { return o.date > tomorrow && live(o); })[0];
+    if (next) return { day: next.date, items: onDay(next.date), when: "المحاضرات القادمة", next: true };
+    return { day: tomorrow, items: onDay(tomorrow), when: "محاضرات غداً" };
+  }
   function initHome(box) {
+    var timer = null;
     access().then(function (a) {
       if (!a.allowed) return; // الزائر وطلاب الكورسات الأخرى: لا يظهر القسم إطلاقاً
       box.hidden = false;
-      var cards = box.querySelector(".tt-cards"), sub = box.querySelector("#ttSub"), note = box.querySelector("#ttNote");
       if (a.admin) { var m = box.querySelector("#ttManage"); if (m) m.hidden = false; }
-      cards.innerHTML = "";
-      for (var s = 0; s < 3; s++) cards.appendChild(el("div", "tt-skel"));
-      var tomorrow = add(iso(new Date()), 1);
-      range(tomorrow, add(tomorrow, 7)).then(function (d) {
+      load(true);
+    });
+    function load(first) {
+      var cards = box.querySelector(".tt-cards"), sub = box.querySelector("#ttSub"), note = box.querySelector("#ttNote");
+      var old = box.querySelector(".tt-empty"); if (old) { old.remove(); cards.hidden = false; }
+      if (first) { cards.innerHTML = ""; for (var s = 0; s < 3; s++) cards.appendChild(el("div", "tt-skel")); }
+      var now = new Date(), today = iso(now);
+      range(today, add(today, 8)).then(function (d) {
         cards.innerHTML = "";
         if (d.__status !== 200) {
-          cards.replaceWith(el("div", "tt-empty", t(d.error === "not_migrated" ? "الجدول غير مفعّل بعد." : "تعذّر تحميل الجدول. حاول لاحقاً.")));
+          cards.hidden = true; cards.after(el("div", "tt-empty", t(d.error === "not_migrated" ? "الجدول غير مفعّل بعد." : "تعذّر تحميل الجدول. حاول لاحقاً.")));
           return;
         }
-        var list = d.items || [];
-        var day = tomorrow, items = list.filter(function (o) { return o.date === tomorrow; });
-        var activeOnDay = function (x) { return list.filter(function (o) { return o.date === x && o.state !== "cancelled" && o.state !== "moved"; }).length; };
-        if (!activeOnDay(tomorrow)) {
-          var next = list.filter(function (o) { return o.date > tomorrow && o.state !== "cancelled" && o.state !== "moved"; })[0];
-          if (next) {
-            if (note) { note.hidden = false; note.textContent = t("لا محاضرات غداً. هذه أقرب محاضرات:") + " " + dayName(next.date) + " " + fmtDate(next.date); }
-            day = next.date; items = list.filter(function (o) { return o.date === day; });
-          }
+        var list = d.items || [], pick = pickDay(list, now);
+        if (note) {
+          note.hidden = !pick.next;
+          if (pick.next) note.textContent = t("لا محاضرات غداً. هذه أقرب محاضرات:") + " " + dayName(pick.day) + " " + fmtDate(pick.day);
         }
-        if (sub) { sub.querySelector("[data-when]").textContent = day === tomorrow ? t("محاضرات غداً") : t("المحاضرات القادمة"); }
-        var more = box.querySelector("#ttWeekLink"); if (more) more.href = "timetable.html?date=" + day;
-        if (!items.length) {
-          cards.replaceWith(el("div", "tt-empty", t(list.length ? "لا محاضرات غداً." : "لا محاضرات منشورة خلال الأسبوع القادم.")));
-          return;
-        }
-        items.forEach(function (o, i) { cards.appendChild(card(o, i, true)); });
+        if (sub) sub.querySelector("[data-when]").textContent = t(pick.when);
+        var more = box.querySelector("#ttWeekLink"); if (more) more.href = "timetable.html?date=" + pick.day;
+        if (!pick.items.length) {
+          cards.hidden = true; cards.after(el("div", "tt-empty", t(list.length ? "لا محاضرات غداً." : "لا محاضرات منشورة خلال الأسبوع القادم.")));
+        } else pick.items.forEach(function (o, i) { cards.appendChild(card(o, i, true)); });
         if (window.I18N) I18N.apply();
+        // بعد انتهاء آخر محاضرة اليوم (أو عند منتصف الليل) يتحوّل القسم وحده
+        clearTimeout(timer);
+        var at = new Date(now); if (pick.until) at.setHours(+pick.until.slice(0, 2), +pick.until.slice(3), 0, 0); else at.setHours(24, 0, 5, 0);
+        timer = setTimeout(function () { load(false); }, Math.min(Math.max(at - Date.now(), 1000), 6 * 3600 * 1000));
       });
-    });
+    }
   }
 
   /* ---------- العرض الأسبوعي ---------- */
@@ -233,7 +248,7 @@
     });
   }
 
-  window.MTT = { svg: svg, kind: kind, card: card, iso: iso, add: add, weekStart: weekStart, fmtDate: fmtDate, DAYS: DAYS, WEEK: WEEK, fetchJson: fetchJson };
+  window.MTT = { pickDay: pickDay, svg: svg, kind: kind, card: card, iso: iso, add: add, weekStart: weekStart, fmtDate: fmtDate, DAYS: DAYS, WEEK: WEEK, fetchJson: fetchJson };
   var home = document.getElementById("ttHome"); if (home) initHome(home);
   var week = document.getElementById("ttWeek"); if (week) initWeek(week);
   document.querySelectorAll("[data-tt-ico]").forEach(function (n) { n.appendChild(svg(n.getAttribute("data-tt-ico"))); });

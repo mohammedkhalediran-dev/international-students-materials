@@ -164,13 +164,31 @@ a.tt-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px var(--tt-
 
 /* الهاتف: البطاقات شريط أفقي ينزلق (يبقى صف المرجع ولا تتكدس) */
 @media (max-width: 760px) {
-  .tt-panel { padding: var(--space-4); }
-  .tt-tile { width: 44px; height: 44px; }
-  .tt-head .tt-toolbar { width: 100%; }
-  .tt-head .tt-toolbar .tt-btn { flex: 1 1 auto; justify-content: center; }
-  .tt-cards { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: calc(-1 * var(--space-4)); padding: 2px var(--space-4) var(--space-2); }
+  .tt-panel { padding: var(--space-3); border-radius: var(--radius-md); }
+  .tt-head { gap: var(--space-2); flex-wrap: nowrap; align-items: flex-start; }
+  .tt-title { gap: var(--space-2); flex: 1 1 auto; }
+  .tt-tile { width: 36px; height: 36px; border-radius: var(--radius-sm); }
+  .tt-tile svg { width: 20px; height: 20px; }
+  .tt-title h2 { font-size: var(--text-base); }
+  .tt-sub { font-size: var(--text-xs); margin-top: 0; }
+  .tt-head .tt-toolbar { flex: none; }
+  .tt-head .tt-btn { min-height: 36px; padding: var(--space-1) var(--space-2); font-size: var(--text-xs); white-space: nowrap; }
+  .tt-head .tt-btn svg { width: 14px; height: 14px; }
+  #ttManage { display: none; }
+  .tt-cards { display: flex; gap: var(--space-2); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: var(--space-3) calc(-1 * var(--space-3)) 0; padding: 2px var(--space-3) var(--space-1); }
   .tt-cards::-webkit-scrollbar { display: none; }
-  .tt-cards > * { flex: 0 0 min(78%, 300px); scroll-snap-align: start; }
+  .tt-cards > * { flex: 0 0 min(68%, 250px); scroll-snap-align: start; }
+  .tt-cards .tt-card { min-height: 0; padding: var(--space-3); gap: var(--space-1); }
+  .tt-cards .tt-card-top { gap: 2px var(--space-2); }
+  .tt-cards .tt-ico svg { width: 22px; height: 22px; }
+  .tt-cards .tt-subj { font-size: var(--text-sm); }
+  .tt-cards .tt-time, .tt-cards .tt-topic, .tt-cards .tt-meta { font-size: var(--text-xs); }
+  .tt-cards .tt-topic { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tt-cards .tt-meta { flex-wrap: nowrap; }
+  .tt-cards .tt-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tt-cards .tt-meta svg { width: 13px; height: 13px; }
+  .tt-skel { min-height: 96px; }
+  .tt-note { margin-top: var(--space-2); }
 }
 
 /* ---------- العرض الأسبوعي ---------- */
