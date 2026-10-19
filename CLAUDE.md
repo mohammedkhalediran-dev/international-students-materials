@@ -116,9 +116,9 @@
 - البطاقات روابط (بطلب محمد 2026-10-19): وسم NEUROANATOMY وبطاقة PHYSIOLOGY ← #semesters، LECTURE NOTES ← workspace.html?view=lectures، CLINICAL LEARNING ← workspace.html?view=questions. خارج ترتيب Tab (tabindex=-1 داخل الرسم المخفي عن قارئ الشاشة)؛ الطبقات الزخرفية لا تلتقط اللمس؛ البطاقة الباهتة (opacity أقل من 0.6) لا تُضغط؛ المشهد يثبت ما دام المؤشر على بطاقة.
 - إضافات Step 54 (بطلب محمد، النقاط السبع): (1) البطاقات روابط كما أعلاه. (2) بطاقة CONTINUE لآخر مادة فُتحت (MS.course(MS.getLast()))، في مرحلة الاستكشاف فقط، ومخفية إن لم توجد. (3) ترحيب «أهلاً، الاسم» (EN/FA أيضاً) لمن سجّل الدخول، من حدث ms:user الذي يطلقه auth.js بعد auth/me؛ الاسم في <bdi>. (4) أُلغيت بقرار محمد: الدماغ ثابت للجميع، لا يتغير العضو حسب الكورس. (5) التمرير: .mm-scroll يبتعد ويخفت والنص ثابت (معطّل مع تقليل الحركة). (6) السحب الأفقي باللمس يميل المشهد حتى 9° ويثبّته (touch-action: pan-y). (7) بطاقة NEW ANNOUNCEMENT لآخر تبليغ من حدث ms:announcements (يطلقه سكربت التبليغات في index.html)، في مرحلة الربط، وتفتح #announcements. النصوص من المستخدم تُكتب textContent فقط.
 
-## Step 55 (2026-10-19): الجدول الجامعي الرسمي (فرع feature/timetable، لم يُنشر)
+## Step 55 (2026-10-19): الجدول الجامعي الرسمي (منشور مع Step 56؛ 0006 طُبّق على D1)
 - قسم «الجدول الجامعي» تحت البانر في الرئيسية (محاضرات الغد) + timetable.html (أسبوعي) + timetable-admin.html (إدارة واستيراد). التصميم: css/timetable.css مكوّن مستقل بنطاق .tt وألوانه --tt-* (فاتح وداكن)، والمرجع ملف محمد MEDIXA-course03-timetable.html ولقطته.
 - الوصول من الخادم: الكورس الثالث (ms.sem في الحساب) أو المشرف؛ الزائر 401 وغيره 403. الإدارة للمشرف فقط. الخادم functions/_lib/timetable.js ويُستدعى في functions/api/[[path]].js بعد auth.
-- migrations/0006_timetable.sql لم يُطبَّق على D1 بعد. Workers AI (ربط AI) اختياري لقراءة الصور. التفاصيل في TIMETABLE.md.
+- migrations/0006_timetable.sql طُبّق على D1 الحقيقي (2026-10-19، بطلب محمد). Workers AI (ربط AI) اختياري لقراءة الصور. التفاصيل في TIMETABLE.md.
 - الإصدار ?v=step56 وV = "medixa-step56" (الإنتاج كان قد استعمل step55 للبانر).
 
