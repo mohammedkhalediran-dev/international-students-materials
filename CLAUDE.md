@@ -135,4 +135,5 @@
 - المشرف: site/grades-admin.html + js/grades-admin.js (رابط «إدارة الدرجات» في admin.html). لصق من Excel/Numbers (Tab) أو CSV، تخمين الأعمدة من العناوين، معاينة بأرقام مقنّعة، رفع دفعة باسم. الدفعات الجديدة تظهر تلقائياً للمربوطين. حذف دفعة، فك ربط. كل ذلك في audit_log بلا أرقام جواز.
 - الجداول: migrations/0007_grades.sql (grade_people، grade_batches، grade_entries، grade_attempts) — لم يُطبَّق على D1 بعد. الإدخال الجماعي بـjson_each في استعلامات قليلة (حد استعلامات الخطة المجانية).
 - css/grades.css يبني على مكوّن .tt من timetable.css. مفاتيح الترجمة جمل كاملة (لا كلمات قصيرة مثل «صف» لأن tr() يستبدل الأجزاء).
-- فحوص: tests/grades_api_check.mjs (ضمن npm test) وtests/step57_grades_browser.py. خطوات التفعيل لمحمد في GRADES-SETUP.md.
+- فحوص: tests/grades_api_check.mjs (ضمن npm test) وtests/step57_grades_browser.py. خطوات التفعيل لمحمد في GRADES-SETUP.md
+- الإصدار: ?v=step57 لـ i18n.js وnav.js في كل الصفحات، وV = "medixa-step57" في sw.js (style.css بقي step56p)..
