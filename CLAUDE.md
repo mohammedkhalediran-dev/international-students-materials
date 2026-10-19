@@ -70,7 +70,7 @@
 - رمز الرفع (UPLOAD_CODES) ما زال منفصلاً عن الحسابات.
 - فحوص إضافية: node --no-warnings tests/auth_api_check.mjs ، node --no-warnings tests/middleware_check.mjs ، python3 -I tests/auth_e2e.py
 
-- قاعدة D1 اسمها medixa (id: 8f0191c3-bac0-4dbc-8717-61e35c3196a5) مربوطة باسم DB في بيئتي Production وPreview، ومعها GOOGLE_CLIENT_ID وADMIN_EMAILS (2026-10-18). جرّب محمد الدخول بحساب Google على main.medixa.pages.dev ونجح، وظهرت لوحة الإدارة. دُمج feature/auth-db في main. شاشة موافقة Google في وضع Testing (المستخدمون التجريبيون فقط) وOAuth Client اسمه Medixa Web داخل مشروع Google Cloud باسم almaaqal-attendance. فرع الإنتاج الفعلي في إعدادات Cloudflare هو cloudflare-upload، فتحقق قبل أي رفع. صفحتا privacy وterms مفتوحتان في البوابة.
+- قاعدة D1 اسمها medixa (id: 8f0191c3-bac0-4dbc-8717-61e35c3196a5) مربوطة باسم DB في بيئتي Production وPreview، ومعها GOOGLE_CLIENT_ID وADMIN_EMAILS (2026-10-18). جرّب محمد الدخول بحساب Google على main.medixa.pages.dev ونجح، وظهرت لوحة الإدارة. دُمج feature/auth-db في main. شاشة موافقة Google كانت في وضع Testing، وأكّد محمد (2026-10-19) أن الدخول مفعّل لكل الطلاب الآن وOAuth Client اسمه Medixa Web داخل مشروع Google Cloud باسم almaaqal-attendance. فرع الإنتاج الفعلي في إعدادات Cloudflare هو cloudflare-upload، فتحقق قبل أي رفع. صفحتا privacy وterms مفتوحتان في البوابة.
 - الأدوار والتبليغات (2026-10-18، بطلب محمد): users.role = student | uploader | rep | admin. المشرف من ADMIN_EMAILS فقط ولا يُعيَّن من اللوحة. يعيّن المشرف الباقي من admin.html (قائمة بجانب الإيقاف؛ POST /api/auth/user {id, role}). الرفع بالحساب: أدوار uploader وrep وadmin تدخل upload.html بلا رمز (deps.account في core.mjs ومساعده uploadAccount في auth.js)، ورموز UPLOAD_CODES ما زالت تعمل. التبليغات: جدول announcements (migrations/0002_announcements.sql، طُبّق على D1 الحقيقي)؛ GET /api/announcements عام، والنشر والحذف لـ rep وadmin من announce.html (عربي فقط)، ويظهر قسم «التبليغات» في الرئيسية فقط إن وُجد تبليغ. فحوص جديدة ضمن auth_api_check وupload_api_check وauth_e2e.
 
 ## نسخة v8.1 (دمج 2026-10-18، فرع feature/medixa-v8.1-with-auth محلي؛ لم يُنشر)
@@ -120,10 +120,20 @@
 - قسم «الجدول الجامعي» تحت البانر في الرئيسية (محاضرات الغد) + timetable.html (أسبوعي) + timetable-admin.html (إدارة واستيراد). التصميم: css/timetable.css مكوّن مستقل بنطاق .tt وألوانه --tt-* (فاتح وداكن)، والمرجع ملف محمد MEDIXA-course03-timetable.html ولقطته.
 - الوصول من الخادم: الكورس الثالث (ms.sem في الحساب) أو المشرف؛ الزائر 401 وغيره 403. الإدارة للمشرف فقط. الخادم functions/_lib/timetable.js ويُستدعى في functions/api/[[path]].js بعد auth.
 - migrations/0006_timetable.sql طُبّق على D1 الحقيقي (2026-10-19، بطلب محمد). Workers AI (ربط AI) اختياري لقراءة الصور. التفاصيل في TIMETABLE.md.
-- الإصدار ?v=step57 وV = "medixa-step57" (بعد دمج إصلاح عارض PDF). الرئيسية تعرض محاضرات اليوم حتى تنتهي آخرها ثم محاضرات الغد (pickDay في timetable.js، تتبدّل وحدها والصفحة مفتوحة)؛ على الهاتف القسم مضغوط.
+- الإصدار ?v=step58 وV = "medixa-step58" (بعد دمج إصلاح عارض PDF ودرجاتي الجامعية Step 57). الرئيسية تعرض محاضرات اليوم حتى تنتهي آخرها ثم محاضرات الغد (pickDay في timetable.js، تتبدّل وحدها والصفحة مفتوحة)؛ على الهاتف القسم مضغوط.
 
 
 ## إصلاح عارض PDF في صفحة المادة (2026-10-19، بطلب محمد)
 - سفاري على iPhone/iPad لا يصغّر PDF داخل iframe (الصفحة مقصوصة ولا تتمرر). العارض في course.html صار site/js/pdf-viewer.js (MedixaViewer.open/close): يرسم كل صفحة بعرض النافذة في #viewerPages وتتمرر عمودياً.
 - الترتيب: pdf.js 3.11.174 من cdnjs (disableFontFace: true لأن خطوط بعض الملفات تتداخل بدونه) ← صور pdf-raster إن وُجدت ← iframe مع تنبيه. الرسم كسول (IntersectionObserver) ويُفرَّغ عند الابتعاد لحماية ذاكرة الهاتف.
 - الإصدار ?v=step56p لـ style.css وi18n.js وpdf-viewer.js، وV = "medixa-step56p".
+
+## Step 57 (2026-10-19): درجاتي الجامعية (بطلب محمد؛ الربط تلقائي)
+- محمد يملك ملف درجات رسمي (اسم الطالب، رقم الجواز، المادة، الدرجة) وأكّد أن عنده إذناً بنشرها لأصحابها. لا بريد في الملف.
+- رقم الجواز لا يُخزَّن أبداً: functions/_lib/grades.js يحوّله إلى بصمة HMAC-SHA256 بمفتاح GRADES_SECRET (سرّ في Cloudflare، 16 حرفاً فأكثر؛ بدونه 503). لا تغيّر المفتاح بعد الرفع (تبطل البصمات). لا تطلب الملف في المحادثة ولا تضعه في المستودع.
+- الطالب: site/grades.html + js/grades.js (رابط «درجاتي الجامعية» في القائمة صار فعّالاً). يكتب رقم جوازه مرة واحدة فيُربط حسابه بشخص واحد (grade_people.user_id UNIQUE) ويرى درجاته فقط. محاولات خاطئة: 5/ساعة و10/يوم (grade_attempts). الرقم مربوط بحساب آخر ← claimed + سجل grades_claim_conflict.
+- المشرف: site/grades-admin.html + js/grades-admin.js (رابط «إدارة الدرجات» في admin.html). لصق من Excel/Numbers (Tab) أو CSV، تخمين الأعمدة من العناوين، معاينة بأرقام مقنّعة، رفع دفعة باسم. الدفعات الجديدة تظهر تلقائياً للمربوطين. حذف دفعة، فك ربط. كل ذلك في audit_log بلا أرقام جواز.
+- الجداول: migrations/0007_grades.sql (grade_people، grade_batches، grade_entries، grade_attempts) — لم يُطبَّق على D1 بعد. الإدخال الجماعي بـjson_each في استعلامات قليلة (حد استعلامات الخطة المجانية).
+- css/grades.css يبني على مكوّن .tt من timetable.css. مفاتيح الترجمة جمل كاملة (لا كلمات قصيرة مثل «صف» لأن tr() يستبدل الأجزاء).
+- فحوص: tests/grades_api_check.mjs (ضمن npm test) وtests/step57_grades_browser.py. خطوات التفعيل لمحمد في GRADES-SETUP.md
+- الإصدار: ?v=step57 لـ i18n.js وnav.js في كل الصفحات، وV = "medixa-step57" في sw.js (style.css بقي step56p)..
