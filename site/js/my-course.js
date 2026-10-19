@@ -48,11 +48,11 @@
   /* حفظ الكورس، ونقل اشتراك الإشعارات إليه، ثم إعادة بناء الصفحة (لتختفي الكورسات الأخرى) */
   function setCourse(id, next) {
     MS.save(KEY, id);
+    var p = loadPrefs(); if (p.courses) { delete p.courses; savePrefs(p); } // مواد الكورس السابق لا تخص الكورس الجديد
     var done = function () { if (next) location.href = next; else location.reload(); };
     currentSub().then(function (s) {
       if (!s) return;
-      var j = s.toJSON(); j.semester = id;
-      return api("POST", "subscribe", j);
+      return api("POST", "subscribe", subBody(s, id));
     }).then(done, done);
   }
   MS.chooseCourse = picker;
@@ -76,6 +76,75 @@
   function registration() { return navigator.serviceWorker.register("sw.js").then(function () { return navigator.serviceWorker.ready; }); }
   function currentSub() { return supported ? registration().then(function (r) { return r.pushManager.getSubscription(); }).catch(function () { return null; }) : Promise.resolve(null); }
 
+  /* ---------- تفضيلات الإشعارات (Step 52): الفئات والمواد، لكل جهاز ----------
+     تُحفظ محلياً (ms.push.prefs) وتُرسل مع الاشتراك؛ الخادم يرسل حسبها فقط. */
+  var PKEY = "ms.push.prefs";
+  function loadPrefs() { var p = MS.load(PKEY, null); return p && typeof p === "object" ? p : {}; }
+  function savePrefs(p) { MS.save(PKEY, p); }
+  function subBody(sub, sem) { var j = sub.toJSON(); j.semester = sem || mySem(); j.prefs = loadPrefs(); return j; }
+  var CATS = [
+    ["lecture", "المحاضرات الجديدة"],
+    ["resource", "الاختبارات وأسئلة السنوات السابقة"],
+    ["announcement", "التبليغات"]
+  ];
+  var pdlg = null;
+  function prefsDialog() {
+    var p = loadPrefs(), sem = mySem();
+    var mine = (MS.ALL_COURSES || COURSES).filter(function (c) { return c.semester === sem; });
+    if (pdlg) pdlg.remove();
+    pdlg = el("dialog", "mc-dialog np-dialog"); pdlg.id = "notifyPrefs"; pdlg.setAttribute("aria-labelledby", "npTitle");
+    var h = el("h2", "mc-title", "تخصيص الإشعارات"); h.id = "npTitle"; pdlg.appendChild(h);
+    pdlg.appendChild(el("p", "mc-sub", "اختر ما يصلك عنه إشعار على هذا الجهاز."));
+    var form = el("form", "np-form"); form.method = "dialog";
+    var f1 = el("fieldset", "np-group"); f1.appendChild(el("legend", "", "الأنواع"));
+    CATS.forEach(function (c) {
+      var lab = el("label", "np-check"), i = el("input"); i.type = "checkbox"; i.name = "cat"; i.value = c[0]; i.checked = p[c[0]] !== false;
+      lab.appendChild(i); lab.appendChild(el("span", "", c[1])); f1.appendChild(lab);
+    });
+    form.appendChild(f1);
+    var f2 = el("fieldset", "np-group"); f2.appendChild(el("legend", "", "المواد"));
+    var all = el("label", "np-check"), ai = el("input"); ai.type = "radio"; ai.name = "scope"; ai.value = "all"; ai.checked = !Array.isArray(p.courses);
+    all.appendChild(ai); all.appendChild(el("span", "", "كل مواد كورسي")); f2.appendChild(all);
+    var some = el("label", "np-check"), si = el("input"); si.type = "radio"; si.name = "scope"; si.value = "some"; si.checked = Array.isArray(p.courses);
+    some.appendChild(si); some.appendChild(el("span", "", "مواد أختارها")); f2.appendChild(some);
+    var list = el("div", "np-courses");
+    mine.forEach(function (c) {
+      var lab = el("label", "np-check"), i = el("input"); i.type = "checkbox"; i.name = "course"; i.value = c.id;
+      i.checked = !Array.isArray(p.courses) || p.courses.indexOf(c.id) !== -1;
+      lab.appendChild(i); var sp = el("span", "", c.nameAr || c.name); sp.setAttribute("data-i18n-skip", ""); lab.appendChild(sp); list.appendChild(lab);
+    });
+    var sync = function () { list.hidden = !si.checked; };
+    ai.addEventListener("change", sync); si.addEventListener("change", sync); sync();
+    f2.appendChild(list); form.appendChild(f2);
+    var status = el("p", "np-status"); status.setAttribute("role", "status"); form.appendChild(status);
+    var row = el("div", "np-actions");
+    var save = el("button", "btn btn-primary btn-sm", "حفظ"); save.type = "submit";
+    var cancel = el("button", "btn btn-secondary btn-sm", "إلغاء"); cancel.type = "button";
+    cancel.addEventListener("click", function () { pdlg.close(); });
+    row.appendChild(save); row.appendChild(cancel); form.appendChild(row);
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var np = {};
+      [].forEach.call(form.querySelectorAll("input[name=cat]"), function (i) { if (!i.checked) np[i.value] = false; });
+      if (si.checked) np.courses = [].filter.call(form.querySelectorAll("input[name=course]"), function (i) { return i.checked; }).map(function (i) { return i.value; });
+      savePrefs(np);
+      save.disabled = true;
+      currentSub().then(function (s) {
+        if (!s) { pdlg.close(); return; }
+        return api("POST", "subscribe", subBody(s)).then(function (r) {
+          save.disabled = false;
+          if (r.status === 200 && r.data.prefsSaved !== false) pdlg.close();
+          else status.textContent = T(r.status === 200 ? "حُفظ على جهازك، ويبدأ العمل به بعد تحديث الخادم." : "تعذّر الحفظ. حاول مرة أخرى.");
+        });
+      });
+    });
+    pdlg.appendChild(form);
+    document.body.appendChild(pdlg);
+    apply();
+    if (pdlg.showModal) pdlg.showModal(); else pdlg.setAttribute("open", "");
+  }
+  MS.notifyPrefs = prefsDialog;
+
   function setRow(state) {
     if (!pushRow) return;
     pushRow.hidden = state === "hidden";
@@ -90,6 +159,7 @@
       error: ["تفعيل الإشعارات", "تعذّر التفعيل. حاول مرة أخرى."]
     }[state] || ["", ""];
     if (b) { b.textContent = T(L[0]); b.disabled = state === "denied" || state === "busy"; }
+    var cfg = pushRow.querySelector(".push-prefs"); if (cfg) cfg.hidden = state !== "on";
     if (note) { note.textContent = T(L[1]); note.hidden = !L[1]; }
   }
   function refresh() {
@@ -123,8 +193,7 @@
     return registration().then(function (r) {
       return sub || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(serverKey) });
     }).then(function (s) {
-      var j = s.toJSON(); j.semester = mySem();
-      return api("POST", "subscribe", j).then(function (res) { setRow(res.status === 200 ? "on" : "error"); });
+      return api("POST", "subscribe", subBody(s)).then(function (res) { setRow(res.status === 200 ? "on" : "error"); });
     }).catch(function () { /* لا شيء */ });
   }
   function enable() {
@@ -137,8 +206,7 @@
       return registration().then(function (r) {
         return r.pushManager.getSubscription().then(function (old) { return old || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(serverKey) }); });
       }).then(function (sub) {
-        var j = sub.toJSON(); j.semester = mySem();
-        return api("POST", "subscribe", j).then(function (res) { setRow(res.status === 200 ? "on" : "error"); });
+        return api("POST", "subscribe", subBody(sub)).then(function (res) { setRow(res.status === 200 ? "on" : "error"); });
       });
     }).catch(function () { setRow("error"); });
   }
@@ -157,6 +225,9 @@
     var b = el("button", "push-btn"); b.type = "button";
     if (MS.icon) { var ic = MS.icon("bell", 18); ic.setAttribute("aria-hidden", "true"); pushRow.appendChild(ic); }
     pushRow.appendChild(b);
+    var cfg = el("button", "push-prefs", "تخصيص"); cfg.type = "button"; cfg.hidden = true;
+    cfg.addEventListener("click", prefsDialog);
+    pushRow.appendChild(cfg);
     var note = el("p", "push-note"); pushRow.appendChild(note);
     b.addEventListener("click", function () {
       var st = pushRow.getAttribute("data-state");

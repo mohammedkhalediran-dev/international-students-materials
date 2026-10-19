@@ -1,6 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-step51";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=step51", "css/semester.css?v=step51", "css/workspace.css?v=step51", "js/app.js?v=step51", "js/nav.js?v=step51", "js/home.js?v=step51", "js/workspace.js?v=step51", "js/planner.js?v=step51", "js/questions.js?v=step51", "js/i18n.js?v=step51", "data/courses.js?v=step51", "data/study/medical-immunology-1.js?v=step51"];
+var V = "medixa-step52";
+var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "assets/icon-192.png", "assets/notify-badge.png", "css/style.css?v=step52", "css/semester.css?v=step52", "css/workspace.css?v=step52", "js/app.js?v=step52", "js/nav.js?v=step52", "js/home.js?v=step52", "js/workspace.js?v=step52", "js/planner.js?v=step52", "js/questions.js?v=step52", "js/i18n.js?v=step52", "data/courses.js?v=step52", "data/study/medical-immunology-1.js?v=step52"];
 var CDN = [
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
@@ -44,26 +44,51 @@ function fetchAndStore(req) {
   });
 }
 
-/* Step 49: إشعارات الموقع (Web Push) — الرسالة مشفّرة من الخادم: {title, body, url, tag} */
-self.addEventListener("push", function (e) {
-  var m = {};
-  try { m = e.data ? e.data.json() : {}; } catch (err) { m = { title: "Medixa", body: e.data ? e.data.text() : "" }; }
-  e.waitUntil(self.registration.showNotification(m.title || "Medixa", {
+/* Step 49: إشعارات الموقع (Web Push) — الرسالة مشفّرة من الخادم: {title, body, url, tag}
+   Step 52 (اختياري في الرسالة): category, course, actions [{action, title, url}], count, ts.
+   شكل الإشعار نفسه يحدده نظام الجهاز؛ هنا نختار الأيقونة والشارة والنص والأزرار فقط.
+   الأزرار تظهر حيث يدعمها النظام (Android وChrome/Edge على الكمبيوتر)؛ في iPhone/iPad وSafari لا تظهر،
+   والضغط على الإشعار نفسه يفتح الوجهة نفسها (البديل العامل). */
+function notifyOptions(m) {
+  var acts = Array.isArray(m.actions) ? m.actions.filter(function (a) { return a && a.action && a.title && a.url; }).slice(0, 2) : [];
+  var max = (self.Notification && self.Notification.maxActions) || 0;
+  var o = {
     body: m.body || "",
     tag: m.tag || "medixa",
     icon: "assets/icon-192.png",
-    badge: "assets/icon-192.png",
+    badge: "assets/notify-badge.png", // Android: شارة أحادية اللون في شريط الحالة
     lang: "ar",
     dir: "rtl",
-    data: { url: m.url || "index.html" }
-  }));
+    timestamp: typeof m.ts === "number" ? m.ts : Date.now(),
+    renotify: false, // تحديث إشعار المادة نفسها (تجميع) يحلّ محل السابق بلا صوت جديد
+    data: { url: m.url || "index.html", actions: {} }
+  };
+  acts.forEach(function (a) { o.data.actions[a.action] = a.url; });
+  if (max > 0 && acts.length) o.actions = acts.slice(0, max).map(function (a) { return { action: a.action, title: a.title }; });
+  return o;
+}
+self.addEventListener("push", function (e) {
+  var m = {};
+  try { m = e.data ? e.data.json() : {}; } catch (err) { m = { title: "Medixa", body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(m.title || "Medixa", notifyOptions(m)));
 });
+function safeTarget(u) {
+  var t;
+  try { t = new URL(u || "index.html", self.registration.scope); } catch (err) { t = null; }
+  return t && t.origin === self.location.origin ? t : new URL("index.html", self.registration.scope);
+}
 self.addEventListener("notificationclick", function (e) {
   e.notification.close();
-  var target = new URL((e.notification.data && e.notification.data.url) || "index.html", self.registration.scope);
-  if (target.origin !== self.location.origin) target = new URL("index.html", self.registration.scope);
+  var d = e.notification.data || {};
+  var target = safeTarget((e.action && d.actions && d.actions[e.action]) || d.url);
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
-    for (var i = 0; i < list.length; i++) { if ("focus" in list[i]) { list[i].navigate(target.href); return list[i].focus(); } }
+    // نافذة مفتوحة من الموقع: ننقلها إلى الوجهة (المحاضرة نفسها) ونظهرها؛ وإن تعذّر النقل نفتح نافذة جديدة
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i];
+      if ("focus" in c && "navigate" in c) {
+        return c.focus().then(function (fc) { return (fc || c).navigate(target.href); }).catch(function () { return self.clients.openWindow(target.href); });
+      }
+    }
     return self.clients.openWindow(target.href);
   }));
 });

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { handle } from "../netlify/lib/core.mjs";
 import { createMockStore } from "./mock_store.mjs";
 import { handleAuth, uploadAccount, currentUser } from "../functions/_lib/auth.js";
-import { handlePush, notify, lectureMessage, b64u } from "../functions/_lib/push.js";
+import { handlePush, notify, lectureNotice, b64u } from "../functions/_lib/push.js";
 import { createMockD1 } from "./mock_d1.mjs";
 import { mint, fakeFetch, CLIENT_ID } from "./google_token.mjs";
 
@@ -50,7 +50,7 @@ http.createServer(async (req, res) => {
     if (!r) {
       r = await handle(rq, deps(req));
       if (req.method === "POST" && /\/api\/(finish|link)$/.test(url.pathname) && r.status === 200) {
-        const msg = lectureMessage(((await r.clone().json().catch(() => ({}))) || {}).entry);
+        const msg = await lectureNotice(store, ((await r.clone().json().catch(() => ({}))) || {}).entry);
         if (msg) await notify(authEnv, msg, pushFetch);
       }
     }
