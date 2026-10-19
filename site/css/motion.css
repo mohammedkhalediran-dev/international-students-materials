@@ -45,3 +45,58 @@
   border: 2px solid var(--color-success); animation: motion-burst 900ms ease-out 200ms both;
 }
 .study-card.is-pass .study-score::after { border-color: var(--color-secondary); animation-delay: 380ms; }
+
+/* ===================== Step 60: موشن تفاعلي (بطلب محمد 2026-10-19) ===================== */
+
+/* ---- 6) انتقال ناعم بين الصفحات (View Transitions بين المستندات؛ سفاري 18.2+ وكروم 126+، وغيرها يتجاهله).
+   الرأس والقائمة ثابتان، والمحتوى يخرج سريعاً ويدخل من الأسفل؛ وصورة المادة تنتقل من بطاقتها إلى رأس صفحتها. ---- */
+@view-transition { navigation: auto; }
+.site-header { view-transition-name: site-header; }
+.sidebar { view-transition-name: site-nav; }
+.course-art { view-transition-name: course-art; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-10px) scale(.985); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(18px); } }
+::view-transition-old(root) { animation: vt-out 160ms var(--motion-ease) both; }
+::view-transition-new(root) { animation: vt-in 380ms var(--motion-enter) 40ms both; }
+::view-transition-group(course-art) { animation-duration: 460ms; animation-timing-function: var(--motion-enter); }
+::view-transition-group(site-header), ::view-transition-group(site-nav) { animation: none; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* ---- 7) موجة اللمس: دائرة تنتشر من مكان الإصبع (js/motion.js يضيف .rp داخل العنصر) ---- */
+.rp-rel { position: relative; }
+.rp { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 0; }
+.rp i { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: currentColor; opacity: .22; transform: scale(0); animation: rp-wave 560ms var(--motion-enter) forwards; }
+.btn-primary .rp i, .mm-cta .rp i { background: var(--color-surface); opacity: .35; }
+@keyframes rp-wave { to { transform: scale(var(--rp-s, 20)); opacity: 0; } }
+
+/* ---- 8) ميلان ثلاثي الأبعاد للبطاقات يتبع المؤشر أو الإصبع، مع لمعة خفيفة ---- */
+.tilt { transform-style: preserve-3d; will-change: transform; }
+.tilt.is-tilting { transition: transform 90ms linear, box-shadow var(--motion-base); }
+.tilt-glare { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1; opacity: 0; transition: opacity var(--motion-base);
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), color-mix(in srgb, var(--color-surface) 55%, transparent), transparent 60%); mix-blend-mode: soft-light; }
+.tilt.is-tilting .tilt-glare { opacity: 1; }
+
+/* ---- 9) أشرطة التقدم تمتلئ عند ظهورها ---- */
+.bar i { transition: width 900ms var(--motion-enter); }
+
+/* ---- 10) النوافذ تنبثق من مكانها، والقائمة الجانبية تنزلق عناصرها بالتتابع ---- */
+@keyframes dlg-in { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+@keyframes dlg-fade { from { opacity: 0; } }
+.mc-dialog[open], .edit-dialog[open] { animation: dlg-in 300ms var(--motion-enter) both; }
+.viewer[open] { animation: vt-in 320ms var(--motion-enter) both; }
+.mc-dialog[open]::backdrop, .viewer[open]::backdrop, .edit-dialog[open]::backdrop { animation: dlg-fade 240ms ease both; }
+@keyframes nav-in { from { opacity: 0; transform: translateX(var(--nav-from, 18px)); } }
+html[dir="ltr"] { --nav-from: -18px; }
+.nav-open .sidebar .nav-item { animation: nav-in 360ms var(--motion-enter) both; }
+.nav-open .sidebar .nav-item:nth-child(2) { animation-delay: 30ms; } .nav-open .sidebar .nav-item:nth-child(3) { animation-delay: 60ms; }
+.nav-open .sidebar .nav-item:nth-child(4) { animation-delay: 90ms; } .nav-open .sidebar .nav-item:nth-child(5) { animation-delay: 120ms; }
+.nav-open .sidebar .nav-item:nth-child(n+6) { animation-delay: 150ms; }
+
+/* ---- 11) وضع الدراسة: البطاقة تدخل، الإجابة الصحيحة تنبض والخاطئة تهتز ---- */
+@keyframes study-in { from { opacity: 0; transform: translateX(var(--study-from, -24px)); } }
+html[dir="ltr"] { --study-from: 24px; }
+.study-card { animation: study-in 380ms var(--motion-enter) both; }
+@keyframes ok-pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 55%, transparent); } 40% { transform: scale(1.03); } 100% { transform: scale(1); box-shadow: 0 0 0 14px transparent; } }
+@keyframes no-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+.study-opt.is-correct { animation: ok-pulse 650ms var(--motion-enter); }
+.study-opt.is-wrong { animation: no-shake 420ms ease; }

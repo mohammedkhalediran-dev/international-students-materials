@@ -143,3 +143,8 @@
 - transform وopacity فقط، وتتوقف تلقائياً مع prefers-reduced-motion ومع .reduced-motion (قواعد style.css العامة).
 - Step 59b (محمد: «لا تكاد تُرى»): js/motion.js بعد nav.js في الصفحات التسع. يضيف مستمع touchstart فارغاً (سفاري iOS لا يطبّق :active بدونه)، ويُظهر العناصر عند الوصول إليها بالتمرير (.mr ← .mr-in عبر IntersectionObserver، ومعه MutationObserver للقوائم المرسومة لاحقاً، ثم تُزال الأصناف). لا يُخفى شيء دون JS أو مع تقليل الحركة. الضغط صار scale(.94)/(.96).
 - الإصدار: motion.css وmotion.js ?v=step59b، وgrades.js ?v=step59، وV = "medixa-step59b" (بقية الملفات step58).
+
+## Step 60 (2026-10-19): موشن تفاعلي (بطلب محمد: «في كل مكان تراه مناسباً»)
+- كله في css/motion.css وjs/motion.js (الأقسام 6–11): انتقال بين الصفحات بـView Transitions (@view-transition؛ الرأس .site-header والقائمة .sidebar ثابتان، وصورة المادة .cc-img ← .course-art تنتقل باسم course-art يُضبط عند الضغط فقط)، موجة لمس (.rp)، ميلان ثلاثي الأبعاد مع لمعة للبطاقات (.tilt، أقصى 7°، باللمس نحو الإصبع ما دام مضغوطاً)، امتلاء أشرطة التقدم عند ظهورها، انبثاق النوافذ، تتابع عناصر القائمة الجانبية عند فتحها، ودخول بطاقة الدراسة مع نبض الإجابة الصحيحة واهتزاز الخاطئة.
+- «تقليل الحركة» (النظام أو إعداد الموقع) يلغي كل ذلك، ومعه انتقال الصفحات (skipTransition في pageswap/pagereveal).
+- الإصدار: motion.css وmotion.js ?v=step60، وV = "medixa-step60".
