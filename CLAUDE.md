@@ -137,3 +137,8 @@
 - css/grades.css يبني على مكوّن .tt من timetable.css. مفاتيح الترجمة جمل كاملة (لا كلمات قصيرة مثل «صف» لأن tr() يستبدل الأجزاء).
 - فحوص: tests/grades_api_check.mjs (ضمن npm test) وtests/step57_grades_browser.py. خطوات التفعيل لمحمد في GRADES-SETUP.md
 - الإصدار: ?v=step57 لـ i18n.js وnav.js في كل الصفحات، وV = "medixa-step57" في sw.js (style.css بقي step56p)..
+
+## Step 59 (2026-10-19): لمسات حركية صغيرة (بطلب محمد)
+- site/css/motion.css (يُربط بعد style.css في كل الصفحات التي تستعملها): تصغير خفيف عند الضغط على الأزرار والبطاقات، رفع خفيف بالمؤشر (الكمبيوتر فقط)، ظهور ناعم متتابع للقوائم (fill-mode backwards حتى لا يمنع رفع البطاقة بعد الانتهاء)، هيكل تحميل .skel (مستعمل في grades.js)، واحتفال صغير .study-card.is-pass عند النجاح في وضع الدراسة.
+- transform وopacity فقط، وتتوقف تلقائياً مع prefers-reduced-motion ومع .reduced-motion (قواعد style.css العامة).
+- الإصدار: motion.css?v=step59 وgrades.js?v=step59، وV = "medixa-step59" في sw.js (بقية الملفات step58).
