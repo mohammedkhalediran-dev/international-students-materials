@@ -1,6 +1,12 @@
-# MEDIXA Step 48
+# MEDIXA Step 49
 
 Authoritative baseline: the attached MEDIXA-Step-38.zip (extracted 2026-10-18). Step 38 progress files are preserved in docs/checkpoints/step38/.
+
+## Completed in Step 49 — «my semester» and notifications
+- Students choose their semester (first home visit or sidebar); saved as ms.sem and synced with the account.
+- Web Push notifications without libraries (Web Crypto, RFC 8291/8292): announcements to everyone; a new lecture only to that semester's students; hidden/old uploads, quizzes and exams do not notify; expired devices removed. iPhone/iPad instructions for Add to Home Screen. Admin page generates the VAPID keys in the browser. See PUSH-NOTIFICATIONS.md.
+- Needs on Cloudflare before it is visible: D1 table push_subs (migration 0003) and VAPID keys set by Mohammed.
+- Tests: push_check.mjs (40 checks, independent decryption), step49_course_push_browser.py (20 checks, stubbed push service).
 
 ## Completed in Step 48 — signed-in students no longer look like guests
 - Report from Mohammed (2026-10-19): after signing in, the site still showed «زائر».

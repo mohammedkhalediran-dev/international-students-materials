@@ -1,6 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-step48";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=step48", "css/semester.css?v=step48", "css/workspace.css?v=step48", "js/app.js?v=step48", "js/nav.js?v=step48", "js/home.js?v=step48", "js/workspace.js?v=step48", "js/planner.js?v=step48", "js/questions.js?v=step48", "js/i18n.js?v=step48", "data/courses.js?v=step48", "data/study/medical-immunology-1.js?v=step48"];
+var V = "medixa-step49";
+var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=step49", "css/semester.css?v=step49", "css/workspace.css?v=step49", "js/app.js?v=step49", "js/nav.js?v=step49", "js/home.js?v=step49", "js/workspace.js?v=step49", "js/planner.js?v=step49", "js/questions.js?v=step49", "js/i18n.js?v=step49", "data/courses.js?v=step49", "data/study/medical-immunology-1.js?v=step49"];
 var CDN = [
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
@@ -43,3 +43,27 @@ function fetchAndStore(req) {
     return res;
   });
 }
+
+/* Step 49: إشعارات الموقع (Web Push) — الرسالة مشفّرة من الخادم: {title, body, url, tag} */
+self.addEventListener("push", function (e) {
+  var m = {};
+  try { m = e.data ? e.data.json() : {}; } catch (err) { m = { title: "Medixa", body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(m.title || "Medixa", {
+    body: m.body || "",
+    tag: m.tag || "medixa",
+    icon: "assets/icon-192.png",
+    badge: "assets/icon-192.png",
+    lang: "ar",
+    dir: "rtl",
+    data: { url: m.url || "index.html" }
+  }));
+});
+self.addEventListener("notificationclick", function (e) {
+  e.notification.close();
+  var target = new URL((e.notification.data && e.notification.data.url) || "index.html", self.registration.scope);
+  if (target.origin !== self.location.origin) target = new URL("index.html", self.registration.scope);
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+    for (var i = 0; i < list.length; i++) { if ("focus" in list[i]) { list[i].navigate(target.href); return list[i].focus(); } }
+    return self.clients.openWindow(target.href);
+  }));
+});

@@ -6,7 +6,9 @@
 //           GET /api/announcements (عام)، POST /api/announcements وPOST /api/announcements/delete (ممثل الدفعة أو المشرف).
 // الأدوار: student (الأصل) | uploader (رفع الملفات) | rep (ممثل الدفعة: رفع + تبليغات) | admin (من ADMIN_EMAILS).
 
-export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
+import { notify, announcementMessage } from "./push.js";
+
+export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
 export const UPLOAD_ROLES = ["uploader", "rep", "admin"];
 export const ANNOUNCE_ROLES = ["rep", "admin"];
@@ -202,7 +204,7 @@ async function announcementsList(env) {
   return json({ ok: true, items });
 }
 
-async function announcementAdd(req, user, env, now) {
+async function announcementAdd(req, user, env, now, opts = {}) {
   const b = await readJson(req);
   if (!b) return fail("bad_request", 400);
   const title = String(b.title || "").trim();
@@ -210,7 +212,11 @@ async function announcementAdd(req, user, env, now) {
   if (!title || title.length > MAX_TITLE || body.length > MAX_BODY) return fail("bad_request", 400);
   const r = await env.DB.prepare("INSERT INTO announcements (title, body, author_id, author_name, created_at) VALUES (?, ?, ?, ?, ?)")
     .bind(title, body, user.id, user.name, now).run();
-  return json({ ok: true, id: r.meta && r.meta.last_row_id });
+  const id = r.meta && r.meta.last_row_id;
+  // إشعار لكل المشتركين (لا يؤخّر الرد؛ على Cloudflare عبر waitUntil)
+  const task = notify(env, announcementMessage({ id, title, body }), opts.pushFetch || fetch).catch(() => null);
+  if (opts.waitUntil) opts.waitUntil(task); else await task;
+  return json({ ok: true, id });
 }
 
 async function announcementDelete(req, env) {
@@ -256,7 +262,7 @@ export async function handleAuth(req, env, opts = {}) {
 
   if (isAnn && req.method === "POST") {
     if (!ANNOUNCE_ROLES.includes(user.role)) return fail("forbidden", 403);
-    return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
+    return p === "/api/announcements" ? announcementAdd(req, user, env, now, opts) : announcementDelete(req, env);
   }
 
   if (user.role !== "admin") return fail("forbidden", 403);

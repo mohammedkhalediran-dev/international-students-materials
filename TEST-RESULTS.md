@@ -1,3 +1,11 @@
+# Step 49 test results — 2026-10-19
+
+## Step 49 additions — PASS
+- `node --no-warnings tests/push_check.mjs` (in npm test): 40 checks. Encrypted payloads (English and Arabic) decrypted by an independent node:crypto RFC 8291 implementation; wrong key fails; VAPID ES256 signature verified with the public key; subscription validation (semester, https, key sizes, cross-origin); semester filtering; expired subscription deleted; announcement to all; unsubscribe; no keys = nothing sent; which uploads notify; course map freshness. Mutation check: changing the RFC 8291 info string makes the test fail.
+- `python3 -I tests/step49_course_push_browser.py` (headless Chromium, push service stubbed): 20 checks — first-visit picker → semester page, sidebar shows semester, no second prompt, home marks current, enable notifications, lecture → only its semester, semester change moves the subscription, hidden upload sends nothing, announcement → all, disable stops delivery, iPhone Safari shows Add-to-Home-Screen instructions.
+- Not tested: real Apple/Google push delivery, real iPhone home-screen app, Cloudflare waitUntil in production.
+- Regression, all PASS: npm test (now includes push_check); step39 29; step40 6; step41 48; step42 15; step43 20; step44 11; step45 7; step46 10; step47 70; step48 30 (sidebar keeps the saved-to-account line next to the semester line); step49 20; v81 smoke 45; auth_e2e; upload_e2e 33.
+
 # Step 48 test results — 2026-10-19
 
 ## Step 48 additions — PASS

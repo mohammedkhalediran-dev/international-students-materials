@@ -2,7 +2,7 @@
    بلا حساب يبقى كل شيء محلياً كما كان. مع الحساب: تُحفظ نسخة على الخادم وتُدمج عند الدخول. */
 (function () {
   "use strict";
-  var SYNC = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
+  var SYNC = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem"];
   var TKEY = "ms.sync.t"; // وقت آخر تعديل محلي لكل مفتاح
   var MS = window.MS || null;
   var user = null;
@@ -127,7 +127,9 @@
     if (user) {
       strong.textContent = user.name || user.email;
       strong.setAttribute("data-i18n-skip", "");
-      if (small) small.textContent = "تقدّمك محفوظ في حسابك";
+      // سطر مستقل (سطر الكورس يملؤه js/my-course.js)
+      var note = document.createElement("small"); note.className = "sb-acct-note"; note.textContent = "تقدّمك محفوظ في حسابك";
+      text.appendChild(note);
       act = document.createElement("button");
       act.type = "button";
       act.textContent = "تسجيل الخروج";
