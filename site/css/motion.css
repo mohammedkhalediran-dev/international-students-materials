@@ -14,22 +14,17 @@
   transition: transform var(--motion-fast) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), background-color var(--motion-base), border-color var(--motion-base);
   -webkit-tap-highlight-color: transparent;
 }
-.btn:active, .tt-btn:active, .icon-btn:active, .mm-cta:active, .file-link:active { transform: scale(.97); }
-.semester-tile:active, .course-card:active, .latest-item:active, .tool-tile:active, .quick-item:active, .resume-card:active { transform: scale(.985); }
+.btn:active, .tt-btn:active, .icon-btn:active, .mm-cta:active, .file-link:active { transform: scale(.94); transition-duration: 60ms; }
+.semester-tile:active, .course-card:active, .latest-item:active, .tool-tile:active, .quick-item:active, .resume-card:active { transform: scale(.96); transition-duration: 80ms; box-shadow: var(--shadow-sm); }
 
 /* ---- 2) رفع خفيف للبطاقات عند المرور بالمؤشر (الكمبيوتر فقط) ---- */
 @media (hover: hover) and (pointer: fine) {
   .semester-tile:hover, .course-card:hover, .tool-tile:hover, .latest-item:hover, .resume-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 }
 
-/* ---- 3) ظهور ناعم للقوائم عند رسمها (متتابع بفارق صغير، وأقصى تأخير محدود) ---- */
-@keyframes motion-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.semester-tiles > *, .latest-stack > *, .tool-tiles > *, .course-grid > *, .gr-batch, .gr-item, .ann-list > * {
-  animation: motion-rise 420ms var(--motion-enter) backwards; /* backwards: بعد الانتهاء لا يمنع رفع البطاقة وضغطها */
-}
-.semester-tiles > :nth-child(2), .latest-stack > :nth-child(2), .tool-tiles > :nth-child(2), .course-grid > :nth-child(2), .gr-item:nth-child(2), .ann-list > :nth-child(2) { animation-delay: 50ms; }
-.semester-tiles > :nth-child(3), .latest-stack > :nth-child(3), .tool-tiles > :nth-child(3), .course-grid > :nth-child(3), .gr-item:nth-child(3), .ann-list > :nth-child(3) { animation-delay: 100ms; }
-.semester-tiles > :nth-child(n+4), .latest-stack > :nth-child(n+4), .tool-tiles > :nth-child(n+4), .course-grid > :nth-child(n+4), .gr-item:nth-child(n+4), .ann-list > :nth-child(n+4) { animation-delay: 150ms; }
+/* ---- 3) ظهور العناصر عند الوصول إليها بالتمرير (يضيف js/motion.js الصنفين؛ بدونه يبقى كل شيء ظاهراً) ---- */
+.mr { opacity: 0; transform: translateY(28px) scale(.97); }
+.mr.mr-in { opacity: 1; transform: none; transition: opacity 600ms var(--motion-enter) var(--mr-delay, 0ms), transform 700ms var(--motion-enter) var(--mr-delay, 0ms); }
 
 /* ---- 4) هيكل تحميل: أسطر رمادية تلمع بهدوء مكان المحتوى بدل صفحة فارغة ---- */
 @keyframes motion-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
@@ -42,8 +37,8 @@
 .skel i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--color-surface), transparent); opacity: .7; animation: motion-shimmer 1.3s ease-in-out infinite; }
 
 /* ---- 5) احتفال صغير عند النجاح في وضع الدراسة ---- */
-@keyframes motion-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
-@keyframes motion-burst { from { transform: scale(.4); opacity: .9; } to { transform: scale(2.2); opacity: 0; } }
+@keyframes motion-pop { 0% { transform: scale(.4); opacity: 0; } 55% { transform: scale(1.35); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes motion-burst { from { transform: scale(.4); opacity: 1; } to { transform: scale(3); opacity: 0; } }
 .study-card.is-pass .study-score { display: inline-block; position: relative; animation: motion-pop 600ms var(--motion-enter) both; }
 .study-card.is-pass .study-score::before, .study-card.is-pass .study-score::after {
   content: ""; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
