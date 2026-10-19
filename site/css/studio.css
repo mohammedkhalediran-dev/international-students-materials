@@ -1,0 +1,5 @@
+/* MEDIXA Study Studio — styles for the reader's ink/workspace layer (pdf-notes.html only). */
+#studio-banner{position:fixed;z-index:30;inset-inline:12px;bottom:76px;max-width:520px;margin-inline:auto;background:#fff;color:#18334b;border:1px solid #9db6bf;border-radius:12px;box-shadow:0 6px 28px #0003;padding:12px 14px;display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
+#studio-banner.open{display:flex}
+#studio-banner span{flex:1 1 220px}
+#studio-banner button{min-height:44px;padding:8px 14px}
