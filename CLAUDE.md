@@ -141,4 +141,5 @@
 ## Step 59 (2026-10-19): لمسات حركية صغيرة (بطلب محمد)
 - site/css/motion.css (يُربط بعد style.css في كل الصفحات التي تستعملها): تصغير خفيف عند الضغط على الأزرار والبطاقات، رفع خفيف بالمؤشر (الكمبيوتر فقط)، ظهور ناعم متتابع للقوائم (fill-mode backwards حتى لا يمنع رفع البطاقة بعد الانتهاء)، هيكل تحميل .skel (مستعمل في grades.js)، واحتفال صغير .study-card.is-pass عند النجاح في وضع الدراسة.
 - transform وopacity فقط، وتتوقف تلقائياً مع prefers-reduced-motion ومع .reduced-motion (قواعد style.css العامة).
-- الإصدار: motion.css?v=step59 وgrades.js?v=step59، وV = "medixa-step59" في sw.js (بقية الملفات step58).
+- Step 59b (محمد: «لا تكاد تُرى»): js/motion.js بعد nav.js في الصفحات التسع. يضيف مستمع touchstart فارغاً (سفاري iOS لا يطبّق :active بدونه)، ويُظهر العناصر عند الوصول إليها بالتمرير (.mr ← .mr-in عبر IntersectionObserver، ومعه MutationObserver للقوائم المرسومة لاحقاً، ثم تُزال الأصناف). لا يُخفى شيء دون JS أو مع تقليل الحركة. الضغط صار scale(.94)/(.96).
+- الإصدار: motion.css وmotion.js ?v=step59b، وgrades.js ?v=step59، وV = "medixa-step59b" (بقية الملفات step58).
