@@ -122,3 +122,8 @@
 - migrations/0006_timetable.sql لم يُطبَّق على D1 بعد. Workers AI (ربط AI) اختياري لقراءة الصور. التفاصيل في TIMETABLE.md.
 - الإصدار ?v=step56 وV = "medixa-step56" (الإنتاج كان قد استعمل step55 للبانر).
 
+
+## إصلاح عارض PDF في صفحة المادة (2026-10-19، بطلب محمد)
+- سفاري على iPhone/iPad لا يصغّر PDF داخل iframe (الصفحة مقصوصة ولا تتمرر). العارض في course.html صار site/js/pdf-viewer.js (MedixaViewer.open/close): يرسم كل صفحة بعرض النافذة في #viewerPages وتتمرر عمودياً.
+- الترتيب: pdf.js 3.11.174 من cdnjs (disableFontFace: true لأن خطوط بعض الملفات تتداخل بدونه) ← صور pdf-raster إن وُجدت ← iframe مع تنبيه. الرسم كسول (IntersectionObserver) ويُفرَّغ عند الابتعاد لحماية ذاكرة الهاتف.
+- الإصدار ?v=step56p لـ style.css وi18n.js وpdf-viewer.js، وV = "medixa-step56p".
