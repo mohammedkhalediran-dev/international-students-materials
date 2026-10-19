@@ -10,6 +10,7 @@ import { handleAuth, uploadAccount, currentUser } from "../functions/_lib/auth.j
 import { handlePush, notify, lectureNotice, b64u } from "../functions/_lib/push.js";
 import { createMockD1 } from "./mock_d1.mjs";
 import { handleTimetable } from "../functions/_lib/timetable.js";
+import { handleGrades } from "../functions/_lib/grades.js";
 import { mint, fakeFetch, CLIENT_ID } from "./google_token.mjs";
 
 const SITE = join(fileURLToPath(new URL(".", import.meta.url)), "..", "site");
@@ -17,7 +18,7 @@ const PORT = Number(process.argv[2]) || 8772;
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".pdf": "application/pdf", ".webmanifest": "application/manifest+json" };
 
 const store = createMockStore();
-const authEnv = { DB: createMockD1(), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: process.env.ADMIN_EMAILS || "boss@x.com" };
+const authEnv = { DB: createMockD1(), GOOGLE_CLIENT_ID: CLIENT_ID, ADMIN_EMAILS: process.env.ADMIN_EMAILS || "boss@x.com", GRADES_SECRET: "dev-only-grades-secret-not-for-production" };
 // Web Push للاختبار: مفاتيح VAPID مولّدة عند التشغيل، والإرسال إلى https://push.test/... يُلتقط في الذاكرة (لا إنترنت)
 if (process.env.NO_VAPID !== "1") {
   const kp = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
@@ -47,7 +48,7 @@ http.createServer(async (req, res) => {
     for await (const c of req) parts.push(c);
     const body = Buffer.concat(parts);
     const rq = new Request(url, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : body });
-    let r = (await handleAuth(rq, authEnv, { fetch: fakeFetch, pushFetch })) || (await handleTimetable(rq, authEnv)) || (await handlePush(rq, authEnv, { currentUser }));
+    let r = (await handleAuth(rq, authEnv, { fetch: fakeFetch, pushFetch })) || (await handleTimetable(rq, authEnv)) || (await handleGrades(rq, authEnv)) || (await handlePush(rq, authEnv, { currentUser }));
     if (!r) {
       r = await handle(rq, deps(req));
       if (req.method === "POST" && /\/api\/(finish|link)$/.test(url.pathname) && r.status === 200) {
