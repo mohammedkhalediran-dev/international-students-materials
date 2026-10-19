@@ -5,6 +5,14 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const hdr = document.querySelector('header'); if (!hdr) return;
+  /* way back to the site (iPad home-screen app has no browser back button): the page that opened the reader, else home */
+  if (!$('st-back')) {
+    let back = 'index.html', label = 'الرئيسية';
+    try { const r = document.referrer && new URL(document.referrer); if (r && r.origin === location.origin && !/pdf-notes/.test(r.pathname)) { back = r.pathname + r.search + r.hash; label = 'رجوع'; } } catch {}
+    const a = document.createElement('a'); a.id = 'st-back'; a.className = 'st-hdr-btn st-back'; a.href = back; a.setAttribute('aria-label', label === 'رجوع' ? 'رجوع إلى المادة' : 'الصفحة الرئيسية');
+    a.innerHTML = '<span>‹ <span class="st-lab"></span></span>'; a.querySelector('.st-lab').textContent = label; a.title = a.getAttribute('aria-label'); hdr.prepend(a);
+    if (label === 'رجوع') { const h = document.createElement('a'); h.id = 'st-home'; h.className = 'st-hdr-btn st-back'; h.href = 'index.html'; h.setAttribute('aria-label', 'الصفحة الرئيسية'); h.title = 'الصفحة الرئيسية'; h.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>'; a.after(h); }
+  }
   const M = window.MedixaStudio;
   const svg = d => '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   const ICON = {

@@ -39,7 +39,7 @@
   let nav = null;
   function build() {
     const hdr = document.querySelector('header'); if (!hdr) return;
-    nav = el('nav', 'st-tabs'); nav.id = 'st-tabs'; nav.setAttribute('aria-label', 'المستندات المفتوحة'); const strong = hdr.querySelector('strong'); (strong || hdr.firstChild).after(nav);
+    nav = el('nav', 'st-tabs'); nav.id = 'st-tabs'; nav.setAttribute('aria-label', 'المستندات المفتوحة'); (hdr.querySelector('.st-brand') || hdr.querySelector('strong') || hdr.firstChild).after(nav);
     render();
   }
   async function dirtyKeys() { try { return await M.draftKeys(); } catch { return new Set(); } }
