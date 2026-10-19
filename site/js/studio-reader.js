@@ -7,7 +7,12 @@
   const M = window.MedixaStudio; if (!M) return;
   const C = M.C;
   const DPR = () => Math.min(3, window.devicePixelRatio || 1);
-  const R = { zoom: 1, pages: [], byId: new Map(), doc: null, bytes: null, raster: null, MAXKEEP: 12, queue: [], running: 0, io: null, listeners: [], nSources: 0, notebook: null };
+  /* iPad/iPhone: Safari has a small total canvas budget; past it pages turn blank. Cap each page canvas and keep fewer. */
+  const TOUCH = (navigator.maxTouchPoints || 0) > 0 || /iP(hone|ad|od)/.test(navigator.userAgent);
+  const MAX_PX = TOUCH ? 4e6 : 12e6;
+  const scaleFor = (w, h) => Math.max(0.5, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, w * h))));
+  const FONTS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/', CMAPS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
+  const R = { zoom: 1, pages: [], byId: new Map(), doc: null, bytes: null, raster: null, MAXKEEP: TOUCH ? 4 : 12, queue: [], running: 0, io: null, listeners: [], nSources: 0, notebook: null };
   const clampZ = z => Math.min(4, Math.max(0.4, z));
   const fitWidth = () => Math.max(240, Math.min((R.root ? R.root.clientWidth : innerWidth) - 24, 960));
   const emit = (n, d) => R.listeners.filter(l => l[0] === n).forEach(l => { try { l[1](d); } catch (e) { console.warn(e); } });
@@ -40,7 +45,7 @@
     for (const [x, y] of geo.dots) { ctx.beginPath(); ctx.arc(x * k, y * k, Math.max(0.7, 0.9 * k), 0, 7); ctx.fill(); }
   }
   async function draw(p) {
-    const token = ++p.token, d = DPR(), W = Math.max(1, Math.round(p.cssW * d)), H = Math.max(1, Math.round(p.cssH * d));
+    const token = ++p.token, d = scaleFor(p.cssW, p.cssH), W = Math.max(1, Math.round(p.cssW * d)), H = Math.max(1, Math.round(p.cssH * d));
     if (p.pdf.width !== W || p.pdf.height !== H) { p.pdf.width = W; p.pdf.height = H; }
     M.setPageActive(p.id, true);
     const ctx = p.pdf.getContext('2d'); let done = false;
@@ -79,7 +84,7 @@
       R.running++; p.drawing = true; draw(p).catch(e => console.warn('render failed', p.id, e)).finally(() => { p.drawing = false; R.running--; clearTimeout(R.st); R.st = setTimeout(settle, 30); pump(); });
     }
   }
-  function want(p) { if (p.queued || p.drawing || (p.rendered && p.rw === Math.round(p.cssW * DPR()))) return; p.queued = true; R.queue.push(p); }
+  function want(p) { if (p.queued || p.drawing || (p.rendered && p.rw === Math.round(p.cssW * scaleFor(p.cssW, p.cssH)))) return; p.queued = true; R.queue.push(p); }
   function distance(p) { const r = p.el.getBoundingClientRect(); return Math.abs((r.top + r.bottom) / 2 - innerHeight / 2); }
   function settle() {
     const near = R.pages.filter(p => p.near).sort((a, b) => distance(a) - distance(b));
@@ -153,14 +158,14 @@
       } else {
         const res = await fetch(src); if (!res.ok) throw Error('HTTP ' + res.status);
         R.bytes = new Uint8Array(await res.arrayBuffer());
-        R.doc = await pdfjsLib.getDocument({ data: R.bytes.slice() }).promise;
+        R.doc = await pdfjsLib.getDocument({ data: R.bytes.slice(), standardFontDataUrl: FONTS, cMapUrl: CMAPS, cMapPacked: true, disableFontFace: true }).promise; /* same as the course viewer: without these, letters of some files overlap on iPad */
         if (manifest && manifest.length) R.raster = manifest.map(u => new URL(u, location.href).href);
         for (let i = 1; i <= R.doc.numPages; i++) { const pr = await R.doc.getPage(i), vp = pr.getViewport({ scale: 1 }); R.sizes.push({ w: vp.width, h: vp.height }); R.proxies.push(pr); }
       }
       R.nSources = R.sizes.length; M.setSources(R.nSources);
       await M.init({ src, bytes: R.bytes });
       if (isNotebook && !M.S.layout.blanks.length) M.addBlank(0, 'lined');           /* a notebook always has a page to write on */
-      R.io = new IntersectionObserver(es => { for (const e of es) { const p = e.target.__p; if (p) p.near = e.isIntersecting; } settle(); }, { rootMargin: '1600px 0px' });
+      R.io = new IntersectionObserver(es => { for (const e of es) { const p = e.target.__p; if (p) p.near = e.isIntersecting; } settle(); }, { rootMargin: TOUCH ? '700px 0px' : '1600px 0px' });
       R.pages = M.pageOrder(R.nSources).map(makePage); root.append(...R.pages.map(p => p.el)); labels();
       if (window.ResizeObserver) { let w0 = root.clientWidth; new ResizeObserver(() => { if (Math.abs(root.clientWidth - w0) > 2) { w0 = root.clientWidth; relayout(); } }).observe(root); }
       M.ready(); emit('opened', R);

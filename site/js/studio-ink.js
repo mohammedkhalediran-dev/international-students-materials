@@ -6,6 +6,8 @@
   const C = window.MedixaStudioCore;
   if (!C) return;
   const DPR = () => Math.min(3, window.devicePixelRatio || 1);
+  const TOUCH = (navigator.maxTouchPoints || 0) > 0 || /iP(hone|ad|od)/.test(navigator.userAgent);
+  const MAX_PX = TOUCH ? 4e6 : 12e6;   /* per canvas; Safari blanks canvases past its memory budget */
   const $ = id => document.getElementById(id);
   const S = {
     layout: { v: 1, margins: {}, blanks: [], order: null }, nSources: 0,
@@ -141,7 +143,7 @@
   }
   function sizePage(pg) {
     if (!pg.on) { if (pg.ink.width !== 1) { pg.ink.width = 1; pg.ink.height = 1; pg.base.width = 1; pg.base.height = 1; } pg.dirty = true; return; }   /* off-screen pages hold no pixels */
-    const r = pg.ink.getBoundingClientRect(), d = DPR(), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
+    const r = pg.ink.getBoundingClientRect(), d = Math.max(0.5, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, r.width * r.height)))), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
     pg.totW = Math.max(1, r.width); pg.totH = Math.max(1, r.height);
     pg.cssW = pg.totW / kx; pg.cssH = pg.totH / ky;                /* cssW/cssH = the PAGE area, margins excluded */
     const W = Math.round(pg.totW * d), H = Math.round(pg.totH * d);
