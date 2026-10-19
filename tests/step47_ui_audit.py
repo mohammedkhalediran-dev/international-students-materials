@@ -1,6 +1,7 @@
 # python3 -I tests/step47_ui_audit.py — Step 47 UI audit guard (headless Chromium, simulated server; not a real device).
 # At 390 and 820 px, light and dark: no horizontal page scroll, no text under 12px, header and footer controls at least
 # 44px tall and 24px wide (touch; text links can be narrower), and muted text at least 4.5:1 on white. Covers the main pages and the login page.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

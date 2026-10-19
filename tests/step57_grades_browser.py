@@ -2,6 +2,7 @@
 # Covers: admin pastes a table (Excel copy) → column guess → masked preview → upload; batch and people lists; student links with a
 # differently written passport and sees only their own grades; wrong / already-claimed passport messages; guest gate; admin unlink;
 # sidebar link; English; 390/1440, dark/light, no horizontal scroll; no passport kept in the page or in browser storage.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

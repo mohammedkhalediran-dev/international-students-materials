@@ -63,6 +63,11 @@ http.createServer(async (req, res) => {
   }
   let p = decodeURIComponent(url.pathname);
   if (p.endsWith("/")) p += "index.html";
+  // CLEAN_URLS=1 يحاكي Cloudflare Pages: ‎/x.html ← تحويل 308 إلى ‎/x، و‎/x يُقدَّم من x.html
+  if (process.env.CLEAN_URLS === "1") {
+    if (/\.html$/.test(p) && !p.endsWith("/index.html")) { res.writeHead(308, { location: p.replace(/\.html$/, "") + url.search }); res.end(); return; }
+    if (!/\.[a-z0-9]+$/i.test(p)) p += ".html";
+  }
   const file = normalize(join(SITE, p));
   if (!file.startsWith(SITE)) { res.writeHead(403); res.end(); return; }
   try {

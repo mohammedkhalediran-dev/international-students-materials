@@ -2,6 +2,7 @@
 # Covers: gate for non-admins, stats, search/filters/pagination, detail, role change with confirmation, suspend/reactivate
 # (session really ends), persistence after reload, CSV export, audit log, notification center (preview vs real test),
 # theme persistence, keyboard/focus, mobile drawer + cards at 390/768/1440. Real Cloudflare/Google/Apple are not exercised.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, json, csv, io, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from seed53 import seed

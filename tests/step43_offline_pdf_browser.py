@@ -1,5 +1,6 @@
 # python3 -I tests/step43_offline_pdf_browser.py — Step 43: PDF reader when the pdf.js CDN is blocked or a PDF fails.
 # Headless Chromium + simulated server. A "later upload" is simulated by routing a non-bundled URL to real PDF bytes.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, os, sys, json, urllib.parse
 from playwright.sync_api import sync_playwright
 # Since Step 45 the service worker fetches the pinned CDN files itself; let routing see those requests (Chromium).

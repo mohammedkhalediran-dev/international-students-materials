@@ -148,11 +148,18 @@
 - كله في css/motion.css وjs/motion.js (الأقسام 6–11): انتقال بين الصفحات بـView Transitions (@view-transition؛ الرأس .site-header والقائمة .sidebar ثابتان، وصورة المادة .cc-img ← .course-art تنتقل باسم course-art يُضبط عند الضغط فقط)، موجة لمس (.rp)، ميلان ثلاثي الأبعاد مع لمعة للبطاقات (.tilt، أقصى 7°، باللمس نحو الإصبع ما دام مضغوطاً)، امتلاء أشرطة التقدم عند ظهورها، انبثاق النوافذ، تتابع عناصر القائمة الجانبية عند فتحها، ودخول بطاقة الدراسة مع نبض الإجابة الصحيحة واهتزاز الخاطئة.
 - «تقليل الحركة» (النظام أو إعداد الموقع) يلغي كل ذلك، ومعه انتقال الصفحات (skipTransition في pageswap/pagereveal).
 - الإصدار: motion.css وmotion.js ?v=step60، وV = "medixa-step60".
+## Step 61 (2026-10-19): صفحة الدخول أولاً (بطلب محمد، مع بقاء «المتابعة كزائر»)
+- من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يُحوَّل إلى login.html?gate=1&next=<الصفحة>. فحص سريع في رأس الصفحات التسع (ms.authed / ms.guest في localStorage) ثم تأكيد من الخادم في auth.js بعد auth/me (يمسح ms.authed القديم إن انتهت الجلسة).
+- «المتابعة كزائر» تحفظ ms.guest فلا تظهر صفحة الدخول له مرة أخرى على الجهاز. الدخول يحفظ ms.authed. الخروج يمسح الاثنين. جلسة قائمة تمر من صفحة الدخول تلقائياً (gate=1). privacy وterms مفتوحتان.
+- Cloudflare يختصر ‎/login.html إلى ‎/login: كل فحص لاسم الصفحة يقبل الحالتين ((\.html)?$)، وإلا تدور صفحة الدخول في إعادة تحميل (أُصلح في Step 61b؛ tests/step60_login_first.py يشغّل الخادم بـCLEAN_URLS=1). الإصدار auth.js ?v=step61b وV = "medixa-step61b".
+- ليس حماية: الزائر مسموح بقرار محمد. للمنع الحقيقي (ومنه ملفات PDF) يوجد REQUIRE_LOGIN=1 في Cloudflare (functions/_middleware.js).
+- الفحوص المتصفحية القديمة تستورد tests/guest_mode.py (تعمل كزائر)؛ فحص البوابة tests/step60_login_first.py.
+- الإصدار: auth.js وlogin.js ?v=step61، وV = "medixa-step61" (بعد دمج موشن Step 60 من الجلسة الأخرى).
 
-## Step 61 (2026-10-19): الملف الشخصي (بطلب محمد)
+## Step 62 (2026-10-19): الملف الشخصي (بطلب محمد)
 - site/profile.html + js/profile.js + js/profile-form.js (النموذج مشترك مع «درجاتي»). رابط «الملف الشخصي» في القائمة صار فعّالاً.
 - تلقائياً: الاسم والبريد من Google (/api/auth/me)، الكورس من ms.sem، رمز الطالب M<user id>. يكتبه الطالب: الاسم الكامل كما في الجامعة (جزءان فأكثر، بلا أرقام) + رقم الجواز مرة واحدة.
 - الخادم في functions/_lib/grades.js: POST /api/grades/profile. الجواز بصمة فقط؛ إن لم تُرفع درجاته بعد يُنشأ سجل grade_people مربوط بلا درجات (name فارغ) فتلحقه الدرجات عند الرفع. الاسم في جدول profiles (migrations/0008_profile.sql — لم يُطبَّق على D1 بعد؛ بدونه 503 not_migrated لصفحتي الملف والدرجات).
 - «درجاتي» لا تعرض الدرجات قبل profile.complete (الاسم + الجواز). /api/grades/claim بقي للتوافق.
 - المشرف: GET /api/grades/admin/roster + زر «تحميل قائمة الطلاب (CSV)» (Student code, Full name, Email, Semester, Subject, Grade؛ BOM). الرفع يقبل رمز الطالب M123 في عمود الجواز؛ صف الرمز بلا مادة ولا درجة يُتجاهل؛ رمز غير معروف ← unknown_code. الملخص يُظهر اسم الملف الشخصي وتنبيه اختلاف الاسم.
-- الإصدار: nav.js وi18n.js ?v=step61 في كل الصفحات، وgrades.css وgrades.js وgrades-admin.js وprofile*.js ?v=step61، وV = "medixa-step61". الفحوص: grades_api_check (70) وstep57_grades_browser (43).
+- الإصدار: nav.js وi18n.js ?v=step62 في كل الصفحات، وgrades.css وgrades.js وgrades-admin.js وprofile*.js ?v=step62، وV = "medixa-step62" (step61 استعملته الجلسة الأخرى لصفحة الدخول). الفحوص: grades_api_check (70) وstep57_grades_browser.

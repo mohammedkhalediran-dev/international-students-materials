@@ -1,4 +1,5 @@
 # python3 -I tests/auth_e2e.py — دخول Google (برمز اختبار) ومزامنة بين جهازين وصفحة الدخول وعودة الزائر.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, sys, os
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
