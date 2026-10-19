@@ -76,6 +76,10 @@
 
   function load() {
     status("جارٍ التحميل…");
+    // هيكل تحميل مكان الجدول (Step 59)؛ يُستبدل عند وصول الدرجات ويُخفى مع البوابة أو نموذج الربط
+    var sk = document.createElement("div"); sk.className = "skel"; sk.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 4; i++) sk.appendChild(document.createElement("i"));
+    $("grList").replaceChildren(sk); $("grList").hidden = false;
     fetchJson("api/grades/me").then(function (d) {
       if (d.__status === 401) return gate("سجّل الدخول لرؤية درجاتك", "الدرجات تظهر لصاحبها فقط، لذلك تحتاج الدخول بحساب Google.", true);
       if (d.__status === 503) return gate("هذه الميزة لم تُفعَّل بعد", "يعمل المشرف على تجهيز الدرجات. عد لاحقاً.", false);
