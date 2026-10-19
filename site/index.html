@@ -48,19 +48,20 @@
   <div class="mm-ambient" aria-hidden="true"></div>
   <div class="mm-brand" aria-hidden="true"><img class="mm-logo" src="assets/logo.png" width="256" height="256" alt=""><span>MEDIX<b>A</b></span></div>
   <div class="mm-copy">
-    <p class="mm-eyebrow"><span aria-hidden="true"></span>مساحتك لدراسة الطب</p>
+    <p class="mm-eyebrow"><span aria-hidden="true"></span><span class="mm-eyebrow-text" id="mmGreet">مساحتك لدراسة الطب</span></p>
     <h1 id="mmTitle"><span class="mm-l1">معرفة أعمق.</span> <span class="mm-l2">دراسة أذكى.</span></h1>
     <p class="mm-sub">من تفاصيل التشريح إلى التفكير السريري.</p>
     <a class="mm-cta" href="#semesters">استكشف الكورسات <span data-ico="arrow"></span></a>
   </div>
   <div class="mm-visual" role="img" aria-label="نموذج فني للدماغ تحيط به بطاقات التشريح ووظائف الأعضاء والملاحظات والتفكير السريري">
+    <div class="mm-scroll">
     <div class="mm-world" aria-hidden="true" data-i18n-skip>
       <div class="mm-floor"></div>
       <div class="mm-orbit"></div>
       <div class="mm-plane mm-plane-back"><div class="mm-plane-bar"></div></div>
       <div class="mm-plane mm-plane-front"></div>
       <div class="mm-brain"><img class="mm-brain-image" src="assets/brain-pearl.webp" width="640" height="640" alt="" draggable="false" fetchpriority="high"><div class="mm-brain-light"><i></i></div></div>
-      <a class="mm-tag mm-link" href="#semesters" tabindex="-1" title="المواد الدراسية"><span class="mm-tag-dot"></span><div><strong>NEUROANATOMY</strong><span>The art of understanding.</span></div></a>
+      <a class="mm-tag mm-link" href="#semesters" tabindex="-1" title="المواد الدراسية"><span class="mm-tag-dot"></span><div><strong class="mm-tag-title">NEUROANATOMY</strong><span class="mm-tag-sub">The art of understanding.</span></div></a>
       <div class="mm-stage"><span class="is-on"><b>01</b> ANATOMY ATLAS</span><span><b>02</b> STRUCTURE &amp; FUNCTION</span><span><b>03</b> CLINICAL REASONING</span><span><b>04</b> CONNECTED LEARNING</span></div>
       <div class="mm-motto">EXPLORE · CONNECT · REMEMBER</div>
       <a class="mm-card mm-physio mm-link" href="#semesters" tabindex="-1" title="المواد الدراسية">
@@ -79,9 +80,18 @@
         <div class="mm-row"><span>01</span>History &amp; examination</div>
         <div class="mm-row"><span>02</span>Clinical reasoning</div>
         <div class="mm-row mm-row-last"><span>03</span>Review &amp; recall <b>✓</b></div>
-        <div class="mm-card-foot"><span>NEUROLOGY</span><span class="mm-dot">●</span></div>
+        <div class="mm-card-foot"><span class="mm-clinical-foot">NEUROLOGY</span><span class="mm-dot">●</span></div>
+      </a>
+      <a class="mm-card mm-resume mm-link" href="#semesters" tabindex="-1" title="تابع المادة" hidden>
+        <div class="mm-card-label"><svg viewBox="0 0 24 24"><path d="M5 12h12M13 6l6 6-6 6"/></svg><span>CONTINUE</span></div>
+        <strong class="mm-resume-name"></strong>
+      </a>
+      <a class="mm-card mm-ann mm-link" href="#announcements" tabindex="-1" title="التبليغات" hidden>
+        <div class="mm-card-label"><svg viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg><span>NEW ANNOUNCEMENT</span></div>
+        <p class="mm-ann-title" dir="auto"></p>
       </a>
       <div class="mm-link-line"></div>
+    </div>
     </div>
   </div>
   <button class="mm-toggle" type="button" aria-pressed="false" aria-label="إيقاف الحركة" title="إيقاف الحركة"><svg class="mm-i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg><svg class="mm-i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg></button>
@@ -99,6 +109,7 @@
   var el = MS.el;
   fetch("api/announcements", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
     if (!d || !d.items || !d.items.length) return;
+    document.dispatchEvent(new CustomEvent("ms:announcements", { detail: d.items })); // يقرؤها بانر الرئيسية (js/medical-banner.js)
     var box = document.getElementById("annList");
     d.items.slice(0, 5).forEach(function (a) {
       var card = el("article", "card ann-item");

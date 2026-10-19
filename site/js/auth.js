@@ -166,6 +166,7 @@
   if (/\/(login|admin|announce)\.html$/.test(location.pathname)) return;
 
   MSAuth.me().then(function () {
+    try { document.dispatchEvent(new CustomEvent("ms:user", { detail: user })); } catch (e) { /* متصفح قديم */ } // يقرؤه بانر الرئيسية للترحيب بالاسم
     paintHeader();
     paintSidebar();
     if (!user) return;
