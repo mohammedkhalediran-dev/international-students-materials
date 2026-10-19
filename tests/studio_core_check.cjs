@@ -97,4 +97,8 @@ ok(JSON.stringify(C.displayOrder(3, bl)) === JSON.stringify([100002, 1, 2, 10000
 ok(JSON.stringify(C.displayOrder(3, bl, [1, 100001, 2, 3, 100002])) === JSON.stringify([1, 100001, 2, 3, 100002]), 'explicit order wins when valid');
 ok(JSON.stringify(C.displayOrder(3, bl, [2, 1, 3, 100001, 100002])) === JSON.stringify([100002, 1, 2, 100001, 3]), 'reordering SOURCE pages is rejected (source ids never reassigned)');
 ok(JSON.stringify(C.displayOrder(3, bl, [1, 2, 3, 100001])) === JSON.stringify([100002, 1, 2, 100001, 3]), 'incomplete order falls back');
+// text-anchored highlight
+const th = { page: 1, tool: 'texthl', color: '#f2c230', points: [[0.1, 0.1], [0.5, 0.12]], rects: [[0.1, 0.1, 0.5, 0.12], [0.1, 0.13, 0.3, 0.15]], quote: 'Mixed fixture' };
+ok(C.validStroke(th), 'texthl valid'); ok(!C.validStroke(Object.assign({}, th, { rects: [] })) && !C.validStroke(Object.assign({}, th, { rects: [[0.5, 0.5, 0.1, 0.6]] })) && !C.validStroke(Object.assign({}, th, { rects: [[0, 0, NaN, 1]] })), 'texthl rects validated');
+ok(C.distToStroke(th, 0.3, 0.11, 800, 1000) === 0 && C.distToStroke(th, 0.3, 0.2, 800, 1000) > 50, 'texthl hit test: inside a line rect is 0');
 console.log('STUDIO CORE OK: ' + n + ' checks');

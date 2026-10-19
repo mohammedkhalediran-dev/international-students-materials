@@ -40,7 +40,7 @@ main#pages{padding-top:calc(var(--st-tb-h,0px) + 12px)}
 .st-cust-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 @media(min-width:1180px){.st-btn .st-lab{display:block}}
 @media(max-width:1179px){.st-lab{display:none}}
-@media(max-width:720px){#studio-toolbar{gap:4px 6px;padding:4px 6px}header strong{display:none}#download,#study-launch{padding:6px 8px;font-size:12px}}
+@media(max-width:720px){#studio-toolbar{gap:4px 6px;padding:4px 6px}header strong{display:none}}
 
 /* ---- lasso selection bar ---- */
 #studio-selbar{position:fixed;z-index:8;inset-inline:12px;top:calc(var(--st-hdr-h,56px) + var(--st-tb-h,0px) + 16px);margin-inline:auto;width:max-content;max-width:calc(100vw - 24px);display:none;gap:6px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid #9db6bf;border-radius:12px;box-shadow:0 6px 28px #0003;padding:8px 10px;color:#18334b}
@@ -197,3 +197,52 @@ body.medixa-focus #studio-toolbar{top:max(8px,env(safe-area-inset-top))}
 
 /* the "previous session" notice of the resume module sits above the dock instead of over the header buttons */
 #mx88-recovery{top:auto!important;bottom:calc(var(--mx-dock-h,64px) + 12px)!important;left:50%!important;transform:translateX(-50%);z-index:14!important}
+
+/* ---- selectable text over the page (invisible; pointer events only in "select text" mode) ---- */
+.st-text{position:absolute;overflow:hidden;line-height:1;text-align:initial;pointer-events:none;z-index:2;-webkit-text-size-adjust:none}
+.st-text span,.st-text br{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
+.st-text ::selection{background:rgba(22,140,140,.38)}
+body.st-selecting .st-text{pointer-events:auto;user-select:text;-webkit-user-select:text}
+body.st-selecting canvas.ink{pointer-events:none}
+body.st-selecting .st-blank canvas.ink{pointer-events:auto}
+.page.st-notext::after{content:"";display:none}
+
+/* study masks live in PAGE coordinates (the margins around a page are not part of the page) */
+.page .mx-mask-layer{inset:auto;left:var(--pa-l,0%);top:var(--pa-t,0%);width:var(--pa-w,100%);height:var(--pa-h,100%)}
+.st-src-flash{position:absolute;border:3px solid #ff7a1a;background:#ff7a1a33;border-radius:3px;z-index:5;pointer-events:none;animation:st-flash 2.4s ease-out forwards;left:calc(var(--pa-l,0%) + var(--x) * var(--pa-w,100%));top:calc(var(--pa-t,0%) + var(--y) * var(--pa-h,100%));width:calc(var(--w) * var(--pa-w,100%));height:calc(var(--h) * var(--pa-h,100%))}
+@keyframes st-flash{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.st-src-flash{animation:none;opacity:1}}
+
+/* ---- smart study layer ---- */
+.st-seltools{position:fixed;z-index:25;display:flex;gap:4px;align-items:center;background:#122c47;border-radius:14px;padding:6px;box-shadow:0 8px 28px #0006}
+.st-seltools[hidden]{display:none}
+.st-sel-btn{min-width:44px;min-height:44px;border:1px solid #ffffff40;border-radius:10px;background:#0d223a;color:#fff;cursor:pointer;font:600 13px system-ui;padding:0 10px}
+.st-sel-hl{border:2px solid #fff;border-radius:50%;padding:0;min-width:44px}
+.st-draft textarea,.st-draft input[type=text]{width:100%;border:1px solid #9db6bf;border-radius:8px;padding:8px;font:inherit;min-height:44px}
+.st-field{display:block;margin:8px 0;font-size:14px}
+.st-cite{background:#eef6f7;border-radius:8px;padding:8px 10px;font-size:13px;margin:4px 0 8px}
+.st-opts-set{border:1px solid #cfdde3;border-radius:10px;margin:8px 0;padding:6px 10px}
+.st-opt-row{display:flex;gap:8px;align-items:center;margin:6px 0}
+.st-opt-row input[type=radio]{width:24px;height:24px;flex:0 0 auto}
+.st-ai-note{font-size:12px;color:#7a5a00;background:#fff6dc;border-radius:8px;padding:6px 10px}
+.st-err{color:#a32727;min-height:1.4em;font-size:13px;margin:4px 0}
+.st-draft .st-ok{background:#168c8c;color:#fff;border-color:#168c8c}
+
+/* the study-tools drawer is modal-like: it sits above the floating toolbar and the header */
+#study-panel{z-index:30!important}
+#study-panel{bottom:var(--mx-dock-h,0px)!important}
+
+/* ---- phones: one slim header row (glyph-only buttons; the save state becomes a coloured dot, text kept for screen readers) ---- */
+@media(max-width:720px){
+  header{padding:4px 6px;gap:4px;min-height:52px}
+  header button:not(.st-tab-b):not(.st-tab-x):not(.st-tab-plus){font-size:0;padding:0 6px;min-width:44px}
+  header button:not(.st-tab-b):not(.st-tab-x):not(.st-tab-plus)::first-letter{font-size:18px}
+  #download::before{content:"⤓";font-size:18px}
+  #status{font-size:0;min-width:24px;display:inline-flex;align-items:center;justify-content:center}
+  #status::before{content:"●";font-size:16px;color:#7ad0a0}
+  html[data-save-state=pending] #status::before,html[data-save-state=editing] #status::before{color:#ffd166}
+  html[data-save-state=failed] #status::before,html[data-save-state=conflict] #status::before,html[data-save-state=corrupt] #status::before{color:#ff7a7a}
+  .st-tab-t{max-width:9ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-tabs{flex:1 1 120px}
+  #studio-toolbar{margin-top:4px}
+}

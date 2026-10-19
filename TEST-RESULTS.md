@@ -90,3 +90,14 @@ pdf.js and pdf-lib were served from local npm copies (MEDIXA_CDN_DIR) because th
 
 ## NOT tested
 Live Google Sign-In, real Cloudflare D1/KV, production deployment, iPad/Android hardware, stylus input, real network PDF loading. ui_check.py / phase1_check.py / parts of nav_check.py are legacy tests for the old homepage and were not run as pass criteria.
+
+
+## Study Studio Pro — run on 2026-10-19 (Chromium 141.0.7390.37, Playwright 1.56.0, Node 22, container, headless)
+Real tests (browser, synthetic PDFs from tests/helpers/make_studio_pdfs.cjs: mixed sizes, /Rotate 90/180/270, CropBox, 120 pages, a text-less "scan"; pdf.js 3.11.174 and pdf-lib 1.17.1 served from npm copies via MEDIXA_CDN_DIR):
+- studio_phase1_browser 34 · studio_phase1_robust_browser 17 · studio_phase2_browser 49 · studio_phase3_browser 30 · studio_phase3_margins_browser 18 · studio_phase3_pages_browser 27 · studio_phase3_workspace_browser 35 · studio_phase4_browser 44.
+- Legacy browser tests re-run and passing: step39, step40 (now 12 keys), step41, step42, step43, step44, step45, step46, browser_dom_ink/occlusion/recovery.
+- npm test: all suites pass incl. studio_core_check (51), backup-runtime (19, now 12 keys), mask suites.
+Command pattern: `MEDIXA_CDN_DIR=<dir> python3 -I tests/<name>.py` (needs `pip install playwright==1.56.0`; old browser_dom_* tests need /usr/bin/chromium → the Playwright Chromium).
+Simulations / not real: pen pressure and touch are Chrome DevTools Protocol events, not an Apple Pencil; the server is tests/dev_server.mjs; timings are this container only (120-page lecture usable in ~2 s, ≤13 rendered pages).
+Failures seen and what happened: tests/nav_check.py fails on index.html (a dialog intercepts a click) — present before this work and unrelated; on the very first baseline run step43 once failed 2 checks (page-image count, ready status) and passed on every later run — cause not determined, treat as possibly flaky.
+Not tested: real iPad/Android hardware, live Cloudflare, live Google sign-in, partial-import rollback for the new layout key beyond the generic backup path.

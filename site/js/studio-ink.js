@@ -85,6 +85,10 @@
     const col = s.color || '#e43d56', base = (s.width || 3) * w / 800;
     ctx.strokeStyle = col; ctx.fillStyle = col;
     if (s.tool === 'text' || s.tool === 'sticky') { drawTextBox(ctx, s, w, h); ctx.restore(); return; }
+    if (s.tool === 'texthl') {                                   /* text-anchored highlight: one translucent fill per line rectangle */
+      ctx.globalAlpha = 0.35; for (const r of s.rects) ctx.fillRect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h);
+      ctx.restore(); return;
+    }
     const segs = C.shapeSegments(s);
     if (segs) {
       ctx.lineWidth = base; const a = s.points[0], b = s.points[s.points.length - 1];
@@ -279,7 +283,7 @@
   const redo = () => afterHistory(S.hist.redo());
 
   /* ---------- export (vector, rotation/CropBox aware) ---------- */
-  const hex = c => { const m = /^#([0-9a-f]{3}|[0-9a-f]{6})/i.exec(c || '#e43d56'); let h = m ? m[1] : 'e43d56'; if (h.length === 3) h = h.split('').map(x => x + x).join(''); return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4), 16) / 255]; };
+  const hex = c => { const m = /^#([0-9a-f]{6}|[0-9a-f]{3})(?![0-9a-f])/i.exec(c || '#e43d56'); let h = m ? m[1] : 'e43d56'; if (h.length === 3) h = h.split('').map(x => x + x).join(''); return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4), 16) / 255]; };
   function quadFlatten(pts) {
     if (pts.length < 3) return pts;
     const out = [pts[0]];
@@ -327,6 +331,11 @@
       const wpt = (s, pr) => C.widthAt(s.width || 3, pr, s.tool === 'highlight' ? 'highlight' : s.tool === 'pen' ? 'pen' : 'shape') / 800 * dw;
       for (const s of strokes) {
         if (s.tool === 'text' || s.tool === 'sticky') { textPages.push({ page, box, rot, s }); continue; }
+        if (s.tool === 'texthl') {
+          const [r0, g0, b0] = hex(s.color || '#f2c230');
+          for (const q of s.rects) page.drawSvgPath(path([[q[0], q[1]], [q[2], q[1]], [q[2], q[3]], [q[0], q[3]]]) + ' Z', { x: 0, y: 0, color: rgb(r0, g0, b0), opacity: 0.35, borderWidth: 0 });
+          continue;
+        }
         const [r, g, b] = hex(s.color), color = rgb(r, g, b), op = s.tool === 'highlight' ? 0.3 : 1;
         const draw = (d, width) => page.drawSvgPath(d, { x: 0, y: 0, borderColor: color, borderWidth: width, borderOpacity: op, borderLineCap: LineCapStyle.Round, borderLineJoin: LineJoinStyle.Round });
         const segs = C.shapeSegments(s);

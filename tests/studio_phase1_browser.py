@@ -55,11 +55,13 @@ try:
                 const ctx=c.getContext('2d'), hit=[]; for (const f of [0.3,0.45,0.6]) { const x=Math.round((0.2+(0.7-0.2)*((f-0.2)/(0.7-0.2)))*vp.width); }
                 // pen runs from (0.2,0.2) to (0.7,0.55): sample 5 points along it, count reddish pixels in a 7px box around each
                 let found=0; for (let k=1;k<=5;k++){ const t=k/6,u=0.2+0.5*t,v=0.2+0.35*t,cx=Math.round(u*vp.width),cy=Math.round(v*vp.height); const d=ctx.getImageData(Math.max(0,cx-4),Math.max(0,cy-4),9,9).data; let red=false; for(let i=0;i<d.length;i+=4) if(d[i]>180&&d[i+1]<130&&d[i+2]<150) red=true; if(red) found++; }
+                let ex=0; const dd=c.getContext('2d').getImageData(0,0,c.width,c.height).data; for(let i=0;i<dd.length;i+=4) if(Math.abs(dd[i]-228)<14&&Math.abs(dd[i+1]-61)<14&&Math.abs(dd[i+2]-86)<14) ex++; out.exact=(out.exact||[]); out.exact.push(ex);
                 out.px.push(found); }
               return out; }""", list(data))
             chk(res['pages'] == 5, f'dpr{dpr}: page count preserved ({res["pages"]})')
             chk(all(('Mixed fixture page %d' % (i + 1)) in res['texts'][i] for i in range(5)), f'dpr{dpr}: original text preserved on every page')
             chk(all(f >= 4 for f in res['px']), f'dpr{dpr}: ink lands where drawn on every page incl. rotated/cropped {res["px"]}')
+            chk(all(e > 15 for e in res['exact']), f'dpr{dpr}: exported pen colour is exactly #e43d56 (not a 3-digit approximation) {res["exact"]}')
             chk(not errs, f'dpr{dpr}: no JS errors {errs[:2]}'); ctx.close()
         b.close()
 finally:

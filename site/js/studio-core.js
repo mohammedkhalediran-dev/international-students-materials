@@ -9,7 +9,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const LIMITS = { strokes: 100000, points: 200000, text: 4000, shapes: 100000 };
-  const TOOLS = ['pen', 'highlight', 'line', 'rectangle', 'ellipse', 'text', 'sticky'];
+  const TOOLS = ['pen', 'highlight', 'line', 'rectangle', 'ellipse', 'text', 'sticky', 'texthl'];   /* texthl = highlight anchored to PDF text (rects + quote), not freehand */
   const SHAPES = ['line', 'rectangle', 'ellipse'];
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
   const clamp01 = n => clamp(n, 0, 1);
@@ -28,6 +28,11 @@
     if (s.pr != null && (!Array.isArray(s.pr) || s.pr.length !== s.points.length || !s.pr.every(isNum))) return false;
     if (s.tool === 'text' || s.tool === 'sticky') {
       if (typeof s.text !== 'string' || s.text.length > LIMITS.text) return false;
+    }
+    if (s.tool === 'texthl') {
+      if (!Array.isArray(s.rects) || !s.rects.length || s.rects.length > 400) return false;
+      if (!s.rects.every(r => Array.isArray(r) && r.length === 4 && r.every(isNum) && r[2] > r[0] && r[3] > r[1])) return false;
+      if (s.quote != null && (typeof s.quote !== 'string' || s.quote.length > 2000)) return false;
     }
     return true;
   }
@@ -89,6 +94,11 @@
   }
   /* Smallest distance in CSS px between a point (u,v) and the stroke. */
   function distToStroke(s, u, v, pw, ph) {
+    if (s.tool === 'texthl') {
+      let best = Infinity;
+      for (const r of s.rects) { const dx = Math.max(r[0] - u, 0, u - r[2]) * pw, dy = Math.max(r[1] - v, 0, v - r[3]) * ph; best = Math.min(best, Math.hypot(dx, dy)); }
+      return best;
+    }
     if (s.tool === 'text' || s.tool === 'sticky') {
       const [x0, y0, x1, y1] = bounds(s);
       const dx = Math.max(x0 - u, 0, u - x1) * pw, dy = Math.max(y0 - v, 0, v - y1) * ph;

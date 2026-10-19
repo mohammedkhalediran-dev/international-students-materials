@@ -69,6 +69,16 @@ Authoritative baseline: the attached MEDIXA-Step-38.zip (extracted 2026-10-18). 
 - New browser test tests/step39_login_integration.py (simulated server).
 - Owner requests kept from the Claude project: header login button on one line on phones; university-name line removed from the home hero.
 
+## Study Studio Pro (2026-10-19) — implemented on branch ccr-a0fcdb08-bz6oce, NOT deployed, NOT pushed
+Four phases from CLAUDE-CODE-PROMPT.md; details in docs/studio/ (FEATURE-MATRIX, ARCHITECTURE-NOTES, STORAGE-COVERAGE, ACCEPTANCE).
+- Phase 1 complete: one ink engine (studio-core/studio-ink), pressure, stroke eraser, one-gesture undo, recovery drafts, conflict merge, vector export (rotation/CropBox aware).
+- Phase 2 complete: lasso, Zoom Writing, shapes, text/sticky, custom toolbar.
+- Phase 3 complete except source-page reordering (by design): lazy reader + zoom, margins, blank pages, notebooks, tabs, split view, focus mode, pages/notes panels.
+- Phase 4 complete: text-anchored highlight, highlight→flashcard/MCQ with source anchors, masks in page coordinates, scanned-page handling.
+- Bugs found and fixed on the way: 3-digit hex prefix parsing made exported colours slightly wrong; the old "previous session" notice covered header buttons; the study drawer was hidden under the toolbar/dock.
+- Removed: study-mode-v6.js (lasso/zoom/pen-only UI; replaced by studio-tools). The `medixa.penOnly` key is kept.
+- Limits: no real Apple Pencil / device testing; typed notes are raster in exported PDFs; tabs are navigation based.
+
 ## Pending / known limitations
 - Live Google Sign-In and real Cloudflare D1 were NOT tested in Step 39. Tests use tests/dev_server.mjs with a mock D1/KV and a locally signed test token. (The same login code was tried live by the owner on main.medixa.pages.dev before this merge.)
 - Study Mode data remains local to each device; it is not synced to the account.

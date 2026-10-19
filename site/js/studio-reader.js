@@ -18,7 +18,10 @@
     const pg = M.page(p.id), e = pg ? pg.ext : { l: 0, t: 0, r: 0, b: 0 }, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
     const totW = fitWidth() * R.zoom, w = totW / kx, h = w * p.h / p.w;
     p.el.style.width = totW + 'px'; p.el.style.height = h * ky + 'px'; p.cssW = w; p.cssH = h;
-    p.pdf.style.left = (e.l / kx * 100) + '%'; p.pdf.style.top = (e.t / ky * 100) + '%'; p.pdf.style.width = (100 / kx) + '%'; p.pdf.style.height = (100 / ky) + '%';
+    const pa = { left: (e.l / kx * 100) + '%', top: (e.t / ky * 100) + '%', width: (100 / kx) + '%', height: (100 / ky) + '%' };
+    Object.assign(p.pdf.style, pa); if (p.text) Object.assign(p.text.style, pa);
+    /* the page area, for layers that draw in page coordinates (study masks, source flashes) */
+    p.el.style.setProperty('--pa-l', pa.left); p.el.style.setProperty('--pa-t', pa.top); p.el.style.setProperty('--pa-w', pa.width); p.el.style.setProperty('--pa-h', pa.height);
     p.el.classList.toggle('st-has-margin', kx > 1 || ky > 1);
   }
 
@@ -26,7 +29,7 @@
   function release(p) {
     if (p.task) { try { p.task.cancel(); } catch {} p.task = null; }
     p.token = (p.token || 0) + 1; p.rendered = false;
-    p.pdf.width = 0; p.pdf.height = 0; M.setPageActive(p.id, false);
+    p.pdf.width = 0; p.pdf.height = 0; M.setPageActive(p.id, false); if (p.text) p.text.replaceChildren();
   }
   /* Template marks for blank pages (same geometry the export uses). */
   function paintTemplate(ctx, W, H, rec) {
@@ -53,6 +56,20 @@
     }
     if (token !== p.token) return;
     p.rendered = true; p.rw = W; emit('rendered', p);
+    textLayer(p, token);
+  }
+  /* Selectable, invisible text over the page (also what screen readers read). Pointer events stay off until the
+     "select text" tool is active, so drawing is never disturbed. Pages without text (scans) are flagged. */
+  async function textLayer(p, token) {
+    if (p.kind !== 'src' || !p.proxy || !window.pdfjsLib || !pdfjsLib.renderTextLayer || !p.proxy.streamTextContent) return;
+    try {
+      let box = p.text;
+      if (!box) { box = document.createElement('div'); box.className = 'st-text'; box.setAttribute('lang', 'en'); p.el.insertBefore(box, p.label); p.text = box; layout(p); }
+      box.replaceChildren(); const vp = p.proxy.getViewport({ scale: p.cssW / p.w }); box.style.setProperty('--scale-factor', String(vp.scale));
+      const task = pdfjsLib.renderTextLayer({ textContentSource: p.proxy.streamTextContent(), container: box, viewport: vp, textDivs: [] }); await task.promise;
+      if (token !== p.token) { box.replaceChildren(); return; }
+      p.hasText = !!box.textContent.trim(); p.el.classList.toggle('st-notext', !p.hasText); emit('text', p);
+    } catch (e) { if (!e || e.name !== 'RenderingCancelledException') console.warn('text layer failed', p.id, e); }
   }
   const imgCache = new Map();
   function imageFor(n) { if (imgCache.has(n)) return imgCache.get(n); const im = new Image(); im.src = R.raster[n - 1]; const pr = im.decode().then(() => im); imgCache.set(n, pr); return pr; }
