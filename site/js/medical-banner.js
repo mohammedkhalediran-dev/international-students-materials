@@ -3,8 +3,8 @@
    كل عنصر له خط زمني من إطارات مفتاحية (الوضع + الشفافية) يُستكمل بمنحنى تسارع لكل مقطع،
    فلا قفزات ولا اختفاء جماعي عند إعادة الدورة (أول إطار = آخر إطار).
    حلقة رسم واحدة فقط، تتوقف خارج الشاشة أو عند إخفاء الصفحة، وتحترم prefers-reduced-motion.
-   Step 54: البطاقات روابط، «تابع» آخر مادة فُتحت، ترحيب بالاسم، العضو يتبع كورس الطالب، حركة مع التمرير،
-   ميلان باللمس، وآخر تبليغ. كل ما يظهر من بيانات حقيقية فقط (ms.last، الحساب، ms.sem، api/announcements).
+   Step 54: البطاقات روابط، «تابع» آخر مادة فُتحت، ترحيب بالاسم، حركة مع التمرير، ميلان باللمس، وآخر تبليغ.
+   كل ما يظهر من بيانات حقيقية فقط (ms.last، الحساب، api/announcements). الدماغ ثابت للجميع (بقرار محمد 2026-10-19).
    MedixaBanner.destroy() يزيل كل المستمعين والمراقبين. */
 (function () {
   "use strict";
@@ -98,34 +98,6 @@
     ]
   };
 
-  // ---- العضو حسب كورس الطالب (ms.sem). الدماغ للكورس الأول وللزائر؛ الصدر للكورسين الثاني والثالث بتسميات مادتيهما.
-  var ECG = "M0 30H25Q30 30 34 25Q38 21 42 30H57L63 35L69 6L75 42L81 30H98Q105 11 114 30H143Q150 30 155 25Q160 21 165 30H180";
-  var BREATH = "M0 30C11 30 15 10 30 10S49 40 60 40S79 10 90 10S109 40 120 40S139 10 150 10S169 30 180 30";
-  var ORGANS = {
-    brain: { src: "assets/brain-pearl.webp", tag: ["NEUROANATOMY", "The art of understanding."], note: "NEUROSCIENCE", clinical: "NEUROLOGY", wave: ECG,
-      label: "نموذج فني للدماغ تحيط به بطاقات التشريح ووظائف الأعضاء والملاحظات والتفكير السريري" },
-    cardio: { src: "assets/medical-thorax.webp", tag: ["CARDIOVASCULAR SYSTEM", "Heart and great vessels."], note: "CARDIAC PHYSIOLOGY", clinical: "CARDIOLOGY", wave: ECG,
-      label: "نموذج فني للصدر والقلب تحيط به بطاقات التشريح ووظائف الأعضاء والملاحظات والتفكير السريري" },
-    resp: { src: "assets/medical-thorax.webp", tag: ["RESPIRATORY SYSTEM", "Airways, lungs and pleura."], note: "RESPIRATORY PHYSIOLOGY", clinical: "PULMONOLOGY", wave: BREATH,
-      label: "نموذج فني للصدر والرئتين تحيط به بطاقات التشريح ووظائف الأعضاء والملاحظات والتفكير السريري" }
-  };
-  var BY_SEMESTER = { 1: "brain", 2: "cardio", 3: "resp" }, organ = "brain";
-  function tr(txt) { return window.I18N && I18N.t ? I18N.t(txt) : txt; }
-  function applyOrgan() {
-    var sem = null; try { sem = window.MS && MS.load ? MS.load("ms.sem", null) : null; } catch (e) { sem = null; }
-    organ = BY_SEMESTER[sem] || "brain";
-    var o = ORGANS[organ], img = q(".mm-brain-image"), light = q(".mm-brain-light");
-    if (o.src !== "assets/brain-pearl.webp") {
-      img.src = o.src;
-      light.style.webkitMaskImage = light.style.maskImage = 'url("' + o.src + '")';
-      root.setAttribute("data-organ", BY_SEMESTER[sem]);
-    }
-    q(".mm-tag-title").textContent = o.tag[0]; q(".mm-tag-sub").textContent = o.tag[1];
-    q(".mm-note-foot").textContent = o.note; q(".mm-clinical-foot").textContent = o.clinical;
-    [].forEach.call(root.querySelectorAll(".mm-wave path"), function (pth) { pth.setAttribute("d", o.wave); });
-    visual.setAttribute("aria-label", tr(o.label));
-  }
-
   // ---- «تابع من حيث توقفت»: آخر مادة فتحها الطالب فعلاً على هذا الجهاز أو حسابه ----
   function applyResume() {
     var c = null; try { c = window.MS && MS.course && MS.getLast ? MS.course(MS.getLast()) : null; } catch (e) { c = null; }
@@ -191,7 +163,6 @@
     bp[1] += Math.sin(secs * 2 * Math.PI / 6.5) * 4;
     bp[3] += Math.sin(secs * 2 * Math.PI / 6.5 + 1) * 1.4;
     bp[4] += Math.sin(secs * 2 * Math.PI / 9.5) * 3.2;
-    if (organ !== "brain") bp[6] *= 1 - .14 * win(t, .64, .76) * (1 - win(t, .9, .99)); // الصدر أعرض من الدماغ: يصغر قليلاً في «اربط» ليبقى عنوان البطاقة السريرية ظاهراً
     pose(els.brain, bp); fade(els.brain, b.o);
 
     // ظل الأرض يتبع الدماغ ويثبت في مكانه (لا يتحرك عمودياً)
@@ -340,7 +311,6 @@
   if (ro) ro.observe(visual); else window.addEventListener("resize", resize);
   if (io) io.observe(root);
 
-  applyOrgan();
   applyResume();
   if (window.MSAuth && MSAuth.user) applyUser(MSAuth.user());
   resize();

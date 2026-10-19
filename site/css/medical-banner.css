@@ -104,7 +104,6 @@ html[dir="ltr"] .mm-cta svg { transform: scaleX(-1); }
 .mm-brain { left: 61px; top: 20px; width: 340px; height: 340px; z-index: 4; transform-origin: 50% 55%; }
 .mm-brain-image { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(5px 22px 15px var(--mm-shadow)); user-select: none; -webkit-user-drag: none; }
 .mm-brain-light { position: absolute; inset: 0; overflow: hidden; -webkit-mask: url("../assets/brain-pearl.webp") center / contain no-repeat; mask: url("../assets/brain-pearl.webp") center / contain no-repeat; mix-blend-mode: soft-light; pointer-events: none; }
-.mm-banner[data-organ] .mm-brain-image, .mm-banner[data-organ] .mm-brain-light { transform: scale(.86); transform-origin: 50% 40%; } /* صورة الصدر تملأ إطارها أكثر من الدماغ */
 .mm-brain-light > i { position: absolute; inset: 0 -60%; background: linear-gradient(110deg, transparent 38%, var(--mm-glint) 49%, var(--mm-glint-blue) 53%, transparent 62%); transform: translateX(-60%); will-change: transform; }
 .mm-floor { left: 124px; top: 308px; width: 215px; height: 22px; border-radius: 50%; background: var(--mm-shadow); filter: blur(16px); }
 .mm-orbit { left: 84px; top: 184px; width: 300px; height: 150px; border-radius: 50%; border: 1px solid var(--mm-blue); opacity: 0; }
