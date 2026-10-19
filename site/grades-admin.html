@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة الدرجات | Medixa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#13294B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Medixa">
+  <link rel="stylesheet" href="css/style.css?v=step56p">
+  <link rel="stylesheet" href="css/timetable.css?v=step56">
+  <link rel="stylesheet" href="css/grades.css?v=step57">
+  <script>
+    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
+    try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+  </script>
+</head>
+<body class="tt-body"><a class="skip" href="#main">تخطَّ إلى المحتوى</a>  <aside class="sidebar" id="sidebar" aria-label="القائمة الجانبية"></aside>
+  <div class="scrim" id="scrim"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
+      <a class="site-wordmark" href="index.html" aria-label="Medixa">Medixa</a>
+      <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
+      <div class="header-actions">
+        <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
+        <select class="lang-sel" id="langSel" aria-label="اللغة" data-i18n-skip>
+          <option value="ar" lang="ar">عربي</option>
+          <option value="fa" lang="fa">فارسی</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <button class="icon-btn" id="themeBtn" type="button"></button>
+      </div>
+    </div>
+  </header>
+<main id="main" class="container tt tt-page tt-admin gr">
+<nav class="breadcrumb" aria-label="مسار التنقل"><ol><li><a href="index.html">الرئيسية</a></li><li><a href="admin.html">مركز الإدارة</a></li><li><span aria-current="page">إدارة الدرجات</span></li></ol></nav>
+<div class="tt-panel tt-gate" id="grGate" hidden><span class="tt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></span><h2>هذه الصفحة للمشرف فقط</h2><p id="grGateMsg">سجّل الدخول بحساب مشرف لإدارة الدرجات.</p><a class="tt-btn is-primary" href="login.html?next=grades-admin.html">تسجيل الدخول</a></div>
+<div id="grApp" hidden>
+<section class="tt-panel" aria-labelledby="grTitle">
+  <div class="tt-head"><div class="tt-title"><span class="tt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.2c1.5 1.4 3.4 2.1 5.5 2.1s4-.7 5.5-2.1v-4.2"/><path d="M21.5 9.5v5"/></svg></span><div><h1 class="tt-h1" id="grTitle">إدارة الدرجات</h1><p class="tt-sub">كل طالب يرى درجاته فقط بعد أن يكتب رقم جوازه مرة واحدة. أرقام الجوازات لا تُحفظ.</p></div></div></div>
+  <div class="tt-stats" id="grStats"></div>
+</section>
+<section class="tt-panel" aria-labelledby="grUpTitle">
+  <h2 class="tt-h2" id="grUpTitle">رفع ملف درجات</h2>
+  <p class="tt-sub">من Excel أو Numbers: حدّد الجدول كاملاً مع صف العناوين، انسخه، ثم الصقه هنا. أو صدّره بصيغة CSV واختر الملف.</p>
+  <div class="tt-form">
+    <label class="full">اسم الدفعة<input id="grTitleIn" maxlength="80" dir="auto" autocomplete="off" placeholder="مثال: نتائج الكورس الثالث 2025/2026"></label>
+  </div>
+  <label class="tt-drop tt-group" id="grDrop"><input type="file" id="grFile" accept=".csv,.tsv,.txt,text/csv,text/plain"><strong>اختر ملف CSV</strong><small>أو الصق الجدول في المربع أدناه</small></label>
+  <textarea class="tt-paste tt-group" id="grPaste" dir="auto" spellcheck="false" autocomplete="off" aria-label="الصق جدول الدرجات هنا" placeholder="الصق الجدول هنا (مع صف العناوين)"></textarea>
+  <div id="grMap" class="tt-group" hidden>
+    <h3>الأعمدة</h3>
+    <div class="tt-form gr-map">
+      <label>اسم الطالب<select data-col="name"></select></label>
+      <label>رقم الجواز<select data-col="passport"></select></label>
+      <label>المادة<select data-col="course"></select></label>
+      <label>الدرجة<select data-col="grade"></select></label>
+    </div>
+    <div class="tt-stats tt-group" id="grPrevStats"></div>
+    <div id="grIssues"></div>
+    <div class="tt-imp-wrap"><table class="tt-imp gr-prev"><thead><tr><th>اسم الطالب</th><th>رقم الجواز</th><th>المادة</th><th>الدرجة</th></tr></thead><tbody id="grPrevBody" data-i18n-skip></tbody></table></div>
+    <p class="tt-sub">المعاينة تُظهر أول 15 صفاً، وأرقام الجوازات مخفية إلا آخر 3 أرقام.</p>
+    <div class="tt-toolbar tt-group"><button class="tt-btn is-primary" type="button" id="grUpload">رفع الدرجات</button><button class="tt-btn" type="button" id="grClear">مسح</button></div>
+  </div>
+  <p class="tt-status" id="grUpStatus" role="status"></p>
+</section>
+<section class="tt-panel" aria-labelledby="grBatchTitle"><h2 class="tt-h2" id="grBatchTitle">الدفعات المرفوعة</h2><div id="grBatches" data-i18n-skip></div></section>
+<section class="tt-panel" aria-labelledby="grPeopleTitle">
+  <h2 class="tt-h2" id="grPeopleTitle">الطلاب وحالة الربط</h2>
+  <label class="tt-field tt-group">بحث بالاسم أو البريد<input id="grSearch" type="search" dir="auto" autocomplete="off"></label>
+  <div id="grPeople" data-i18n-skip></div>
+</section>
+</div>
+<div class="tt-toast" id="grToast" role="status" aria-live="polite"></div>
+</main>
+<footer class="footer"><div class="container footer-inner"><a class="brand" href="index.html">Medixa</a><nav class="footer-links" aria-label="روابط التذييل"><a href="workspace.html?view=help">المساعدة</a><a href="workspace.html?view=settings">الإعدادات</a></nav></div></footer>
+<script src="data/courses.js?v=step56"></script><script src="js/i18n.js?v=step57"></script><script src="js/app.js?v=step56"></script><script src="js/auth.js?v=step56"></script><script src="js/nav.js?v=step57"></script><script src="js/grades-admin.js?v=step57"></script>
+</body></html>

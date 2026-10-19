@@ -32,7 +32,7 @@
       { id: "results", label: "نتائج التدريب", icon: "chart", href: "workspace.html?view=results", enabled: true }
     ] },
     { title: "حسابي", items: [
-      { id: "grades", label: "درجاتي الجامعية", icon: "cap", soon: true },  // يحتاج تحقق هوية من الخادم قبل أي عرض
+      { id: "grades", label: "درجاتي الجامعية", icon: "cap", href: "grades.html", enabled: true },  // Step 57: الخادم يتحقق من الحساب ويعطي كل طالب درجاته فقط
       { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
     ] }
   ];
@@ -201,6 +201,7 @@
     if (p === "workspace.html") {
       return {search:"courses",lectures:"latest",favorites:"favorites",professors:"professors",planner:"plan",questions:"qbank",results:"results",settings:"settings",help:"help"}[new URLSearchParams(location.search).get("view")] || "courses";
     }
+    if (p === "grades.html") return "grades";
     if (p === "index.html") {
       if (location.hash === "#favorites") return "favorites";
       if (spyId && (location.hash === "" || location.hash === "#home" || SPY[location.hash.slice(1)])) return spyId;
