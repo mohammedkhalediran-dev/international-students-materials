@@ -88,3 +88,9 @@
 - الإصدار ?v=step39 وV = "medixa-step39" في sw.js.
 - `npm test` يشغّل فحوص الدراسة وفحوص الخادم (auth/middleware/upload/kv). فحوص المتصفح: tests/step39_login_integration.py وtests/auth_e2e.py وtests/v81_auth_smoke.py (تحتاج Playwright؛ MEDIXA_CDN_DIR لتشغيل pdf.js بلا إنترنت).
 - baseline-preservation يسمح فقط بالتغييرات الموثقة في tests/baseline-intentional-changes.json (بصمة المحتوى الجديد مثبتة).
+
+## Step 49 (2026-10-19): «كورسي» والإشعارات
+- الطالب يختار كورسه (ms.sem، يُزامن مع الحساب) من نافذة في أول زيارة للرئيسية (site/js/my-course.js). بعد الاختيار لا تظهر له الكورسات الأخرى في الواجهة (حذف من SEMESTERS/COURSES في app.js؛ القوائم الكاملة في MS.ALL_SEMESTERS/MS.ALL_COURSES؛ صفحات الرفع والإدارة لا تتأثر). التغيير من الإعدادات فقط؛ لا زر كورس في القائمة الجانبية (بقرار محمد 2026-10-19).
+- إشعارات Web Push: الزائر وصاحب الحساب. المحاضرة الجديدة (type lecture، وليست مخفية من «أحدث المحاضرات») لطلاب كورسها فقط، والتبليغ للجميع. التفاصيل والإعداد في PUSH-NOTIFICATIONS.md.
+- يلزم: جدول push_subs (migrations/0003_push.sql) في D1، ومتغيرا VAPID_PUBLIC_KEY وVAPID_PRIVATE_KEY (سرّي) يولّدهما محمد من admin.html ويضعهما بنفسه في Cloudflare. بدونهما يبقى الزر مخفياً.
+- بعد تعديل courses.js شغّل node scripts/gen-course-semesters.cjs.

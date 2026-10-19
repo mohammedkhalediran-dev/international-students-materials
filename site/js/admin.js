@@ -56,3 +56,31 @@
   }
   load();
 })();
+
+/* Step 49: مفاتيح الإشعارات (VAPID) تُولَّد في المتصفح فقط؛ يضعها المشرف بنفسه في Cloudflare */
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  if (!$("pushAdmin")) return;
+  function b64u(buf) { var s = "", a = new Uint8Array(buf); for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  fetch("api/push/key", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+    $("pushState").textContent = d.ready ? "الإشعارات مفعّلة على الخادم. لا تولّد مفاتيح جديدة إلا إذا تسرّب المفتاح السرّي." : "الإشعارات غير مفعّلة بعد على الخادم: ولّد المفاتيح وضعها في Cloudflare.";
+    $("pushGen").hidden = false;
+  }).catch(function () { $("pushState").textContent = "تعذّر التحقق من حالة الإشعارات."; $("pushGen").hidden = false; });
+  $("pushMake").addEventListener("click", function () {
+    if (!window.crypto || !crypto.subtle) { $("pushState").textContent = "هذا المتصفح لا يدعم توليد المفاتيح."; return; }
+    crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]).then(function (kp) {
+      return Promise.all([crypto.subtle.exportKey("raw", kp.publicKey), crypto.subtle.exportKey("jwk", kp.privateKey)]);
+    }).then(function (k) {
+      $("pushPub").value = b64u(k[0]);
+      $("pushPriv").value = k[1].d;
+      $("pushOut").hidden = false;
+    });
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-copy]");
+    if (!b) return;
+    var v = $(b.getAttribute("data-copy")).value;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { b.textContent = "نُسخ ✓"; }, function () { $(b.getAttribute("data-copy")).select(); });
+  });
+})();

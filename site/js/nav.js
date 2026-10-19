@@ -7,7 +7,7 @@
   var MS = window.MS;
   var T = function (s) { return window.I18N && I18N.t ? I18N.t(s) : s; };
   var KEY_NAV = "ms.nav";       // تفضيل طي القائمة على الكمبيوتر: "min" أو "full"
-  var KEY_SEM = "ms.sem";       // كورس الطالب الحقيقي (رقم) إن حُفظ؛ لا واجهة تضبطه بعد فلا تظهر شارة «الحالي»
+  var KEY_SEM = "ms.sem";       // كورس الطالب (رقم) يختاره من js/my-course.js؛ تظهر شارة «الحالي» عليه
   var DESKTOP = "(min-width: 1081px)";
 
   /* ---------- الإعداد ----------
