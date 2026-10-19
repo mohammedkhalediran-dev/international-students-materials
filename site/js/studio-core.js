@@ -164,7 +164,8 @@
   function transformStroke(s, m) {
     /* m = {dx,dy,sx,sy,cx,cy}: scale about (cx,cy) then translate. Result clamped to the page. */
     const sx = m.sx == null ? 1 : m.sx, sy = m.sy == null ? 1 : m.sy, cx = m.cx || 0, cy = m.cy || 0, dx = m.dx || 0, dy = m.dy || 0;
-    const points = s.points.map(p => [clamp01(cx + (p[0] - cx) * sx + dx), clamp01(cy + (p[1] - cy) * sy + dy)]);
+    const bx = m.bx || [0, 1], by = m.by || [0, 1];      /* page extent incl. margins: [-l, 1+r] x [-t, 1+b] */
+    const points = s.points.map(p => [clamp(cx + (p[0] - cx) * sx + dx, bx[0], bx[1]), clamp(cy + (p[1] - cy) * sy + dy, by[0], by[1])]);
     const out = { points, rev: (s.rev || 1) + 1 };
     if (s.w != null) out.w = Math.max(0.02, s.w * Math.abs(sx));
     if (s.h != null) out.h = Math.max(0.02, s.h * Math.abs(sy));

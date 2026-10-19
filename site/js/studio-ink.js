@@ -8,6 +8,7 @@
   const DPR = () => Math.min(3, window.devicePixelRatio || 1);
   const $ = id => document.getElementById(id);
   const S = {
+    layout: { v: 1, margins: {} },
     tool: 'pen', color: '#e43d56', width: 3, snap: false,
     penOnly: false, items: [], hist: null, pages: new Map(), deleted: new Set(),
     guard: null, key: '', src: '', docHash: '', raf: 0, saveTimer: 0, state: 'idle', listeners: {}
@@ -134,14 +135,18 @@
   }
   function sizePage(pg) {
     if (!pg.on) { if (pg.ink.width !== 1) { pg.ink.width = 1; pg.ink.height = 1; pg.base.width = 1; pg.base.height = 1; } pg.dirty = true; return; }   /* off-screen pages hold no pixels */
-    const r = pg.ink.getBoundingClientRect(), d = DPR();
-    pg.cssW = Math.max(1, r.width); pg.cssH = Math.max(1, r.height);
-    const W = Math.round(pg.cssW * d), H = Math.round(pg.cssH * d);
+    const r = pg.ink.getBoundingClientRect(), d = DPR(), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
+    pg.totW = Math.max(1, r.width); pg.totH = Math.max(1, r.height);
+    pg.cssW = pg.totW / kx; pg.cssH = pg.totH / ky;                /* cssW/cssH = the PAGE area, margins excluded */
+    const W = Math.round(pg.totW * d), H = Math.round(pg.totH * d);
     if (pg.ink.width !== W || pg.ink.height !== H) { pg.ink.width = W; pg.ink.height = H; pg.base.width = W; pg.base.height = H; pg.dirty = true; }
+    pg.pw = W / kx; pg.ph = H / ky;                                /* page area in canvas px */
   }
   function renderBase(pg) {
     const ctx = pg.base.getContext('2d'); ctx.clearRect(0, 0, pg.base.width, pg.base.height);
-    for (const s of S.items) if (s && s.page === pg.n && C.validStroke(s)) drawStroke(ctx, s, pg.base.width, pg.base.height);
+    ctx.save(); ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t);
+    for (const s of S.items) if (s && s.page === pg.n && C.validStroke(s)) drawStroke(ctx, s, pg.pw, pg.ph);
+    ctx.restore();
     pg.dirty = false;
   }
   function frame() {
@@ -152,7 +157,7 @@
       if (!pg.needsPaint) continue;
       pg.needsPaint = false;
       const ctx = pg.ink.getContext('2d'); ctx.clearRect(0, 0, pg.ink.width, pg.ink.height); ctx.drawImage(pg.base, 0, 0);
-      if (pg.live) drawStroke(ctx, pg.live, pg.ink.width, pg.ink.height);
+      if (pg.live) { ctx.save(); ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t); drawStroke(ctx, pg.live, pg.pw, pg.ph); ctx.restore(); }
       emit('overlay', { pg, ctx });
     }
   }
@@ -165,19 +170,21 @@
 
   /* ---------- pointer pipeline ---------- */
   const SNAP = Math.PI / 12;
+  const bx = (pg, u) => C.clamp(u, -pg.ext.l, 1 + pg.ext.r), by = (pg, v) => C.clamp(v, -pg.ext.t, 1 + pg.ext.b);
   function posOf(pg, e) {
-    const r = pg.ink.getBoundingClientRect();
-    return [C.clamp01((e.clientX - r.left) / r.width), C.clamp01((e.clientY - r.top) / r.height)];
+    const r = pg.ink.getBoundingClientRect(), x = pg.ext, kx = 1 + x.l + x.r, ky = 1 + x.t + x.b;
+    return [C.clamp(((e.clientX - r.left) / r.width) * kx - x.l, -x.l, 1 + x.r), C.clamp(((e.clientY - r.top) / r.height) * ky - x.t, -x.t, 1 + x.b)];
   }
   function snapEnd(a, b, tool, pg) {
     if (!S.snap) return b;
     const dx = (b[0] - a[0]) * pg.cssW, dy = (b[1] - a[1]) * pg.cssH;
-    if (tool === 'line') { const ang = Math.round(Math.atan2(dy, dx) / SNAP) * SNAP, len = Math.hypot(dx, dy); return [C.clamp01(a[0] + Math.cos(ang) * len / pg.cssW), C.clamp01(a[1] + Math.sin(ang) * len / pg.cssH)]; }
+    if (tool === 'line') { const ang = Math.round(Math.atan2(dy, dx) / SNAP) * SNAP, len = Math.hypot(dx, dy); return [bx(pg, a[0] + Math.cos(ang) * len / pg.cssW), by(pg, a[1] + Math.sin(ang) * len / pg.cssH)]; }
     const m = Math.max(Math.abs(dx), Math.abs(dy));
-    return [C.clamp01(a[0] + Math.sign(dx || 1) * m / pg.cssW), C.clamp01(a[1] + Math.sign(dy || 1) * m / pg.cssH)];
+    return [bx(pg, a[0] + Math.sign(dx || 1) * m / pg.cssW), by(pg, a[1] + Math.sign(dy || 1) * m / pg.cssH)];
   }
   function attachPage(o) {
-    const pg = { n: o.pageNumber, wrap: o.wrap, ink: o.ink, pdf: o.pdf || null, base: document.createElement('canvas'), dirty: true, needsPaint: true, live: null, active: null, cssW: 1, cssH: 1, on: !o.lazy && !o.pdf };
+    const pg = { n: o.pageNumber, wrap: o.wrap, ink: o.ink, pdf: o.pdf || null, base: document.createElement('canvas'), dirty: true, needsPaint: true, live: null, active: null, cssW: 1, cssH: 1, totW: 1, totH: 1, pw: 1, ph: 1, ext: Object.assign({ l: 0, t: 0, r: 0, b: 0 }, S.layout.margins[o.pageNumber] || {}), on: !o.lazy && !o.pdf };
+    pg.px = (u, v) => [(u + pg.ext.l) * pg.pw, (v + pg.ext.t) * pg.ph];
     S.pages.set(pg.n, pg);
     o.ink.style.touchAction = 'none';
     sizePage(pg); paint(pg);
@@ -244,7 +251,7 @@
     }
     S.items.push(L); idx(pg.n).insert(L);
     S.hist.push([{ k: 'add', s: L }]);
-    const ctx = pg.base.getContext('2d'); drawStroke(ctx, L, pg.base.width, pg.base.height);
+    const ctx = pg.base.getContext('2d'); ctx.save(); ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t); drawStroke(ctx, L, pg.pw, pg.ph); ctx.restore();
     paint(pg); markDirty();
   }
   function erase(pg, p) {
@@ -280,15 +287,27 @@
     }
     out.push(pts[pts.length - 1]); return out;
   }
+  /* Expanded output: the page boxes grow to hold the margins; original content stays exactly where it was. */
+  function growBoxes(page, box, rot, e) {
+    const c = [C.viewToPdf(-e.l, -e.t, box, rot), C.viewToPdf(1 + e.r, 1 + e.b, box, rot)], x0 = Math.min(c[0][0], c[1][0]), x1 = Math.max(c[0][0], c[1][0]), y0 = Math.min(c[0][1], c[1][1]), y1 = Math.max(c[0][1], c[1][1]);
+    page.setMediaBox(x0, y0, x1 - x0, y1 - y0); page.setCropBox(x0, y0, x1 - x0, y1 - y0);
+  }
+  /* What a clipped (original-page) export would leave out. */
+  function marginReport() {
+    const pages = new Set(); let strokes = 0;
+    for (const s of S.items) { if (!s || !C.validStroke(s)) continue; const b = C.bounds(s); if (b[0] < 0 || b[1] < 0 || b[2] > 1 || b[3] > 1) { strokes++; pages.add(s.page); } }
+    return { strokes, pages: [...pages].sort((a, b) => a - b), hasMargins: Object.keys(S.layout.margins).length > 0 };
+  }
   async function exportPdf(bytes, opts) {
     opts = opts || {};
     const { PDFDocument, rgb, LineCapStyle, LineJoinStyle } = window.PDFLib;
     const out = await PDFDocument.load(bytes), pagesN = out.getPageCount();
-    const textPages = [];
+    const textPages = [], expand = opts.margins === 'expand';
     for (let i = 0; i < pagesN; i++) {
       const strokes = S.items.filter(x => x && x.page === i + 1 && C.validStroke(x)); if (!strokes.length) continue;
       const page = out.getPage(i), box = page.getCropBox ? page.getCropBox() : page.getMediaBox(), rot = page.getRotation().angle;
       const [dw, dh] = C.displaySize(box, rot);
+      if (expand && S.layout.margins[i + 1]) growBoxes(page, box, rot, S.layout.margins[i + 1]);
       const P = p => { const q = C.viewToPdf(p[0], p[1], box, rot); return [q[0], q[1]]; };
       const path = pts => pts.map((p, k) => { const q = P(p); return (k ? 'L' : 'M') + q[0].toFixed(3) + ' ' + (-q[1]).toFixed(3); }).join(' ');
       const wpt = (s, pr) => C.widthAt(s.width || 3, pr, s.tool === 'highlight' ? 'highlight' : s.tool === 'pen' ? 'pen' : 'shape') / 800 * dw;
@@ -359,7 +378,7 @@
   /* ---------- init ---------- */
   async function init(o) {
     S.src = o.src; S.key = 'medixa.pdf.annotations.v1:' + new URL(o.src, location.href).href;
-    S.guard = openGuard();
+    S.guard = openGuard(); loadLayout();
     const loaded = S.guard.value;
     const m = C.migrate(Array.isArray(loaded) ? loaded : []);
     S.items = m.list; S.invalid = m.invalid; S.dirty = false;      /* migration is in-memory; first real edit persists it */
@@ -379,6 +398,36 @@
   }
   function ready() { setState(S.guard.state === 'ok' ? 'saved' : S.guard.state); S.state = S.guard.state === 'ok' ? 'saved' : S.guard.state; const el = $('status'); if (el && S.guard.state === 'ok') el.textContent = 'جاهز • الحفظ محلي'; }
 
+  /* ---------- layout (margins; the page area itself never changes) ---------- */
+  const zeroExt = { l: 0, t: 0, r: 0, b: 0 };
+  function loadLayout() {
+    S.layoutKey = 'medixa.studio.layout.v1:' + new URL(S.src, location.href).href;
+    S.layoutGuard = MedixaGuard.open(localStorage, S.layoutKey, { fallback: () => ({ v: 1, margins: {} }), valid: v => v && typeof v === 'object' && !Array.isArray(v) && v.margins && typeof v.margins === 'object' });
+    const v = S.layoutGuard.value, out = { v: 1, margins: {} };
+    for (const [k, e] of Object.entries(v.margins || {})) if (e && ['l', 't', 'r', 'b'].every(f => typeof e[f] === 'number' && e[f] >= 0 && e[f] <= 1)) out.margins[k] = { l: e.l, t: e.t, r: e.r, b: e.b };
+    S.layout = out;
+  }
+  function saveLayout() { const r = S.layoutGuard.write(S.layout); if (r !== 'saved') { setState(r === 'conflict' ? 'conflict' : 'failed'); emit('savefail', r); } return r; }
+  /* Smallest margins that still contain everything already written on the page (so shrinking never hides ink). */
+  function needExt(n) {
+    const need = { l: 0, t: 0, r: 0, b: 0 };
+    for (const s of S.items) { if (!s || s.page !== n || !C.validStroke(s)) continue; const b = C.bounds(s); need.l = Math.max(need.l, -b[0]); need.t = Math.max(need.t, -b[1]); need.r = Math.max(need.r, b[2] - 1); need.b = Math.max(need.b, b[3] - 1); }
+    for (const k of Object.keys(need)) need[k] = Math.min(1, Math.ceil(need[k] * 20) / 20);
+    return need;
+  }
+  /* ext = {l,t,r,b} fractions of the page size (0..1). Returns {ext, clamped}. */
+  function setMargins(n, ext, opts) {
+    const pg = S.pages.get(n); if (!pg) return null;
+    const want = {}; for (const k of ['l', 't', 'r', 'b']) want[k] = C.clamp(+ext[k] || 0, 0, 1);
+    const need = needExt(n), fin = {}; let clamped = false;
+    for (const k of ['l', 't', 'r', 'b']) { fin[k] = Math.max(want[k], need[k]); if (fin[k] > want[k] + 1e-9) clamped = true; }
+    Object.assign(pg.ext, fin);
+    if (['l', 't', 'r', 'b'].every(k => fin[k] === 0)) delete S.layout.margins[n]; else S.layout.margins[n] = Object.assign({}, fin);
+    sizePage(pg); pg.dirty = true; paint(pg); emit('layout', { n, ext: fin });
+    if (!opts || !opts.defer) saveLayout();
+    return { ext: fin, clamped };
+  }
+  const marginsOf = n => Object.assign({}, zeroExt, S.layout.margins[n] || {});
   /* Programmatic edits used by tool modules. Every call returns ops for one history command. */
   function addItem(s) { S.items.push(s); idx(s.page).insert(s); invalidate(s.page); return { k: 'add', s }; }
   function removeItems(ids) {
@@ -390,7 +439,7 @@
   function patchItem(id, props) { const i = S.items.findIndex(x => x && x.id === id); if (i < 0) return null; const before = {}; for (const k of Object.keys(props)) before[k] = S.items[i][k]; S.items[i] = Object.assign({}, S.items[i], props); rebuildIndexPage(S.items[i].page); invalidate(S.items[i].page); return { k: 'edit', id, before, after: props }; }
   function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   const api = {
-    S, C, init, setPageActive, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
+    S, C, init, setPageActive, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
     page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox,
     setPenOnly(v) { S.penOnly = !!v; try { localStorage.setItem('medixa.penOnly', String(S.penOnly)); } catch {} emit('penonly', S.penOnly); },
     setSnap(v) { S.snap = !!v; },

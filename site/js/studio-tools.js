@@ -29,7 +29,9 @@
   }
   const inside = (box, p) => p[0] >= box[0] && p[0] <= box[2] && p[1] >= box[1] && p[1] <= box[3];
   function pick(s) { const o = { points: s.points, rev: s.rev || 1 }; if (s.w != null) o.w = s.w; if (s.h != null) o.h = s.h; return o; }
+  const bounds = pg => ({ bx: [-pg.ext.l, 1 + pg.ext.r], by: [-pg.ext.t, 1 + pg.ext.b] });
   function applyLive(pg, m) {
+    m = Object.assign({}, m, bounds(pg));
     for (const [id, orig] of lasso.orig) { const i = S.items.findIndex(x => x && x.id === id); if (i >= 0) S.items[i] = Object.assign({}, orig, C.transformStroke(orig, m)); }
     pg.dirty = true; M.paint(pg);
   }
@@ -94,21 +96,21 @@
     }
   });
   M.on('overlay', ({ pg, ctx }) => {
-    const k = pg.ink.width / pg.cssW;
+    const k = pg.ink.width / pg.totW, P = (u, v) => pg.px(u, v);
     if (lasso && lasso.poly && lasso.page === pg.n && lasso.mode === 'draw') {
       ctx.save(); ctx.setLineDash([6 * k, 4 * k]); ctx.strokeStyle = TEAL; ctx.fillStyle = 'rgba(22,140,140,.08)'; ctx.lineWidth = 1.6 * k;
-      ctx.beginPath(); lasso.poly.forEach((q, i) => i ? ctx.lineTo(q[0] * pg.ink.width, q[1] * pg.ink.height) : ctx.moveTo(q[0] * pg.ink.width, q[1] * pg.ink.height)); ctx.fill(); ctx.stroke(); ctx.restore();
+      ctx.beginPath(); lasso.poly.forEach((q, i) => { const a = P(q[0], q[1]); i ? ctx.lineTo(a[0], a[1]) : ctx.moveTo(a[0], a[1]); }); ctx.fill(); ctx.stroke(); ctx.restore();
     }
     if (sel.page === pg.n && sel.ids.length) {
-      const items = selItems(); if (!items.length) return; const b = boxOf(items), W = pg.ink.width, H = pg.ink.height, pad = 6 * k;
+      const items = selItems(); if (!items.length) return; const b = boxOf(items), pad = 6 * k, a0 = P(b[0], b[1]), a1 = P(b[2], b[3]);
       ctx.save(); ctx.strokeStyle = TEAL; ctx.lineWidth = 1.6 * k; ctx.setLineDash([5 * k, 4 * k]);
-      ctx.strokeRect(b[0] * W - pad, b[1] * H - pad, (b[2] - b[0]) * W + 2 * pad, (b[3] - b[1]) * H + 2 * pad); ctx.setLineDash([]); ctx.fillStyle = '#fff';
-      for (const [x, y] of [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]]) { ctx.beginPath(); ctx.arc(x * W + (x === b[0] ? -pad : pad), y * H + (y === b[1] ? -pad : pad), 6 * k, 0, 7); ctx.fill(); ctx.stroke(); }
+      ctx.strokeRect(a0[0] - pad, a0[1] - pad, a1[0] - a0[0] + 2 * pad, a1[1] - a0[1] + 2 * pad); ctx.setLineDash([]); ctx.fillStyle = '#fff';
+      for (const [x, y] of [[a0[0] - pad, a0[1] - pad], [a1[0] + pad, a0[1] - pad], [a0[0] - pad, a1[1] + pad], [a1[0] + pad, a1[1] + pad]]) { ctx.beginPath(); ctx.arc(x, y, 6 * k, 0, 7); ctx.fill(); ctx.stroke(); }
       ctx.restore();
     }
     if (zw.open && zw.page === pg.n) {
-      const R = zw.R(pg), W = pg.ink.width, H = pg.ink.height;
-      ctx.save(); ctx.fillStyle = 'rgba(22,140,140,.10)'; ctx.strokeStyle = TEAL; ctx.lineWidth = 2 * k; ctx.fillRect(R.u0 * W, R.v0 * H, R.wU * W, R.hV * H); ctx.strokeRect(R.u0 * W, R.v0 * H, R.wU * W, R.hV * H); ctx.restore();
+      const R = zw.R(pg), a = P(R.u0, R.v0), w = R.wU * pg.pw, h = R.hV * pg.ph;
+      ctx.save(); ctx.fillStyle = 'rgba(22,140,140,.10)'; ctx.strokeStyle = TEAL; ctx.lineWidth = 2 * k; ctx.fillRect(a[0], a[1], w, h); ctx.strokeRect(a[0], a[1], w, h); ctx.restore();
     }
   });
   M.on('select-refresh', () => { sel.ids = sel.ids.filter(id => S.items.some(s => s && s.id === id)); if (!sel.ids.length) sel.page = 0; updateBar(); const pg = M.page(sel.page || 1); if (pg) M.paint(pg); });
@@ -132,13 +134,13 @@
   function del() { const ids = sel.ids.slice(); const ops = M.removeItems(ids); clearSel(); M.commit(ops); }
   function duplicate() {
     const ops = [], ids = [];
-    for (const s of selItems()) { const c = Object.assign({}, s, { id: C.newId(), rev: 1, points: s.points.map(p => [C.clamp01(p[0] + 0.02), C.clamp01(p[1] + 0.02)]) }); ops.push(M.addItem(c)); ids.push(c.id); }
+    for (const s of selItems()) { const c = Object.assign({}, s, { id: C.newId(), rev: 1, points: s.points.map(p => [Math.min(1 + M.page(sel.page).ext.r, p[0] + 0.02), Math.min(1 + M.page(sel.page).ext.b, p[1] + 0.02)]) }); ops.push(M.addItem(c)); ids.push(c.id); }
     sel.ids = ids; M.commit(ops); M.paint(M.page(sel.page)); updateBar();
   }
   function nudge(dx, dy) {
     const pg = M.page(sel.page); if (!pg || !sel.ids.length) return;
     const ops = [];
-    for (const s of selItems()) { const t = C.transformStroke(s, { dx: dx / pg.cssW, dy: dy / pg.cssH }); ops.push({ k: 'edit', id: s.id, before: pick(s), after: t }); }
+    for (const s of selItems()) { const t = C.transformStroke(s, Object.assign({ dx: dx / pg.cssW, dy: dy / pg.cssH }, bounds(pg))); ops.push({ k: 'edit', id: s.id, before: pick(s), after: t }); }
     for (const o of ops) M.patchItem(o.id, o.after);
     M.commit(ops);
   }
@@ -174,8 +176,9 @@
     const el = document.createElement('div'); el.className = 'st-editor'; el.dataset.kind = tool;
     const ta = document.createElement('textarea'); ta.maxLength = C.LIMITS.text; ta.dir = 'auto'; ta.rows = 3; ta.setAttribute('aria-label', tool === 'sticky' ? 'نص الملاحظة اللاصقة' : 'نص التعليق'); ta.value = existing ? existing.text : '';
     const w = existing ? existing.w : 0.28, size = existing ? existing.size || 18 : 18;
-    const x0 = existing ? C.bounds(existing)[0] : Math.min(p[0], 1 - w), y0 = existing ? C.bounds(existing)[1] : Math.min(p[1], 0.9);
-    el.style.left = (x0 * 100) + '%'; el.style.top = (y0 * 100) + '%'; el.style.width = (w * 100) + '%';
+    const x0 = existing ? C.bounds(existing)[0] : C.clamp(p[0], -pg.ext.l, 1 + pg.ext.r - w), y0 = existing ? C.bounds(existing)[1] : C.clamp(p[1], -pg.ext.t, 0.9 + pg.ext.b);
+    const kx = 1 + pg.ext.l + pg.ext.r, ky = 1 + pg.ext.t + pg.ext.b;
+    el.style.left = ((x0 + pg.ext.l) / kx * 100) + '%'; el.style.top = ((y0 + pg.ext.t) / ky * 100) + '%'; el.style.width = (w / kx * 100) + '%';
     ta.style.fontSize = (size * pg.cssW / 800) + 'px';
     const row = document.createElement('div'); row.className = 'st-editor-row';
     let fill = existing && existing.fill || FILLS[0];
@@ -199,7 +202,7 @@
       if (!text) return;
       const s = { id: C.newId(), v: 2, rev: 1, page: pg.n, tool, color: '#18334b', width: 3, text, size, w, h: 0.1, points: [[x0, y0]] };
       if (tool === 'sticky') s.fill = fill;
-      s.h = M.fitTextHeight(s, pg); if (y0 + s.h > 1) s.points = [[x0, Math.max(0, 1 - s.h)]];
+      s.h = M.fitTextHeight(s, pg); if (y0 + s.h > 1 + pg.ext.b) s.points = [[x0, Math.max(-pg.ext.t, 1 + pg.ext.b - s.h)]];
       M.commit([M.addItem(s)]);
     } };
     setTimeout(() => ta.focus({ preventScroll: true }), 0);
@@ -223,8 +226,8 @@
   const zw = { open: false, page: 1, mag: 3, dir: 1, cu: 0.1, cv: 0.2, prev: 'pen', live: null, strip: null, ctx: null, raf: 0 };
   zw.R = pg => {
     const sw = zw.strip ? zw.strip.getBoundingClientRect().width : 600, sh = zw.strip ? zw.strip.getBoundingClientRect().height : 150;
-    const wU = Math.min(1, (sw / zw.mag) / pg.cssW), hV = Math.min(1, (sh / zw.mag) / pg.cssH);
-    return { u0: C.clamp(zw.cu, 0, 1 - wU), v0: C.clamp(zw.cv, 0, 1 - hV), wU, hV };
+    const wU = Math.min(1 + pg.ext.l + pg.ext.r, (sw / zw.mag) / pg.cssW), hV = Math.min(1 + pg.ext.t + pg.ext.b, (sh / zw.mag) / pg.cssH);
+    const e = pg.ext; return { u0: C.clamp(zw.cu, -e.l, 1 + e.r - wU), v0: C.clamp(zw.cv, -e.t, 1 + e.b - hV), wU, hV };
   };
   function zwBuild() {
     const el = document.createElement('section'); el.id = 'zw'; el.setAttribute('aria-label', 'الكتابة المكبرة'); el.hidden = true;
@@ -242,7 +245,7 @@
     el.querySelector('#zw-newline').onclick = newLine; el.querySelector('#zw-close').onclick = zwClose;
     const c = zw.strip; c.style.touchAction = 'none';
     let drawing = null;
-    const map = e => { const r = c.getBoundingClientRect(), R = zw.R(M.page(zw.page)); const su = C.clamp01((e.clientX - r.left) / r.width), sv = C.clamp01((e.clientY - r.top) / r.height); return [C.clamp01(R.u0 + su * R.wU), C.clamp01(R.v0 + sv * R.hV), su]; };
+    const map = e => { const r = c.getBoundingClientRect(), R = zw.R(M.page(zw.page)); const su = C.clamp01((e.clientX - r.left) / r.width), sv = C.clamp01((e.clientY - r.top) / r.height), pe = M.page(zw.page).ext; return [C.clamp(R.u0 + su * R.wU, -pe.l, 1 + pe.r), C.clamp(R.v0 + sv * R.hV, -pe.t, 1 + pe.b), su]; };
     c.addEventListener('pointerdown', e => {
       if (drawing) return; if (S.penOnly && e.pointerType !== 'pen') return;
       e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch {}
@@ -273,7 +276,7 @@
   }
   /* Keep the target region visible above the strip. */
   function zwReveal(pg, R) {
-    const r = pg.ink.getBoundingClientRect(), top = r.top + R.v0 * r.height, bottom = r.top + (R.v0 + R.hV) * r.height, limit = innerHeight - (zw.el.getBoundingClientRect().height + 24);
+    const r = pg.ink.getBoundingClientRect(), ky = 1 + pg.ext.t + pg.ext.b, top = r.top + (R.v0 + pg.ext.t) / ky * r.height, bottom = r.top + (R.v0 + R.hV + pg.ext.t) / ky * r.height, limit = innerHeight - (zw.el.getBoundingClientRect().height + 24);
     if (bottom > limit || top < 70) scrollBy(0, (bottom > limit ? bottom - limit : top - 90) + 0);
   }
   function zwDraw() {
@@ -281,8 +284,12 @@
     zw.raf = requestAnimationFrame(() => {
       zw.raf = 0; const pg = M.page(zw.page); if (!pg) return; const R = zw.R(pg), c = zw.strip, x = zw.ctx, W = c.width, H = c.height;
       x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
-      const pdf = pg.wrap.querySelector('canvas.pdf'); if (pdf) x.drawImage(pdf, R.u0 * pdf.width, R.v0 * pdf.height, R.wU * pdf.width, R.hV * pdf.height, 0, 0, W, H);
-      x.drawImage(pg.base, R.u0 * pg.base.width, R.v0 * pg.base.height, R.wU * pg.base.width, R.hV * pg.base.height, 0, 0, W, H);
+      const pdf = pg.wrap.querySelector('canvas.pdf');
+      if (pdf && pdf.width > 1) {                                  /* only the part of the region that lies on the page itself */
+        const iu0 = Math.max(0, R.u0), iv0 = Math.max(0, R.v0), iu1 = Math.min(1, R.u0 + R.wU), iv1 = Math.min(1, R.v0 + R.hV);
+        if (iu1 > iu0 && iv1 > iv0) x.drawImage(pdf, iu0 * pdf.width, iv0 * pdf.height, (iu1 - iu0) * pdf.width, (iv1 - iv0) * pdf.height, (iu0 - R.u0) / R.wU * W, (iv0 - R.v0) / R.hV * H, (iu1 - iu0) / R.wU * W, (iv1 - iv0) / R.hV * H);
+      }
+      const e = pg.ext; x.drawImage(pg.base, (R.u0 + e.l) * pg.pw, (R.v0 + e.t) * pg.ph, R.wU * pg.pw, R.hV * pg.ph, 0, 0, W, H);
       if (zw.live) {
         const sw = c.getBoundingClientRect().width, tmp = Object.assign({}, zw.live, { points: zw.live.points.map(q => [(q[0] - R.u0) / R.wU, (q[1] - R.v0) / R.hV]), width: zw.live.width * zw.mag * pg.cssW / sw });
         M.drawStroke(x, tmp, W, H);

@@ -72,7 +72,9 @@ body.zw-open{padding-bottom:260px}
 /* ---- pages: sized by the reader, rendered lazily ---- */
 main#pages{max-width:none;overflow-x:auto;padding-inline:10px}
 .page{max-width:none;width:auto;background:#fff}
-.page canvas.pdf{position:absolute;inset:0;width:100%;height:100%;max-width:none}
+.page canvas.pdf{position:absolute;left:0;top:0;width:100%;height:100%;max-width:none}
+.page.st-has-margin{background:repeating-linear-gradient(0deg,#f7fafb,#f7fafb 27px,#e3edf1 28px)}
+.page.st-has-margin canvas.pdf{background:#fff;box-shadow:0 0 0 1px #9db6bf}
 .page canvas.ink{position:absolute;inset:0;width:100%;height:100%}
 
 #st-zoom{position:fixed;z-index:8;inset-inline-end:12px;bottom:calc(var(--mx-dock-h,64px) + 12px);display:flex;gap:2px;align-items:center;background:#122c47;border-radius:999px;padding:4px;box-shadow:0 6px 20px #0004}
@@ -112,3 +114,9 @@ body.medixa-focus .st-panel,body.medixa-focus #st-zoom{display:none!important}
 body.medixa-focus #studio-toolbar{top:8px}
 body.medixa-focus main#pages{padding-top:calc(var(--st-tb-h,0px) + 20px)}
 body.medixa-dark .page canvas.pdf{filter:none}
+
+#studio-margins,#studio-export-dlg{border:1px solid #9db6bf;border-radius:14px;padding:16px;max-width:min(420px,94vw);direction:rtl;color:#18334b}
+#studio-margins::backdrop,#studio-export-dlg::backdrop{background:#0006}
+.st-margin-row{display:flex;gap:8px;align-items:center;justify-content:space-between;min-height:48px}
+.st-margin-row select{min-height:44px;min-width:150px;border-radius:8px}
+.st-note-line{font-size:13px;color:#4a6573}

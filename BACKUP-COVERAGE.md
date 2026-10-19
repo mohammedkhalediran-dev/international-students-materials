@@ -15,6 +15,7 @@
 | Cards / Anki (pdf-notes) | `medixa.study.v1:A` | no | yes | replace | study JSON |
 | Reader bookmarks v5 | `medixa.reader.v1:A` | no | yes | replace | none |
 | Image masks v9.0 | `medixa.occlusion.v1:A` | no | yes | replace | none |
+| Studio layout (margins; Study Studio) | `medixa.studio.layout.v1:A` | — | yes | replace | none |
 | PDF ink (pdf-notes) | `medixa.pdf.annotations.v1:A` | no | yes | **merge** (adds strokes, never deletes, skips duplicates) | ink JSON (v8.9) |
 
 ## Deliberately excluded

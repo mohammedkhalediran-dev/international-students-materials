@@ -76,7 +76,8 @@
     const po = document.createElement('label'); po.className = 'st-check'; po.innerHTML = '<input type="checkbox" id="medixa-pen-only"> قلم إلكتروني فقط'; po.querySelector('input').checked = S.penOnly; po.querySelector('input').onchange = e => M.setPenOnly(e.target.checked);
     const sn = document.createElement('label'); sn.className = 'st-check'; sn.innerHTML = '<input type="checkbox" id="studio-snap"> محاذاة الزاوية'; sn.querySelector('input').onchange = e => M.setSnap(e.target.checked);
     const cs = btn('st-btn', 'تخصيص الشريط', 'تخصيص الشريط', 'studio-customize'); cs.onclick = () => { gp.hidden = true; gear.setAttribute('aria-expanded', 'false'); openCustomize(); };
-    gp.append(po, sn, cs); gear.onclick = () => { gp.hidden = !gp.hidden; gear.setAttribute('aria-expanded', String(!gp.hidden)); }; opts.append(gear, gp);
+    const mg = btn('st-btn', 'هوامش الكتابة', 'هوامش الكتابة', 'studio-margins-btn'); mg.onclick = () => { gp.hidden = true; gear.setAttribute('aria-expanded', 'false'); openMargins(); };
+    gp.append(po, sn, mg, cs); gear.onclick = () => { gp.hidden = !gp.hidden; gear.setAttribute('aria-expanded', String(!gp.hidden)); }; opts.append(gear, gp);
     root.append(styleHost, hist, opts); sync(); hs();
     root.dispatchEvent(new CustomEvent('st-rendered'));
   }
@@ -115,6 +116,41 @@
     };
     draw(); document.body.append(d); d.addEventListener('close', () => d.remove()); d.showModal();
   }
+  /* ---- margins dialog: virtual writing room around the page; export chooser ---- */
+  function openMargins() {
+    let d = $('studio-margins'); if (d) d.remove();
+    d = document.createElement('dialog'); d.id = 'studio-margins'; d.setAttribute('aria-labelledby', 'studio-margins-t');
+    const cur = M.reader ? M.reader.current() : 1, e0 = M.marginsOf(cur);
+    const h = document.createElement('h2'); h.id = 'studio-margins-t'; h.textContent = 'هوامش الكتابة (الصفحة ' + cur + ')'; d.append(h);
+    const note = document.createElement('p'); note.className = 'st-note-line'; note.textContent = 'الهامش مساحة كتابة إضافية حول الصفحة. لا يغيّر ملف PDF الأصلي ولا يمدّد رسوماتك.'; d.append(note);
+    const sel = {};
+    for (const [k, label] of [['l', 'اليسار'], ['r', 'اليمين'], ['t', 'الأعلى'], ['b', 'الأسفل']]) {
+      const row = document.createElement('label'); row.className = 'st-margin-row'; row.append(label + ' ');
+      const s = document.createElement('select'); s.id = 'margin-' + k; for (const v of [0, 0.25, 0.5, 1]) { const o = document.createElement('option'); o.value = v; o.textContent = v === 0 ? 'بلا' : Math.round(v * 100) + '% من الصفحة'; if (Math.abs(e0[k] - v) < 0.001) o.selected = true; s.append(o); }
+      sel[k] = s; row.append(s); d.append(row);
+    }
+    const all = document.createElement('label'); all.className = 'st-check'; all.innerHTML = '<input type="checkbox" id="margin-all"> تطبيق على كل الصفحات'; d.append(all);
+    const msg = document.createElement('p'); msg.id = 'margin-msg'; msg.setAttribute('role', 'status'); d.append(msg);
+    const row = document.createElement('div'); row.className = 'st-cust-row';
+    const ok = btn('st-btn', 'تطبيق', 'تطبيق'); ok.id = 'margin-apply'; ok.onclick = () => {
+      const ext = {}; for (const k of Object.keys(sel)) ext[k] = +sel[k].value; let clamped = 0;
+      const targets = all.querySelector('input').checked ? M.reader.pages.map(p => p.n) : [cur];
+      for (const n of targets) { const r = M.setMargins(n, ext, { defer: true }); if (r && r.clamped) clamped++; }
+      M.saveLayout(); msg.textContent = clamped ? 'بعض الهوامش لم تصغر لأن فيها كتابة؛ احذف الكتابة أولاً.' : 'تم تطبيق الهوامش.'; if (!clamped) setTimeout(() => d.close(), 400);
+    };
+    const cl = btn('st-btn', 'إغلاق', 'إغلاق'); cl.onclick = () => d.close(); row.append(ok, cl); d.append(row);
+    document.body.append(d); d.addEventListener('close', () => d.remove()); d.showModal();
+  }
+  M.chooseMargins = function () {
+    const r = M.marginReport(); if (!r.hasMargins) return Promise.resolve('clip');
+    return new Promise(res => {
+      const d = document.createElement('dialog'); d.id = 'studio-export-dlg'; d.setAttribute('aria-labelledby', 'studio-export-t');
+      d.innerHTML = '<h2 id="studio-export-t">تنزيل PDF بالتعليقات</h2><p></p><label class="st-check"><input type="radio" name="expmode" value="clip" checked> الصفحة الأصلية فقط</label><label class="st-check"><input type="radio" name="expmode" value="expand"> مع الهوامش (صفحات أكبر)</label><div class="st-cust-row"><button type="button" class="st-btn" id="exp-go">تنزيل</button><button type="button" class="st-btn" id="exp-cancel">إلغاء</button></div>';
+      d.querySelector('p').textContent = r.strokes ? 'يوجد ' + r.strokes + ' عنصراً مكتوباً في الهوامش (صفحات: ' + r.pages.join('، ') + '). اختيار «الصفحة الأصلية فقط» سيقصّها من الملف.' : 'لا توجد كتابة في الهوامش.';
+      let out = null; d.querySelector('#exp-go').onclick = () => { out = d.querySelector('input[name=expmode]:checked').value; d.close(); }; d.querySelector('#exp-cancel').onclick = () => d.close();
+      d.addEventListener('close', () => { d.remove(); res(out); }); document.body.append(d); d.showModal();
+    });
+  };
   if (S.hist) render(); else M.on('init', render);
   M.toolbar = { render, cfg: () => cfg, TOOLS };
 })();

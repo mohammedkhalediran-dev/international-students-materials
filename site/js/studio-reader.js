@@ -11,8 +11,14 @@
   const emit = (n, d) => R.listeners.filter(l => l[0] === n).forEach(l => { try { l[1](d); } catch (e) { console.warn(e); } });
   R.on = (n, f) => R.listeners.push([n, f]);
 
-  function cssSize(p) { const w = fitWidth() * R.zoom; return [w, w * p.h / p.w]; }
-  function layout(p) { const [w, h] = cssSize(p); p.el.style.width = w + 'px'; p.el.style.height = h + 'px'; p.cssW = w; p.cssH = h; }
+  /* Page area keeps its aspect ratio; margins add room around it, and the whole sheet fits the column at 100% zoom. */
+  function layout(p) {
+    const pg = M.page(p.n), e = pg ? pg.ext : { l: 0, t: 0, r: 0, b: 0 }, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
+    const totW = fitWidth() * R.zoom, w = totW / kx, h = w * p.h / p.w;
+    p.el.style.width = totW + 'px'; p.el.style.height = h * ky + 'px'; p.cssW = w; p.cssH = h;
+    p.pdf.style.left = (e.l / kx * 100) + '%'; p.pdf.style.top = (e.t / ky * 100) + '%'; p.pdf.style.width = (100 / kx) + '%'; p.pdf.style.height = (100 / ky) + '%';
+    p.el.classList.toggle('st-has-margin', kx > 1 || ky > 1);
+  }
 
   /* ---------- rendering ---------- */
   function release(p) {
@@ -107,8 +113,8 @@
         const label = document.createElement('span'); label.className = 'page-label'; label.textContent = i + ' / ' + n;
         el.append(pdf, ink, label); root.append(el);
         const p = { n: i, el, pdf, ink, w: sizes[i - 1].w, h: sizes[i - 1].h, proxy: proxies[i - 1], near: false, token: 0 };
-        el.__p = p; R.pages.push(p); layout(p);
-        M.attachPage({ wrap: el, ink, pageNumber: i, pdf });
+        el.__p = p; R.pages.push(p);
+        M.attachPage({ wrap: el, ink, pageNumber: i, pdf }); layout(p);
         R.io.observe(el);
       }
       if (window.ResizeObserver) { let w0 = root.clientWidth; new ResizeObserver(() => { if (Math.abs(root.clientWidth - w0) > 2) { w0 = root.clientWidth; relayout(); } }).observe(root); }
@@ -128,6 +134,7 @@
   };
   R.current = () => { let best = 1, d = Infinity; for (const p of R.pages) { const r = p.el.getBoundingClientRect(), k = Math.abs(r.top - 140); if (k < d) { d = k; best = p.n; } } return best; };
   R.goto = (n, smooth) => { const el = R.pageEl(Math.max(1, Math.min(R.pages.length, n))); if (el) el.scrollIntoView({ block: 'start', behavior: smooth === false ? 'auto' : 'smooth' }); };
+  M.on('layout', ({ n }) => { const p = R.pages[n - 1]; if (!p) return; const a = anchor(); layout(p); if (p.near) { p.rendered = false; want(p); pump(); } if (a && a.p === p) { /* keep position */ } });
   R.pageEl = n => R.pages[n - 1] && R.pages[n - 1].el;
   R.destroy = () => { R.pages.forEach(release); if (R.io) R.io.disconnect(); if (R.doc && R.doc.destroy) R.doc.destroy(); };
   M.reader = R;
