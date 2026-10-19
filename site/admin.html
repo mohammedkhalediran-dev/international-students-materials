@@ -8,8 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icon-192.png">
   <meta name="theme-color" content="#13294B">
-  <link rel="stylesheet" href="css/style.css?v=step48">
-  <link rel="stylesheet" href="css/upload.css?v=step48">
+  <link rel="stylesheet" href="css/style.css?v=step50">
+  <link rel="stylesheet" href="css/upload.css?v=step50">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
   </script>
@@ -26,8 +26,25 @@
     <p class="up-lead">هذه الصفحة للمشرفين فقط. يمكنك إيقاف حساب أو إعادة تفعيله، وتحديد دور كل شخص: طالب، أو رافع ملفات، أو ممثل الدفعة (يرفع الملفات ويكتب التبليغات).</p>
     <p class="up-msg" id="msg" role="alert" hidden></p>
     <section class="card up-card" aria-label="الحسابات"><div id="list"></div></section>
+    <section class="card up-card" aria-labelledby="pushTitle" id="pushAdmin">
+      <h2 class="up-title" id="pushTitle">مفاتيح الإشعارات</h2>
+      <p class="up-hint" id="pushState">جارٍ التحقق…</p>
+      <div id="pushGen" hidden>
+        <p class="up-hint">تُولَّد المفاتيح على جهازك فقط ولا تُرسل إلى أي مكان. انسخ كل مفتاح وضعه في Cloudflare: المشروع medixa ← Settings ← Variables and Secrets ← Production. أضف <b class="up-ltr">VAPID_PUBLIC_KEY</b> كنص عادي، و<b class="up-ltr">VAPID_PRIVATE_KEY</b> كـ Secret، ثم أعد النشر.</p>
+        <button class="btn btn-primary" type="button" id="pushMake">توليد المفاتيح</button>
+        <div id="pushOut" hidden>
+          <label class="up-label" for="pushPub">VAPID_PUBLIC_KEY</label>
+          <input class="field up-ltr" id="pushPub" readonly>
+          <button class="btn btn-secondary btn-sm" type="button" data-copy="pushPub">نسخ</button>
+          <label class="up-label" for="pushPriv">VAPID_PRIVATE_KEY (سرّي)</label>
+          <input class="field up-ltr" id="pushPriv" readonly>
+          <button class="btn btn-secondary btn-sm" type="button" data-copy="pushPriv">نسخ</button>
+          <p class="up-hint">لا ترسل المفتاح السرّي لأحد ولا تكتبه في محادثة. إن ولّدت مفاتيح جديدة لاحقاً يحتاج كل طالب إلى تفعيل الإشعارات من جديد.</p>
+        </div>
+      </div>
+    </section>
   </main>
-  <script src="js/auth.js?v=step48"></script>
-  <script src="js/admin.js?v=step48"></script>
+  <script src="js/auth.js?v=step50"></script>
+  <script src="js/admin.js?v=step50"></script>
 </body>
 </html>

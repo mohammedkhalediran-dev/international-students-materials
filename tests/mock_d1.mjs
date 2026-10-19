@@ -6,6 +6,7 @@ export function createMockD1() {
   const db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("../migrations/0001_init.sql", import.meta.url), "utf8"));
   db.exec(readFileSync(new URL("../migrations/0002_announcements.sql", import.meta.url), "utf8"));
+  db.exec(readFileSync(new URL("../migrations/0003_push.sql", import.meta.url), "utf8"));
   const stmt = (sql, args = []) => ({
     bind: (...a) => stmt(sql, a),
     async first() { return db.prepare(sql).get(...args) || null; },
