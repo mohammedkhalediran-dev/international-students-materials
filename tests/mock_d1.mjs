@@ -11,6 +11,7 @@ export function createMockD1({ without = [] } = {}) {
   if (!without.includes("0005")) db.exec(readFileSync(new URL("../migrations/0005_admin.sql", import.meta.url), "utf8"));
   if (!without.includes("0006")) db.exec(readFileSync(new URL("../migrations/0006_timetable.sql", import.meta.url), "utf8"));
   if (!without.includes("0007")) db.exec(readFileSync(new URL("../migrations/0007_grades.sql", import.meta.url), "utf8"));
+  if (!without.includes("0008")) db.exec(readFileSync(new URL("../migrations/0008_profile.sql", import.meta.url), "utf8"));
   const stmt = (sql, args = []) => ({
     bind: (...a) => stmt(sql, a),
     async first() { return db.prepare(sql).get(...args) || null; },

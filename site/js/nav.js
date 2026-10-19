@@ -33,7 +33,7 @@
     ] },
     { title: "حسابي", items: [
       { id: "grades", label: "درجاتي الجامعية", icon: "cap", href: "grades.html", enabled: true },  // Step 57: الخادم يتحقق من الحساب ويعطي كل طالب درجاته فقط
-      { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
+      { id: "profile", label: "الملف الشخصي", icon: "user", href: "profile.html", enabled: true }  // Step 61: الاسم كما في الجامعة + ربط الجواز
     ] }
   ];
   var FOOT = [
@@ -202,6 +202,7 @@
       return {search:"courses",lectures:"latest",favorites:"favorites",professors:"professors",planner:"plan",questions:"qbank",results:"results",settings:"settings",help:"help"}[new URLSearchParams(location.search).get("view")] || "courses";
     }
     if (p === "grades.html") return "grades";
+    if (p === "profile.html") return "profile";
     if (p === "index.html") {
       if (location.hash === "#favorites") return "favorites";
       if (spyId && (location.hash === "" || location.hash === "#home" || SPY[location.hash.slice(1)])) return spyId;

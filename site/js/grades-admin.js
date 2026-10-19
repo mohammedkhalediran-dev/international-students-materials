@@ -29,7 +29,7 @@
     // يخمّن الأعمدة من صف العناوين (عربي/فارسي/إنجليزي)
     guess: function (header) {
       var tests = {
-        passport: /pass|جواز|گذرنامه|پاسپورت|گذر نامه/i,
+        passport: /pass|جواز|گذرنامه|پاسپورت|گذر نامه|code|رمز|کد/i, // Step 61: «Student code» من قائمة الملفات الشخصية
         name: /name|اسم|نام|الطالب|student/i,
         course: /course|subject|module|مادة|المادة|مقرر|درس|الدرس/i,
         grade: /grade|mark|score|result|درجة|الدرجة|الدرجه|نمره|نمرة|النتيجة|علامة/i
@@ -48,13 +48,24 @@
       var body = hasHeader ? table.slice(1) : table, out = [], issues = [];
       body.forEach(function (r, i) {
         var o = { name: map.name >= 0 ? r[map.name] || "" : "", passport: r[map.passport] || "", course: r[map.course] || "", grade: r[map.grade] || "" };
-        var miss = ["passport", "course", "grade"].filter(function (k) { return !String(o[k]).trim(); });
+        // رمز الطالب (M123) من قائمة الملفات الشخصية يُرسل بدل الجواز
+        if (/^\s*M\d+\s*$/i.test(o.passport)) { o.code = o.passport.trim().toUpperCase(); o.passport = ""; }
+        // صف من قائمة الطلاب لم تُكتب له مادة ولا درجة: يُتجاهل بدل أن يمنع الرفع
+        if (o.code && !String(o.course).trim() && !String(o.grade).trim()) return;
+        var miss = ["passport", "course", "grade"].filter(function (k) { return !String(k === "passport" ? o.passport || o.code || "" : o[k]).trim(); });
         if (miss.length) issues.push({ row: i + (hasHeader ? 2 : 1), missing: miss });
         out.push(o);
       });
       return { rows: out, issues: issues };
     },
-    mask: function (p) { p = String(p || "").replace(/\s/g, ""); return p.length > 3 ? "•••" + p.slice(-3) : "•••"; }
+    mask: function (p) { p = String(p || "").replace(/\s/g, ""); return p.length > 3 ? "•••" + p.slice(-3) : "•••"; },
+    // Step 61: قائمة الطلاب بصيغة CSV يفتحها Excel/Numbers (BOM للعربية)، ويُملأ فيها عمودا Subject وGrade ثم تُلصق للرفع
+    rosterCsv: function (students) {
+      var q = function (v) { v = String(v == null ? "" : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      var lines = [["Student code", "Full name", "Email", "Semester", "Subject", "Grade"].join(",")];
+      students.forEach(function (s) { lines.push([s.code, s.fullName, s.email, s.semester || "", "", ""].map(q).join(",")); });
+      return "\ufeff" + lines.join("\r\n") + "\r\n";
+    }
   };
   window.GRParse = GRParse;
   if (typeof document === "undefined" || !document.getElementById("grApp")) return;
@@ -68,10 +79,11 @@
 
   var ERR = {
     forbidden: "هذه العملية للمشرف فقط.", unauthorized: "انتهت الجلسة. سجّل الدخول مرة أخرى.",
-    not_configured: "المفتاح السري GRADES_SECRET غير مضبوط في Cloudflare بعد.", not_migrated: "جداول الدرجات غير موجودة في قاعدة البيانات بعد (migrations/0007_grades.sql).",
+    not_configured: "المفتاح السري GRADES_SECRET غير مضبوط في Cloudflare بعد.", not_migrated: "جداول الدرجات أو الملف الشخصي غير موجودة في قاعدة البيانات بعد (migrations/0007_grades.sql و0008_profile.sql).",
     title_required: "اكتب اسماً للدفعة.", empty: "الملف فارغ.", too_many_rows: "الملف كبير جداً (أكثر من 3000 صف). قسّمه إلى ملفين.",
     invalid_rows: "بعض الصفوف ناقصة أو رقم الجواز فيها غير صحيح.", name_mismatch: "رقم جواز واحد ظهر باسمين مختلفين. راجع الأعمدة.",
-    network: "لا اتصال بالإنترنت.", bad_request: "البيانات غير مكتملة.", not_found: "لم يعد هذا العنصر موجوداً."
+    network: "لا اتصال بالإنترنت.", bad_request: "البيانات غير مكتملة.", not_found: "لم يعد هذا العنصر موجوداً.",
+    unknown_code: "رمز طالب غير معروف (من قائمة الطلاب). نزّل القائمة من جديد."
   };
   var errText = function (d) { return t(ERR[d && d.error] || "حدث خطأ. حاول مرة أخرى."); };
   function fetchJson(url, opts) {
@@ -128,8 +140,15 @@
     if (!state.people.length) { box.appendChild(el("div", "tt-empty", t("لا طلاب بعد."))); return; }
     var list = el("div", "gr-list");
     items.slice(0, 300).forEach(function (p) {
-      var row = el("div", "gr-item"), main = el("div", "gr-item-main"), name = el("strong", "", p.name || t("بلا اسم"));
+      var pname = p.user && p.user.profileName || "";
+      var row = el("div", "gr-item"), main = el("div", "gr-item-main"), name = el("strong", "", p.name || pname || t("بلا اسم"));
       name.dir = "auto"; main.appendChild(name);
+      // Step 61: الاسم الذي كتبه الطالب في ملفه الشخصي، ومعه تنبيه إن اختلف عن اسم ملف الدرجات
+      if (pname && p.name && simple(pname) !== simple(p.name)) {
+        var diff = el("small", "gr-mismatch"); diff.appendChild(document.createTextNode(t("الاسم في الملف الشخصي مختلف") + ": "));
+        var pn = el("bdi", "", pname); diff.appendChild(pn); main.appendChild(diff);
+      }
+      if (!p.rows) main.appendChild(el("small", "", t("أكمل ملفه الشخصي؛ تلحقه درجاته عند رفعها.")));
       var info = el("small");
       var badge = el("span", "gr-badge" + (p.linked ? " is-on" : ""), t(p.linked ? "الحساب مربوط" : "لم يربط بعد"));
       info.appendChild(badge);
@@ -151,6 +170,23 @@
     if (window.I18N) I18N.apply();
   }
   $("grSearch").addEventListener("input", renderPeople);
+  function simple(n) { return String(n || "").toLowerCase().normalize("NFKD").replace(/[^a-z\u0600-\u06ff]+/g, " ").trim().split(" ").sort().join(" "); }
+
+  /* ---------- Step 61: قائمة الطلاب من ملفاتهم الشخصية ---------- */
+  $("grRoster").addEventListener("click", function () {
+    var btn = $("grRoster"); btn.disabled = true; $("grRosterStatus").textContent = t("جارٍ التحميل…");
+    fetchJson("api/grades/admin/roster").then(function (d) {
+      btn.disabled = false;
+      if (d.__status !== 200) { $("grRosterStatus").textContent = errText(d); return; }
+      var list = d.students || [];
+      $("grRosterStatus").textContent = t("عدد الطلاب") + ": " + list.length;
+      if (!list.length) return;
+      var url = URL.createObjectURL(new Blob([GRParse.rosterCsv(list)], { type: "text/csv;charset=utf-8" }));
+      var a = document.createElement("a"); a.href = url; a.download = "medixa-students.csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    });
+  });
 
   /* ---------- الرفع ---------- */
   var parsed = null; // { table, hasHeader } — يبقى في الذاكرة فقط ويُمسح بعد الرفع
@@ -183,12 +219,12 @@
     var missingCols = ["passport", "course", "grade"].filter(function (k) { return map[k] < 0; });
     if (missingCols.length) { issuesBox.appendChild(el("div", "tt-err", t("اختر أعمدة رقم الجواز والمادة والدرجة."))); $("grUpload").disabled = true; return; }
     var res = GRParse.rows(parsed.table, map, parsed.hasHeader);
-    var students = {}; res.rows.forEach(function (r) { var k = String(r.passport).replace(/\s/g, "").toUpperCase(); if (k) students[k] = 1; });
+    var students = {}; res.rows.forEach(function (r) { var k = String(r.passport || r.code || "").replace(/\s/g, "").toUpperCase(); if (k) students[k] = 1; });
     stat(st, "عدد الصفوف", res.rows.length); stat(st, "عدد الطلاب", Object.keys(students).length); stat(st, "صفوف ناقصة", res.issues.length);
     res.rows.slice(0, 15).forEach(function (r, i) {
       var tr = el("tr"), bad = res.issues.some(function (x) { return x.row === i + (parsed.hasHeader ? 2 : 1); });
       if (bad) tr.className = "is-invalid";
-      [r.name, GRParse.mask(r.passport), r.course, r.grade].forEach(function (v, j) { var td = el("td", "", v); td.dir = j === 1 ? "ltr" : "auto"; tr.appendChild(td); });
+      [r.name, r.code || GRParse.mask(r.passport), r.course, r.grade].forEach(function (v, j) { var td = el("td", "", v); td.dir = j === 1 ? "ltr" : "auto"; tr.appendChild(td); });
       body.appendChild(tr);
     });
     if (res.issues.length) issuesBox.appendChild(el("div", "tt-err", t("صفوف ناقصة (رقم الصف في الملف)") + ": " + res.issues.slice(0, 20).map(function (x) { return x.row; }).join("، ")));

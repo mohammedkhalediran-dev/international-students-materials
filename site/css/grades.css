@@ -7,7 +7,8 @@
 /* ربط الحساب */
 .gr-claim { max-width: 520px; margin-top: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 .gr-claim > * { min-width: 0; }
-.gr-claim input { width: 100%; min-width: 0; box-sizing: border-box; font-size: var(--text-lg); letter-spacing: 0.08em; text-transform: uppercase; }
+.gr-claim input { width: 100%; min-width: 0; box-sizing: border-box; font-size: var(--text-lg); }
+.gr-claim #grPassport { letter-spacing: 0.08em; text-transform: uppercase; }
 .gr-notes { margin: 0; padding-inline-start: var(--space-5); color: var(--tt-muted); font-size: var(--text-sm); display: grid; gap: var(--space-1); }
 
 /* درجات الطالب */
@@ -39,3 +40,12 @@
   .gr-map { grid-template-columns: 1fr 1fr; }
   .gr-table th, .gr-table td { padding-inline: var(--space-3); }
 }
+.gr-mismatch { display: block; color: var(--tt-amber-ico); }
+/* Step 61: الملف الشخصي */
+.pf-account { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: var(--space-4) 0 0; padding: var(--space-4); border: 1px solid var(--tt-day-line); border-radius: var(--radius-lg); }
+.pf-account dt { color: var(--tt-muted); font-size: var(--text-sm); }
+.pf-account dd { margin: 0; color: var(--tt-ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pf-grades { margin-top: var(--space-4); }
+.gr-profile { margin-top: var(--space-5); }
+.gr-done { margin: 0; color: var(--tt-green-ico); font-weight: 600; }
+.gr-edit { display: inline-block; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--tt-accent); }
