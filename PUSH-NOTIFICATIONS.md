@@ -3,7 +3,7 @@
 Decisions by Mohammed (2026-10-19): guests and signed-in students can turn notifications on; a new lecture notifies only students of that lecture's semester; announcements go to everyone; each student chooses their semester.
 
 ## For the student
-- First visit to the home page asks «في أي كورس أنت؟». The choice (`ms.sem`) opens that semester's page, marks it «الحالي», drives «أحدث المحاضرات», syncs with the account, and can be changed from the sidebar («الكورس الثالث · تغيير»).
+- First visit to the home page asks «في أي كورس أنت؟». The choice (`ms.sem`) opens that semester's page and, from then on, the other semesters are hidden everywhere in the student interface (home, sidebar, search, planner, question bank). It syncs with the account and can be changed only in Settings (workspace.html?view=settings). Decision by Mohammed 2026-10-19: no course button in the sidebar. Upload/admin pages still list every semester.
 - Sidebar: «تفعيل الإشعارات». Android and computers: works in the browser. iPhone/iPad: only after Share → «إضافة إلى الشاشة الرئيسية», opening Medixa from that icon (iOS 16.4+); the button explains this.
 - Notifications: «محاضرة جديدة: <المادة>» (tap opens the lecture) and «تبليغ: <العنوان>» (opens the announcements).
 

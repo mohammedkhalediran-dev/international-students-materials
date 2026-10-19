@@ -1,16 +1,16 @@
 /* js/my-course.js — Step 49 (بقرار محمد 2026-10-19):
-   1) «كورسي»: الطالب يختار كورسه (ms.sem)؛ أول زيارة للرئيسية تسأله ثم تفتح صفحة كورسه، ويغيّره من القائمة الجانبية.
-      ms.sem يُزامن مع الحساب (SYNC_KEYS) ويُستعمل في «الحالي» و«أحدث المحاضرات».
+   1) «كورسي»: الطالب يختار كورسه (ms.sem) في أول زيارة للرئيسية ثم تُفتح صفحة كورسه. بعدها لا تظهر له الكورسات
+      الأخرى في الواجهة (الحذف في js/app.js). يغيّره من الإعدادات فقط (workspace.html?view=settings). ms.sem يُزامن مع الحساب.
    2) إشعارات الموقع (Web Push): زر في القائمة الجانبية. إشعار المحاضرة يصل لطلاب كورسها فقط، والتبليغ للجميع.
       على iPhone/iPad لا تعمل إلا بعد «إضافة إلى الشاشة الرئيسية» وفتح الموقع من هناك (iOS 16.4+). */
 (function () {
   "use strict";
   if (!window.MS || typeof SEMESTERS === "undefined") return;
+  var ALL = MS.ALL_SEMESTERS || SEMESTERS;
   var KEY = "ms.sem";
   function T(s) { return window.I18N && I18N.t ? I18N.t(s) : s; }
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
-  function mySem() { var v = MS.load(KEY, null); return SEMESTERS.some(function (s) { return s.id === v; }) ? v : null; }
-  function semName(id) { var s = SEMESTERS.filter(function (x) { return x.id === id; })[0]; return s ? (MS.lang === "en" && s.nameEn ? s.nameEn : s.name) : ""; }
+  function mySem() { var v = MS.load(KEY, null); return ALL.some(function (s) { return s.id === v; }) ? v : null; }
   function apply() { if (window.I18N && I18N.apply) I18N.apply(); }
 
   /* ---------- اختيار الكورس ---------- */
@@ -20,9 +20,9 @@
     if (!dlg) {
       dlg = el("dialog", "mc-dialog"); dlg.id = "myCourseDialog"; dlg.setAttribute("aria-labelledby", "mcTitle");
       var h = el("h2", "mc-title", "في أي كورس أنت؟"); h.id = "mcTitle"; dlg.appendChild(h);
-      dlg.appendChild(el("p", "mc-sub", "نعرض لك موادّ كورسك أولاً، وتصلك إشعارات محاضراته فقط. يمكنك تغييره لاحقاً من القائمة."));
+      dlg.appendChild(el("p", "mc-sub", "تظهر لك موادّ كورسك فقط، وتصلك إشعارات محاضراته. يمكنك تغييره لاحقاً من الإعدادات."));
       var list = el("div", "mc-options");
-      SEMESTERS.slice().sort(function (a, b) { return b.id - a.id; }).forEach(function (s) {
+      ALL.slice().sort(function (a, b) { return b.id - a.id; }).forEach(function (s) {
         var b = el("button", "mc-option"); b.type = "button"; b.setAttribute("data-sem", String(s.id));
         b.appendChild(el("span", "mc-no", String(s.id).padStart(2, "0")));
         b.appendChild(el("span", "mc-name", s.name));
@@ -41,35 +41,23 @@
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
   }
   function choose(id) {
-    var changed = mySem() !== id;
-    MS.save(KEY, id);
+    var go = dlg && dlg._go;
     if (dlg) dlg.close();
-    paintSidebar();
-    if (changed) document.dispatchEvent(new CustomEvent("ms:sem", { detail: id }));
-    if (dlg && dlg._go) { location.href = "semester.html?id=" + id; return; }
-    if (changed && /(^|\/)(index\.html)?$/.test(location.pathname)) location.reload(); // الرئيسية تبني «الحالي» و«أحدث المحاضرات» من الكورس
+    setCourse(id, go ? "semester.html?id=" + id : null);
+  }
+  /* حفظ الكورس، ونقل اشتراك الإشعارات إليه، ثم إعادة بناء الصفحة (لتختفي الكورسات الأخرى) */
+  function setCourse(id, next) {
+    MS.save(KEY, id);
+    var done = function () { if (next) location.href = next; else location.reload(); };
+    currentSub().then(function (s) {
+      if (!s) return;
+      var j = s.toJSON(); j.semester = id;
+      return api("POST", "subscribe", j);
+    }).then(done, done);
   }
   MS.chooseCourse = picker;
+  MS.setCourse = setCourse;
 
-  /* ---------- القائمة الجانبية: «كورسي · تغيير» وزر الإشعارات ---------- */
-  function paintSidebar() {
-    var box = document.querySelector(".sb-user");
-    if (!box) return;
-    var text = box.querySelector(".sb-user-text");
-    var btn = box.querySelector(".mc-change");
-    if (!btn && text) {
-      btn = el("button", "mc-change"); btn.type = "button";
-      btn.addEventListener("click", function () { picker(); });
-      var small = text.querySelector("small");
-      if (small) text.replaceChild(btn, small); else text.appendChild(btn);
-    }
-    if (btn) {
-      var s = mySem();
-      btn.textContent = s ? semName(s) + " · " + T("تغيير") : T("اختر كورسك");
-      btn.setAttribute("data-i18n-skip", "");
-    }
-    paintPush();
-  }
 
   /* ---------- الإشعارات ---------- */
   var serverKey = null, pushRow = null;
@@ -146,12 +134,7 @@
     box.parentNode.insertBefore(pushRow, box.nextSibling);
     api("GET", "key").then(function (r) { serverKey = r.status === 200 && r.data.ready ? r.data.publicKey : null; refresh(); });
   }
-  // تغيّر الكورس: نحدّث كورس الاشتراك على الخادم حتى تصل إشعارات الكورس الجديد
-  document.addEventListener("ms:sem", function (e) {
-    currentSub().then(function (s) { if (s) { var j = s.toJSON(); j.semester = e.detail; api("POST", "subscribe", j); } });
-  });
-
-  paintSidebar();
+  paintPush();
   // أول زيارة للرئيسية بلا كورس: نسأل مرة في الجلسة، ثم نفتح صفحة الكورس المختار
   var home = /(^|\/)(index\.html)?$/.test(location.pathname) && !location.hash;
   var asked = false; try { asked = sessionStorage.getItem("ms.sem.asked") === "1"; } catch (e) { /* لا شيء */ }

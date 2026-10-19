@@ -486,7 +486,6 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .sb-auth-action { justify-self: start; display: inline-flex; align-items: center; min-height: var(--control-h); padding: 0; border: 0; background: none; color: var(--nav-accent); font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .sb-auth-action:disabled { opacity: .6; cursor: wait; }
 /* Step 49: «كورسي» والإشعارات في القائمة الجانبية */
-.mc-change { justify-self: start; min-height: var(--control-h); padding: 0; border: 0; background: none; color: var(--nav-muted); font: inherit; font-size: var(--text-xs); text-align: start; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .sb-push { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0 var(--space-2); margin: 0 var(--space-4) var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-md); color: var(--nav-accent); }
 .sb-push[hidden] { display: none; }
 .push-btn { min-height: var(--control-h); padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: var(--text-sm); font-weight: 600; text-align: start; cursor: pointer; }

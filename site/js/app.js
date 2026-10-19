@@ -68,6 +68,21 @@
   MS.save = save;
   MS.KEY = KEY;
 
+  /* «كورسي» (بقرار محمد 2026-10-19): بعد أن يختار الطالب كورسه لا تظهر له الكورسات الأخرى في الواجهة.
+     نحذفها من SEMESTERS وCOURSES في الصفحة نفسها، فتختفي من الرئيسية والقائمة والبحث والمخطط وبنك الأسئلة معاً.
+     القوائم الكاملة في MS.ALL_SEMESTERS وMS.ALL_COURSES (لنافذة الاختيار والإعدادات). صفحات الرفع والإدارة لا تتأثر. */
+  if (typeof SEMESTERS !== "undefined" && typeof COURSES !== "undefined") {
+    MS.ALL_SEMESTERS = SEMESTERS.slice();
+    MS.ALL_COURSES = COURSES.slice();
+    var mine = load("ms.sem", null);
+    var staff = /\/(upload|admin|announce|login|privacy|terms)\.html$/.test(location.pathname);
+    if (!staff && SEMESTERS.some(function (s) { return s.id === mine; })) {
+      for (var si = SEMESTERS.length - 1; si >= 0; si--) if (SEMESTERS[si].id !== mine) SEMESTERS.splice(si, 1);
+      for (var ci = COURSES.length - 1; ci >= 0; ci--) if (COURSES[ci].semester !== mine) COURSES.splice(ci, 1);
+      MS.myCourseOnly = mine;
+    }
+  }
+
   /* ---------- الأيقونات ---------- */
   var ICONS = {
     lungs: '<path d="M12 4v7"/><path d="M12 8c-1.6 0-5 2-6 6-.7 2.6-.3 4.6 1.5 4.6 2 0 3-1.5 3.5-3 .3-1 .5-2 .5-3.4"/><path d="M12 8c1.6 0 5 2 6 6 .7 2.6.3 4.6-1.5 4.6-2 0-3-1.5-3.5-3-.3-1-.5-2-.5-3.4"/>',

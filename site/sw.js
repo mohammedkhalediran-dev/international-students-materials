@@ -1,6 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-step49";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=step49", "css/semester.css?v=step49", "css/workspace.css?v=step49", "js/app.js?v=step49", "js/nav.js?v=step49", "js/home.js?v=step49", "js/workspace.js?v=step49", "js/planner.js?v=step49", "js/questions.js?v=step49", "js/i18n.js?v=step49", "data/courses.js?v=step49", "data/study/medical-immunology-1.js?v=step49"];
+var V = "medixa-step50";
+var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "assets/medical-thorax.webp", "css/style.css?v=step50", "css/semester.css?v=step50", "css/workspace.css?v=step50", "js/app.js?v=step50", "js/nav.js?v=step50", "js/home.js?v=step50", "js/workspace.js?v=step50", "js/planner.js?v=step50", "js/questions.js?v=step50", "js/i18n.js?v=step50", "data/courses.js?v=step50", "data/study/medical-immunology-1.js?v=step50"];
 var CDN = [
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
