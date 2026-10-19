@@ -10,7 +10,13 @@ Branch: `ccr-a0fcdb08-bz6oce` (from origin/cloudflare-upload @ a23c69f). Never p
 - Tests (need `MEDIXA_CDN_DIR` = npm-packed pdfjs-dist-3.11.174 + pdf-lib-1.17.1, Playwright 1.56 for the installed Chromium 1194; `ln -s /opt/pw-browsers/chromium-1194/chrome-linux/chrome /usr/bin/chromium` for the old browser_dom_* tests):
   `python3 -I tests/studio_phase1_browser.py` (32), `tests/studio_phase1_robust_browser.py` (17).
 
+## Done (Phase 2 — committed)
+- `studio-tools.js` (lasso: select/move/resize/duplicate/delete/arrow-nudge/type filter; text + sticky with Arabic multiline, edit via dblclick; Zoom Writing strip with target region, ×2/3/4/6, direction, auto-advance, new line), `studio-toolbar.js` (config order/visibility/left-handed/reset, compact overflow, active tool always visible), `studio-shell.js` (relocates v5 reader-bar buttons into the header; the floating toolbar sits under it).
+- Test: `python3 -I tests/studio_phase2_browser.py` (49 checks incl. export of text on rotated/cropped pages).
+- Not verifiable here: real Apple Pencil / touch hardware (only Chromium CDP pen+touch simulation).
+
 ## Next
+0. (old list below; Phase 2 items done)
 1. Phase 2: lasso (events `gesture` on the engine, hooks in studio-ink.js), Zoom Writing, shapes snap UI, text/sticky editing UI (export already handles text via canvas raster), custom toolbar. Pen-only checkbox UI (engine API `setPenOnly`).
 2. Phase 3: shell per design (css/studio.css), margins, blank pages, split view, tabs, focus mode.
 3. Phase 4: smart study layer (reuse `medixa.study.v1:` cards + anki scheduler; masks `medixa.occlusion.v1:`).

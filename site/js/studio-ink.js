@@ -14,6 +14,7 @@
   };
   try { S.penOnly = localStorage.getItem('medixa.penOnly') === 'true'; } catch {}
 
+  const TOOLS = {};   /* name -> {down,move,up}; used by lasso / text / sticky / zoom writing */
   const emit = (n, d) => (S.listeners[n] || []).forEach(f => { try { f(d); } catch (e) { console.warn(e); } });
   const on = (n, f) => (S.listeners[n] = S.listeners[n] || []).push(f);
 
@@ -107,6 +108,7 @@
   /* Text / sticky: drawn by the browser (so Arabic shaping and RTL are exact). Implemented fully in Phase 2. */
   function drawTextBox(ctx, s, w, h) {
     const b = C.bounds(s), x = b[0] * w, y = b[1] * h, bw = (b[2] - b[0]) * w, bh = (b[3] - b[1]) * h;
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, bw, bh); ctx.clip();
     if (s.tool === 'sticky') { ctx.fillStyle = s.fill || '#fff3a3'; ctx.shadowColor = 'rgba(0,0,0,.2)'; ctx.shadowBlur = 6; ctx.fillRect(x, y, bw, bh); ctx.shadowBlur = 0; }
     ctx.fillStyle = s.color || '#18334b';
     const size = (s.size || 18) * w / 800; ctx.font = `${size}px system-ui, "Noto Naskh Arabic", sans-serif`; ctx.textBaseline = 'top';
@@ -120,6 +122,15 @@
       }
       ctx.fillText(line, rtl ? x + bw - pad : x + pad, ty); ty += size * 1.35;
     }
+    ctx.restore();
+  }
+  /* Height (normalized) a text needs at the box width, so notes grow with their content. */
+  function fitTextHeight(s, pg) {
+    const cv = fitTextHeight.cv || (fitTextHeight.cv = document.createElement('canvas')), ctx = cv.getContext('2d'), W = 800, H = 800 * pg.cssH / pg.cssW;
+    const size = s.size || 18, pad = size * 0.4, bw = (s.w || 0.28) * W; ctx.font = `${size}px system-ui, "Noto Naskh Arabic", sans-serif`;
+    let lines = 0;
+    for (const para of String(s.text).split('\n')) { let line = ''; lines++; for (const word of para.split(/\s+/)) { const t = line ? line + ' ' + word : word; if (ctx.measureText(t).width > bw - pad * 2 && line) { lines++; line = word; } else line = t; } }
+    return Math.max(0.04, (pad * 2 + lines * size * 1.35) / H);
   }
   function sizePage(pg) {
     const r = pg.ink.getBoundingClientRect(), d = DPR();
@@ -187,8 +198,7 @@
     try { pg.ink.setPointerCapture(e.pointerId); } catch {}
     const p = posOf(pg, e), tool = S.tool;
     pg.active = { id: e.pointerId, type: e.pointerType, tool, ops: [], last: p, px: e.clientX, py: e.clientY };
-    emit('beforegesture', { pg, e, tool });
-    if (pg.active.cancelled) { pg.active = null; return; }
+    if (TOOLS[tool]) { pg.active.custom = TOOLS[tool]; setState('editing'); if (TOOLS[tool].down(pg, e, p) === false) pg.active = null; return; }
     if (tool === 'eraser') { setState('editing'); erase(pg, p); return; }
     if (['pen', 'highlight', 'line', 'rectangle', 'ellipse'].includes(tool)) {
       setState('editing');
@@ -197,7 +207,6 @@
       if (real && tool === 'pen') pg.live.pr = [C.clamp01(e.pressure)];
       paint(pg); return;
     }
-    emit('gesture', { pg, e, tool, phase: 'down', p });
   }
   function move(pg, e) {
     const a = pg.active; if (!a || a.id !== e.pointerId) return;
@@ -205,9 +214,10 @@
     const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
     for (const ev of (evs.length ? evs : [e])) {
       const p = posOf(pg, ev);
+      if (a.custom) { a.custom.move(pg, ev, p); a.last = p; continue; }
       if (a.tool === 'eraser') { erase(pg, p); a.last = p; continue; }
       const L = pg.live;
-      if (!L) { emit('gesture', { pg, e: ev, tool: a.tool, phase: 'move', p }); continue; }
+      if (!L) continue;
       if (C.SHAPES.includes(L.tool)) { L.points = [L.points[0], snapEnd(L.points[0], p, L.tool, pg)]; continue; }
       const last = L.points[L.points.length - 1];
       if (Math.hypot((p[0] - last[0]) * pg.cssW, (p[1] - last[1]) * pg.cssH) < 0.6) continue;   /* thin redundant samples */
@@ -220,9 +230,10 @@
     try { pg.ink.releasePointerCapture(e.pointerId); } catch {}
     pg.active = null;
     if (a.pan) return;
+    if (a.custom) { a.custom.up(pg, e, cancelled, posOf(pg, e)); const ok = S.state === 'editing'; if (ok) setState(S.dirty ? 'pending' : 'saved'); return; }
     if (a.tool === 'eraser') { if (a.ops.length) { S.hist.push(a.ops); markDirty(); } else if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); invalidate(pg.n); return; }
     const L = pg.live; pg.live = null;
-    if (!L) { emit('gesture', { pg, e, tool: a.tool, phase: 'up', cancelled }); return; }
+    if (!L) return;
     if (cancelled) { paint(pg); setState(S.dirty ? 'pending' : 'saved'); return; }      /* a cancelled pointer discards its stroke */
     if (C.SHAPES.includes(L.tool) && L.points.length < 2) { paint(pg); return; }
     if (C.SHAPES.includes(L.tool)) {
@@ -302,28 +313,19 @@
       const page = out.getPage(i), box = page.getCropBox ? page.getCropBox() : page.getMediaBox(), rot = page.getRotation().angle, [dw, dh] = C.displaySize(box, rot);
       const b = C.bounds(s), W = Math.round((b[2] - b[0]) * 1200), H = Math.round((b[3] - b[1]) * 1200 * dh / dw);
       const cv = document.createElement('canvas'); cv.width = Math.max(4, W); cv.height = Math.max(4, H);
-      const sb = Object.assign({}, s, { points: [[0, 0]], w: 1, h: 1 }); drawTextBox(cv.getContext('2d'), sb, cv.width, cv.height);
+      const cx = cv.getContext('2d'); cx.translate(-b[0] * 1200, -b[1] * 1200 * dh / dw); drawTextBox(cx, s, 1200, 1200 * dh / dw);
       const png = await out.embedPng(await (await fetch(cv.toDataURL('image/png'))).arrayBuffer());
-      const p0 = C.viewToPdf(b[0], b[1], box, rot), p1 = C.viewToPdf(b[2], b[3], box, rot);
-      const x = Math.min(p0[0], p1[0]), y = Math.min(p0[1], p1[1]), w = Math.abs(p1[0] - p0[0]), h = Math.abs(p1[1] - p0[1]);
-      if (rot === 0) page.drawImage(png, { x, y, width: w, height: h });
-      else {
-        /* Rotated page: draw upright in display space by rotating the image about its pdf-space origin. */
-        const { degrees } = window.PDFLib;
-        const o = C.viewToPdf(b[0], b[3], box, rot);
-        page.drawImage(png, { x: o[0], y: o[1], width: (b[2] - b[0]) * dw, height: (b[3] - b[1]) * dh, rotate: degrees(rot === 90 ? -90 : rot === 180 ? 180 : 90) });
-      }
+      /* Display-space bottom-left of the note is the image origin; the image x-axis follows display-x, which is the
+         PDF axis rotated by the page's /Rotate (verified for 0/90/180/270 with CropBox in tests/studio_phase2_browser.py). */
+      const o = C.viewToPdf(b[0], b[3], box, rot), { degrees } = window.PDFLib;
+      page.drawImage(png, { x: o[0], y: o[1], width: (b[2] - b[0]) * dw, height: (b[3] - b[1]) * dh, rotate: degrees(rot) });
     }
   }
 
   /* ---------- tool UI binding (header buttons keep their ids/data attributes) ---------- */
-  function setTool(t) { S.tool = t; document.querySelectorAll('[data-tool]').forEach(b => { b.classList.toggle('active', b.dataset.tool === t); b.setAttribute('aria-pressed', String(b.dataset.tool === t)); }); document.documentElement.dataset.studioTool = t; emit('tool', t); }
+  function setTool(t) { if (t === 'pen' || t === 'highlight') S.lastDrawTool = t; S.tool = t; document.querySelectorAll('[data-tool]').forEach(b => { b.classList.toggle('active', b.dataset.tool === t); b.setAttribute('aria-pressed', String(b.dataset.tool === t)); }); document.documentElement.dataset.studioTool = t; emit('tool', t); }
   function bindUi() {
     document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
-    if ($('color')) $('color').oninput = e => { S.color = e.target.value; emit('style'); };
-    if ($('width')) $('width').oninput = e => { S.width = +e.target.value; emit('style'); };
-    if ($('undo')) $('undo').onclick = undo;
-    if ($('redo')) $('redo').onclick = redo;
     addEventListener('keydown', e => {
       if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
@@ -359,7 +361,7 @@
     const m = C.migrate(Array.isArray(loaded) ? loaded : []);
     S.items = m.list; S.invalid = m.invalid; S.dirty = false;      /* migration is in-memory; first real edit persists it */
     S.hist = new C.History(S.items); S.hist.onchange = () => emit('history');
-    rebuildIndex(); bindUi(); setTool('pen');
+    rebuildIndex(); bindUi(); setTool('pen'); emit('init');
     S.state = 'idle';
     if (o.bytes && window.crypto && crypto.subtle) { try { const h = await crypto.subtle.digest('SHA-256', o.bytes); S.docHash = [...new Uint8Array(h)].slice(0, 8).map(x => x.toString(16).padStart(2, '0')).join(''); } catch {} }
     const draft = await readDraft();
@@ -374,8 +376,19 @@
   }
   function ready() { setState(S.guard.state === 'ok' ? 'saved' : S.guard.state); S.state = S.guard.state === 'ok' ? 'saved' : S.guard.state; const el = $('status'); if (el && S.guard.state === 'ok') el.textContent = 'جاهز • الحفظ محلي'; }
 
+  /* Programmatic edits used by tool modules. Every call returns ops for one history command. */
+  function addItem(s) { S.items.push(s); idx(s.page).insert(s); invalidate(s.page); return { k: 'add', s }; }
+  function removeItems(ids) {
+    const ops = [];
+    for (const id of ids) { const i = S.items.findIndex(x => x && x.id === id); if (i < 0) continue; const s = S.items[i]; S.items.splice(i, 1); S.deleted.add(id); ops.push({ k: 'del', s, i }); }
+    const pages = new Set(ops.map(o => o.s.page)); pages.forEach(n => { rebuildIndexPage(n); invalidate(n); }); return ops;
+  }
+  function rebuildIndexPage(n) { const ix = new C.SpatialIndex(); S.items.forEach(s => s && s.id && s.page === n && C.validStroke(s) && ix.insert(s)); S.index.set(n, ix); }
+  function patchItem(id, props) { const i = S.items.findIndex(x => x && x.id === id); if (i < 0) return null; const before = {}; for (const k of Object.keys(props)) before[k] = S.items[i][k]; S.items[i] = Object.assign({}, S.items[i], props); rebuildIndexPage(S.items[i].page); invalidate(S.items[i].page); return { k: 'edit', id, before, after: props }; }
+  function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   const api = {
-    S, C, init, ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox,
+    S, C, init, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
+    page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox,
     setPenOnly(v) { S.penOnly = !!v; try { localStorage.setItem('medixa.penOnly', String(S.penOnly)); } catch {} emit('penonly', S.penOnly); },
     setSnap(v) { S.snap = !!v; },
     getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
