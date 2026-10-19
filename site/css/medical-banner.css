@@ -147,6 +147,25 @@ html[dir="ltr"] .mm-cta svg { transform: scaleX(-1); }
 .mm-wave-lit { stroke: var(--mm-blue); stroke-dasharray: 70 310; }
 .mm-link-line { left: 47px; right: 43px; bottom: 26px; height: 1px; background: linear-gradient(90deg, transparent, var(--mm-blue), transparent); transform-origin: left; opacity: 0; }
 
+/* ---- البطاقات روابط: الوسم والبطاقات تفتح أقسامها (Step 54) ---- */
+.mm-world, .mm-world * { pointer-events: none; } /* الطبقات الزخرفية لا تلتقط اللمس؛ البطاقات الروابط فقط */
+.mm-world .mm-link, .mm-world .mm-link * { pointer-events: auto; }
+.mm-world .mm-link.is-faint, .mm-world .mm-link.is-faint * { pointer-events: none; }
+.mm-link { color: inherit; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mm-card.mm-link { display: block; }
+.mm-link::after {
+  content: "↗"; position: absolute; top: 10px; right: 10px;
+  display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--mm-blue); color: var(--mm-paper); font: 700 10px/1 Arial, sans-serif;
+  opacity: 0; transform: scale(.6); transition: opacity .25s, transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+.mm-tag.mm-link { position: absolute; }
+.mm-tag.mm-link::after { top: -7px; right: -7px; }
+.mm-link:hover::after { opacity: 1; transform: none; }
+.mm-card.mm-link, .mm-tag.mm-link { transition: box-shadow .3s ease; }
+.mm-card.mm-link:hover { box-shadow: 0 0 0 1.5px var(--mm-blue), 1px 3px 1px var(--mm-shadow-soft), 0 26px 40px -14px var(--mm-shadow); }
+.mm-tag.mm-link:hover { box-shadow: 0 0 0 1.5px var(--mm-blue), 0 12px 23px -10px var(--mm-shadow); }
+
 /* ---- زر إيقاف الحركة (صغير في الزاوية) ---- */
 .mm-toggle {
   position: absolute; left: 12px; bottom: 10px; z-index: 8;

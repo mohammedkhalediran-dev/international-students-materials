@@ -95,7 +95,10 @@
   function pose(el, p) {
     el.style.transform = "translate3d(" + p[0].toFixed(2) + "px," + p[1].toFixed(2) + "px," + p[2].toFixed(2) + "px) rotateX(" + p[3].toFixed(2) + "deg) rotateY(" + p[4].toFixed(2) + "deg) rotateZ(" + p[5].toFixed(2) + "deg) scale(" + p[6].toFixed(4) + ")";
   }
-  function fade(el, o) { el.style.opacity = o < .002 ? "0" : o.toFixed(3); el.style.visibility = o < .002 ? "hidden" : ""; }
+  function fade(el, o) {
+    el.style.opacity = o < .002 ? "0" : o.toFixed(3); el.style.visibility = o < .002 ? "hidden" : "";
+    if (el.classList.contains("mm-link")) el.classList.toggle("is-faint", o < .6); // لا يُضغط على بطاقة باهتة أو مختفية
+  }
   function win(t, a, b) { return EASE.io(clamp((t - a) / (b - a))); }
 
   // ---- مقاس العالم + ميل خفيف يتبع المؤشر على الكمبيوتر ----
@@ -105,7 +108,7 @@
     scale = Math.min(w / 460, h / 360) || 1;
   }
 
-  var stageOn = 0;
+  var stageOn = 0, hold = false;
   function draw(t, secs) {
     // تنفّس دائم للدماغ مستقل عن الدورة (زمن حقيقي، فلا انقطاع عند إعادتها). ميلان محدود: لا دوران كامل.
     var b = sample(T.brain, t), bp = b.p.slice();
@@ -158,7 +161,8 @@
     if (!root.isConnected) { destroy(); return; }
     if (!running()) return;
     var dt = last ? Math.min((now - last) / 1000, .08) : 0; last = now;
-    elapsed = (elapsed + dt) % DURATION; clock += dt;
+    if (!hold) elapsed = (elapsed + dt) % DURATION; // يثبت المشهد ما دام المؤشر على بطاقة، فلا تهرب منه
+    clock += dt;
     draw(elapsed / DURATION, clock);
     raf = requestAnimationFrame(tick);
   }
@@ -185,6 +189,8 @@
     if (paused && !raf) draw(elapsed / DURATION, clock);
   }
   function onLeave() { aimX = 0; aimY = 0; }
+  function onOver(e) { hold = !!(e.target.closest && e.target.closest(".mm-link")); }
+  function onOut(e) { if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest(".mm-link")) hold = false; }
   function onReduce() { if (reduce.matches) { paused = true; stop(); label(); elapsed = STILL * DURATION; draw(STILL, clock); } }
 
   var ro = window.ResizeObserver ? new ResizeObserver(function () { resize(); if (!raf) draw(elapsed / DURATION, clock); }) : null;
@@ -201,6 +207,8 @@
     document.removeEventListener("visibilitychange", onVisibility);
     hero.removeEventListener("pointermove", onMove);
     hero.removeEventListener("pointerleave", onLeave);
+    visual.removeEventListener("pointerover", onOver);
+    visual.removeEventListener("pointerout", onOut);
     if (reduce && reduce.removeEventListener) reduce.removeEventListener("change", onReduce);
     window.removeEventListener("resize", resize);
     if (window.MedixaBanner && window.MedixaBanner.root === root) delete window.MedixaBanner;
@@ -208,7 +216,7 @@
 
   toggle.addEventListener("click", onToggle);
   document.addEventListener("visibilitychange", onVisibility);
-  if (finePointer) { hero.addEventListener("pointermove", onMove); hero.addEventListener("pointerleave", onLeave); }
+  if (finePointer) { hero.addEventListener("pointermove", onMove); hero.addEventListener("pointerleave", onLeave); visual.addEventListener("pointerover", onOver); visual.addEventListener("pointerout", onOut); }
   if (reduce && reduce.addEventListener) reduce.addEventListener("change", onReduce);
   if (ro) ro.observe(visual); else window.addEventListener("resize", resize);
   if (io) io.observe(root);
