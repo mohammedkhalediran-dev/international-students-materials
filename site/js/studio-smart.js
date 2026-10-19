@@ -29,7 +29,8 @@
     if (!region || region.pg !== pg) return; const k = pg.ink.width / pg.totW, a = pg.px(Math.min(region.a[0], region.b[0]), Math.min(region.a[1], region.b[1])), b = pg.px(Math.max(region.a[0], region.b[0]), Math.max(region.a[1], region.b[1]));
     ctx.save(); ctx.setLineDash([6 * k, 4 * k]); ctx.strokeStyle = '#168c8c'; ctx.lineWidth = 2 * k; ctx.fillStyle = 'rgba(22,140,140,.12)'; ctx.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); ctx.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); ctx.restore();
   });
-  M.on('tool', t => { document.body.classList.toggle('st-selecting', t === 'select'); if (t !== 'select' && t !== 'region') hide(); else if (t === 'select') checkNoText(); });
+  M.on('tool', t => { document.body.classList.toggle('st-selecting', t === 'select'); if (t !== 'select' && t !== 'region') hide(); else if (t === 'select') { selectHint(); checkNoText(); } });
+  function selectHint() { try { if (localStorage.getItem('medixa.studio.selhint')) return; localStorage.setItem('medixa.studio.selhint', '1'); } catch { return; } M.banner('اضغط على سطر لتحديده، أو اضغط مطولاً واسحب لتحديد جزء. ثم اختر «ترجمة» أو تظليل أو بطاقة.', [['حسناً', () => {}]]); }
   function checkNoText() {
     const R = M.reader; if (!R) return; const vis = R.pages.filter(p => p.kind === 'src' && p.near);
     if (R.raster && !window.pdfjsLib) { M.banner('النص غير متاح الآن لأن مكتبة عرض PDF لم تُحمَّل. استعمل أداة «منطقة من الصفحة» لإنشاء بطاقة أو قناع.', [['حسناً', () => {}]]); return; }
@@ -68,6 +69,7 @@
     cur = a; const b = ensureBar(); b.replaceChildren();
     const mk = (cls, label, text, fn) => { const x = el('button', 'st-sel-btn ' + cls, text); x.type = 'button'; x.setAttribute('aria-label', label); x.title = label; x.onmousedown = e => e.preventDefault(); x.onclick = fn; b.append(x); return x; };
     if (a.kind === 'text') for (const [c, n] of HL) { const x = mk('st-sel-hl', 'تظليل ' + n, '', () => highlight(a, c)); x.style.background = c; x.dataset.color = c; }
+    if (a.kind === 'text' && a.quote) mk('st-sel-tr', 'ترجمة إلى العربية', 'ترجمة', () => translate(a));
     mk('st-sel-card', 'بطاقة مراجعة', 'بطاقة', () => draft('card', a));
     mk('st-sel-mcq', 'سؤال اختيار من متعدد', 'سؤال', () => draft('mcq', a));
     if (a.pageId < C.BLANK_ID0) mk('st-sel-mask', 'قناع دراسة على هذا الجزء', 'قناع', () => mask(a));
@@ -82,6 +84,18 @@
   let st = 0;
   document.addEventListener('selectionchange', () => { if (S.tool !== 'select') return; clearTimeout(st); st = setTimeout(() => { const a = selectionAnchor(); if (a) show(a); else if (cur && cur.kind === 'text') hide(); }, 180); });
   document.addEventListener('pointerdown', e => { if (bar && !bar.hidden && !e.target.closest('#st-seltools,.st-text,canvas.ink')) hide(); }, true);
+  /* iPad/Pencil: a tap on a line selects the whole line (long-press + drag still works for any range) */
+  document.addEventListener('click', e => {
+    if (S.tool !== 'select') return; const sp = e.target.closest && e.target.closest('.st-text span'); if (!sp) return;
+    const sel = getSelection(); if (sel && !sel.isCollapsed && sel.containsNode(sp, true)) return;
+    const r = document.createRange(); r.selectNodeContents(sp); sel.removeAllRanges(); sel.addRange(r);
+    const a = selectionAnchor(); if (a) show(a);
+  });
+  /* translation: the selected English text in Google Translate (opens beside the reader; nothing is sent unless tapped) */
+  function translate(a) {
+    const u = 'https://translate.google.com/?sl=auto&tl=ar&op=translate&text=' + encodeURIComponent(a.quote.slice(0, 4500));
+    const w = window.open(u, '_blank', 'noopener'); if (!w) location.href = u;
+  }
 
   /* ---------- actions ---------- */
   function highlight(a, color) {
