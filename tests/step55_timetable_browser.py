@@ -148,6 +148,7 @@ try:
         pa.locator('#ttRows tr').nth(1).locator('input').nth(3).fill('Pharmacology II')  # editable preview
         pa.click('#ttCheck'); pa.wait_for_function("document.getElementById('ttImpStatus').textContent.includes('لا أخطاء')")
         pa.click('#ttApprove'); pa.wait_for_function("document.getElementById('ttPreview').hidden")
+        pa.wait_for_function("document.getElementById('ttList').textContent.includes('Pharmacology II')", timeout=8000)
         chk('Pharmacology II' in pa.inner_text('#ttList') and pa.locator('#ttList .tt-chip.is-draft').count() == 4, 'approved rows saved as drafts (edited value kept)')
         if CDN:
             from reportlab.pdfgen import canvas as rc
