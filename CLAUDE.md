@@ -151,6 +151,7 @@
 ## Step 61 (2026-10-19): صفحة الدخول أولاً (بطلب محمد، مع بقاء «المتابعة كزائر»)
 - من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يُحوَّل إلى login.html?gate=1&next=<الصفحة>. فحص سريع في رأس الصفحات التسع (ms.authed / ms.guest في localStorage) ثم تأكيد من الخادم في auth.js بعد auth/me (يمسح ms.authed القديم إن انتهت الجلسة).
 - «المتابعة كزائر» تحفظ ms.guest فلا تظهر صفحة الدخول له مرة أخرى على الجهاز. الدخول يحفظ ms.authed. الخروج يمسح الاثنين. جلسة قائمة تمر من صفحة الدخول تلقائياً (gate=1). privacy وterms مفتوحتان.
+- Cloudflare يختصر ‎/login.html إلى ‎/login: كل فحص لاسم الصفحة يقبل الحالتين ((\.html)?$)، وإلا تدور صفحة الدخول في إعادة تحميل (أُصلح في Step 61b؛ tests/step60_login_first.py يشغّل الخادم بـCLEAN_URLS=1). الإصدار auth.js ?v=step61b وV = "medixa-step61b".
 - ليس حماية: الزائر مسموح بقرار محمد. للمنع الحقيقي (ومنه ملفات PDF) يوجد REQUIRE_LOGIN=1 في Cloudflare (functions/_middleware.js).
 - الفحوص المتصفحية القديمة تستورد tests/guest_mode.py (تعمل كزائر)؛ فحص البوابة tests/step60_login_first.py.
 - الإصدار: auth.js وlogin.js ?v=step61، وV = "medixa-step61" (بعد دمج موشن Step 60 من الجلسة الأخرى).

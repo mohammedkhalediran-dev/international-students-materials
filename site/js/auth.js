@@ -163,14 +163,14 @@
   };
 
   // صفحة الدخول تدير نفسها (js/login.js)
-  if (/\/(login|admin|announce)\.html$/.test(location.pathname)) return;
+  if (/\/(login|admin|announce)(\.html)?$/.test(location.pathname)) return; // Cloudflare يختصر login.html إلى /login
 
   MSAuth.me().then(function () {
     // صفحة الدخول أولاً (بطلب محمد 2026-10-19): من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يذهب إليها
     if (user) lsSet("ms.authed", "1");
     else {
       lsDel("ms.authed");
-      if (!lsGet("ms.guest") && !/\/(privacy|terms)\.html$/.test(location.pathname)) {
+      if (!lsGet("ms.guest") && !/\/(login|privacy|terms)(\.html)?$/.test(location.pathname)) {
         location.replace("login.html?gate=1&next=" + encodeURIComponent((location.pathname.split("/").pop() || "index.html") + location.search + location.hash));
         return;
       }
