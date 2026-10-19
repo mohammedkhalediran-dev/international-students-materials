@@ -15,6 +15,11 @@ Branch: `ccr-a0fcdb08-bz6oce` (from origin/cloudflare-upload @ a23c69f). Never p
 - Test: `python3 -I tests/studio_phase2_browser.py` (49 checks incl. export of text on rotated/cropped pages).
 - Not verifiable here: real Apple Pencil / touch hardware (only Chromium CDP pen+touch simulation).
 
+## Done (Phase 3 — committed)
+- `studio-reader.js` (lazy per-page render/release, bounded memory, CSS zoom, 120-page lecture OK), `studio-panels.js` (pages thumbnails + bookmarks relocation + blank-page controls; "ملاحظاتي"), `studio-tabs.js` (tabs by navigation: per-doc store/history(sessionStorage)/position, dirty marker, recoverable close, notebook creation, lecture picker), `studio-split.js` (iframe pane `?embed=1`, divider pointer+keyboard, min sizes, narrow switcher), margins (engine `ext`, layout store `medixa.studio.layout.v1:`, clipped vs expanded export), virtual blank pages (ids >= 100001, `displayOrder`), notebooks (`file=notebook:<id>`, index `medixa.notebooks.v1`), focus mode CSS, compact header.
+- Tests: `studio_phase3_browser.py` (30), `_margins_` (18), `_pages_` (27), `_workspace_` (35), core unit (48).
+- Known limits: source PDF pages cannot be reordered (by design: ids never reassigned); blank page delete is not undoable; split pane has its own toolbar (no shared toolbar); the second pane can't hold the same document.
+
 ## Next
 0. (old list below; Phase 2 items done)
 1. Phase 2: lasso (events `gesture` on the engine, hooks in studio-ink.js), Zoom Writing, shapes snap UI, text/sticky editing UI (export already handles text via canvas raster), custom toolbar. Pen-only checkbox UI (engine API `setPenOnly`).

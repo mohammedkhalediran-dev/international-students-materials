@@ -120,3 +120,80 @@ body.medixa-dark .page canvas.pdf{filter:none}
 .st-margin-row{display:flex;gap:8px;align-items:center;justify-content:space-between;min-height:48px}
 .st-margin-row select{min-height:44px;min-width:150px;border-radius:8px}
 .st-note-line{font-size:13px;color:#4a6573}
+
+.st-add{display:flex;gap:6px;align-items:center}
+.st-add select{min-height:44px;border-radius:10px;border:1px solid #ffffff40;background:#0d223a;color:#fff;padding:0 8px;font:inherit;flex:0 0 auto}
+.st-add-btn{min-height:44px;flex:1 1 auto;border:1px solid #2fd0d0;border-radius:10px;background:#0d223a;color:#fff;cursor:pointer;font:600 13px system-ui}
+.st-row{display:flex;gap:4px;align-items:stretch}
+.st-row .st-th{flex:1 1 auto}
+.st-th-tools{display:flex;flex-direction:column;gap:4px}
+.st-th-tools .st-mini{min-width:44px;min-height:44px;background:#ffffff1a;color:#fff;border-color:#ffffff40}
+.st-blank{position:relative;margin:14px auto;background:#fff;box-shadow:0 4px 18px #0002;touch-action:pan-y}
+.st-blank canvas.pdf,.st-blank canvas.ink{position:absolute;inset:0;width:100%;height:100%}
+.st-blank .page-label{position:absolute;bottom:4px;left:8px;background:#fffd;padding:3px 8px;font-size:12px}
+.st-blank.st-has-margin{background:repeating-linear-gradient(0deg,#f7fafb,#f7fafb 27px,#e3edf1 28px)}
+.st-blank.st-has-margin canvas.pdf{background:#fff;box-shadow:0 0 0 1px #9db6bf}
+
+/* ---- document tabs ---- */
+.st-tabs{display:flex;gap:6px;align-items:center;flex:1 1 220px;min-width:0}
+.st-tablist{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;min-width:0;flex:0 1 auto}
+.st-tab{display:flex;align-items:center;border:1px solid #ffffff40;border-radius:10px;background:#ffffff12;color:#d9e8ed;flex:0 0 auto}
+.st-tab.current{background:#168c8c;border-color:#2fd0d0;color:#fff}
+.st-tab-b,.st-tab-x{min-height:44px;border:0;background:transparent;color:inherit;cursor:pointer;font:inherit;font-size:13px}
+.st-tab-b{padding:0 10px;display:flex;gap:6px;align-items:center}
+.st-tab-x{min-width:44px}
+.st-dirty{color:#ffd166;font-size:14px}
+.st-tab-plus{min-width:44px;min-height:44px;border:1px dashed #ffffff80;border-radius:10px;background:transparent;color:#fff;cursor:pointer;font-size:18px}
+.st-dlg{border:1px solid #9db6bf;border-radius:14px;padding:16px;max-width:min(520px,94vw);width:min(520px,94vw);direction:rtl;color:#18334b}
+.st-dlg::backdrop{background:#0006}
+.st-dlg input[type=search],.st-dlg input:not([type]){width:100%;min-height:44px;border:1px solid #9db6bf;border-radius:8px;padding:0 10px;font:inherit;margin:6px 0}
+.st-menu-list{list-style:none;margin:0 0 10px;padding:0;max-height:34vh;overflow:auto}
+.st-menu-b{display:block;width:100%;min-height:44px;text-align:start;border:0;border-bottom:1px solid #e2eaed;background:transparent;padding:6px 8px;cursor:pointer;font:inherit;color:#18334b}
+.st-menu-b:hover{background:#eef6f7}
+.st-new-nb{font-weight:700;color:#0f6b6b}
+
+/* ---- split view ---- */
+.st-split{display:none;position:fixed;z-index:11;top:var(--st-hdr-h,56px);bottom:var(--mx-dock-h,64px);inset-inline-end:0;width:var(--st-split-w,40vw);background:#122c47;box-shadow:0 0 24px #0005;flex-direction:column}
+.st-split.open{display:flex}
+.st-pane2{flex:1 1 auto;width:100%;border:0;background:#edf3f5}
+.st-divider{position:absolute;top:0;bottom:0;inset-inline-start:-9px;width:18px;cursor:col-resize;z-index:2;touch-action:none;display:flex;align-items:center;justify-content:center}
+.st-divider::after{content:"";width:5px;height:56px;border-radius:3px;background:#2fd0d0;box-shadow:0 0 0 2px #122c47}
+.st-divider:focus-visible{outline:3px solid #7ad0d0}
+.st-split-x{min-height:44px;border:0;border-bottom:1px solid #ffffff30;background:#0d223a;color:#fff;cursor:pointer;font:600 13px system-ui}
+.st-split-switch{display:none;position:fixed;z-index:14;inset-inline:0;margin-inline:auto;width:max-content;bottom:calc(var(--mx-dock-h,64px) + 10px);background:#122c47;border-radius:999px;padding:4px;box-shadow:0 6px 20px #0005;gap:4px}
+body.st-dragging{user-select:none}
+body.st-dragging .st-pane2{pointer-events:none}
+body.st-split-on main#pages{margin-inline-end:var(--st-split-w,40vw)}
+body.st-split-on{--st-pad-e:var(--st-split-w,40vw)}
+body.st-split-narrow .st-split{inset-inline-start:0;width:auto}
+body.st-split-narrow .st-divider{display:none}
+body.st-split-narrow.st-split-on .st-split-switch{display:flex}
+body.st-split-narrow .st-sw-b{min-width:120px;min-height:44px;border:1px solid #ffffff40;border-radius:10px;background:transparent;color:#fff;cursor:pointer;font:600 14px system-ui}
+body.st-split-narrow .st-sw-b[aria-selected=true]{background:#168c8c}
+body.st-split-narrow:not(.st-show-second) .st-split{display:none}
+body.st-split-narrow.st-show-second main#pages,body.st-split-narrow.st-show-second #studio-toolbar{display:none}
+body.st-split-narrow.st-split-on main#pages{margin-inline-end:0}
+body.st-split-narrow.st-split-on{--st-pad-e:0px}
+/* embedded reader (second pane) */
+html.st-embed header>*:not(#status){display:none!important}
+html.st-embed header{min-height:32px;padding:4px 10px;position:static}
+html.st-embed #mx-dock,html.st-embed #mx86-open,html.st-embed #st-zoom,html.st-embed .st-panel,html.st-embed #medixa-split{display:none!important}
+html.st-embed{--st-hdr-h:32px}
+html.st-embed body{padding-bottom:12px!important}
+/* focus mode: chrome goes away; tools, save status, page controls and an obvious exit stay */
+body.medixa-focus .st-tabs,body.medixa-focus .st-split{display:none!important}
+body.medixa-focus #mx-dock>*:not(#mx-reader-nav):not(#mx-save-state){display:none!important}
+#medixa-focus-exit{min-height:44px;padding:0 16px!important;background:#168c8c!important;color:#fff!important;border:2px solid #fff!important;border-radius:999px!important;font:700 14px system-ui;top:max(12px,env(safe-area-inset-top))!important;inset-inline-start:12px!important;left:auto!important}
+#st-focus-status{display:none;position:fixed;z-index:15;top:max(12px,env(safe-area-inset-top));inset-inline-start:190px;min-height:44px;align-items:center;padding:0 14px;border-radius:999px;background:#122c47;color:#fff;font-size:13px}
+body.medixa-focus #st-focus-status{display:flex}
+body.medixa-focus #studio-toolbar{top:max(8px,env(safe-area-inset-top))}
+
+/* ---- compact header below laptop width: glyph-only action buttons, no title ---- */
+@media(max-width:1199px){
+  header strong{display:none}
+  .st-hdr-btn{font-size:0;padding:0 6px}
+  .st-hdr-btn::first-letter{font-size:18px}
+}
+
+/* the "previous session" notice of the resume module sits above the dock instead of over the header buttons */
+#mx88-recovery{top:auto!important;bottom:calc(var(--mx-dock-h,64px) + 12px)!important;left:50%!important;transform:translateX(-50%);z-index:14!important}

@@ -206,6 +206,30 @@
   }
   /* Legacy v1 points were normalized to the displayed canvas, so they are already canonical. */
 
+  /* ---------- page templates (blank pages / notebooks) ---------- */
+  const TEMPLATES = ['blank', 'lined', 'grid', 'dots'];
+  const BLANK_ID0 = 100001;                                       /* virtual page ids start here; source pages keep their own numbers */
+  /* Geometry in PDF points, origin top-left, y down: {lines:[[x1,y1,x2,y2]], dots:[[x,y]]}. One source for canvas and export. */
+  function templateGeometry(kind, w, h) {
+    const lines = [], dots = [], step = 24, top = 56, side = 36;
+    if (kind === 'lined') for (let y = top; y < h - 24; y += step) lines.push([side, y, w - side, y]);
+    else if (kind === 'grid') { for (let y = top; y < h - 24; y += step) lines.push([side, y, w - side, y]); for (let x = side; x <= w - side + 0.1; x += step) lines.push([x, top, x, Math.floor((h - 24 - top) / step) * step + top]); }
+    else if (kind === 'dots') for (let y = top; y < h - 24; y += step) for (let x = side; x <= w - side + 0.1; x += step) dots.push([x, y]);
+    return { lines, dots };
+  }
+  function validBlank(b) { return b && typeof b === 'object' && Number.isInteger(b.id) && b.id >= BLANK_ID0 && TEMPLATES.includes(b.template) && isNum(b.w) && isNum(b.h) && b.w >= 100 && b.w <= 3000 && b.h >= 100 && b.h <= 3000; }
+  /* Display order of page ids. `order` (explicit) wins only if it is an exact permutation of sources + blanks and keeps
+     the source pages in ascending order; otherwise blanks follow the page named by their `after` hint. */
+  function displayOrder(nSources, blanks, order) {
+    const ids = new Set(blanks.map(b => b.id)), src = Array.from({ length: nSources }, (_, i) => i + 1);
+    if (Array.isArray(order) && order.length === nSources + blanks.length && new Set(order).size === order.length && order.every(x => ids.has(x) || (Number.isInteger(x) && x >= 1 && x <= nSources))) {
+      const s2 = order.filter(x => x <= nSources); if (s2.every((x, i) => x === i + 1)) return order.slice();
+    }
+    const out = []; const at = a => blanks.filter(b => (b.after || 0) === a).map(b => b.id);
+    out.push(...at(0)); for (const n of src) { out.push(n); out.push(...at(n)); }
+    return out;
+  }
+
   /* ---------- merge (multi-tab conflict path) ---------- */
   /* Union by id. For ids present on both sides the higher rev wins. ids in `deleted` (removed in this tab) stay
      removed. Entries without id (legacy invalid) are kept once by JSON fingerprint. */
@@ -223,5 +247,5 @@
     return order.map(k => byId.get(k) || noId.get(k));
   }
 
-  return { LIMITS, TOOLS, SHAPES, MOUSE_PRESSURE, clamp, clamp01, validStroke, validList, migrate, newId, bounds, distToStroke, segDist, shapeSegments, SpatialIndex, thin, widthAt, History, transformStroke, pointInPolygon, lassoHit, viewToPdf, displaySize, mergeById };
+  return { LIMITS, TOOLS, SHAPES, MOUSE_PRESSURE, clamp, clamp01, validStroke, validList, migrate, newId, bounds, distToStroke, segDist, shapeSegments, SpatialIndex, thin, widthAt, History, transformStroke, TEMPLATES, BLANK_ID0, templateGeometry, validBlank, displayOrder, pointInPolygon, lassoHit, viewToPdf, displaySize, mergeById };
 });

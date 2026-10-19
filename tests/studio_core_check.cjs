@@ -86,4 +86,15 @@ const L = [{ id: 'a', rev: 2, v: 1 }, { id: 'c', rev: 1 }], R = [{ id: 'a', rev:
 const merged = C.mergeById(L, R, new Set(['gone']));
 ok(merged.length === 3 && merged.find(x => x.id === 'a').rev === 2 && !merged.find(x => x.id === 'gone'), 'merge union, higher rev, tombstone honoured');
 
+// templates + display order
+ok(C.templateGeometry('blank', 595, 842).lines.length === 0, 'blank template has no marks');
+const lg = C.templateGeometry('lined', 595, 842); ok(lg.lines.length > 25 && lg.lines.every(l => l[1] === l[3] && l[0] < l[2]), 'lined template: horizontal rules');
+const gg = C.templateGeometry('grid', 595, 842); ok(gg.lines.some(l => l[0] === l[2]) && gg.lines.some(l => l[1] === l[3]), 'grid template: both directions');
+ok(C.templateGeometry('dots', 595, 842).dots.length > 100, 'dot grid');
+ok(C.validBlank({ id: 100001, template: 'lined', w: 595, h: 842 }) && !C.validBlank({ id: 5, template: 'lined', w: 595, h: 842 }) && !C.validBlank({ id: 100002, template: 'x', w: 595, h: 842 }) && !C.validBlank({ id: 100002, template: 'lined', w: NaN, h: 842 }), 'blank validation');
+const bl = [{ id: 100001, template: 'lined', w: 595, h: 842, after: 2 }, { id: 100002, template: 'grid', w: 595, h: 842, after: 0 }];
+ok(JSON.stringify(C.displayOrder(3, bl)) === JSON.stringify([100002, 1, 2, 100001, 3]), 'natural order follows the after hints');
+ok(JSON.stringify(C.displayOrder(3, bl, [1, 100001, 2, 3, 100002])) === JSON.stringify([1, 100001, 2, 3, 100002]), 'explicit order wins when valid');
+ok(JSON.stringify(C.displayOrder(3, bl, [2, 1, 3, 100001, 100002])) === JSON.stringify([100002, 1, 2, 100001, 3]), 'reordering SOURCE pages is rejected (source ids never reassigned)');
+ok(JSON.stringify(C.displayOrder(3, bl, [1, 2, 3, 100001])) === JSON.stringify([100002, 1, 2, 100001, 3]), 'incomplete order falls back');
 console.log('STUDIO CORE OK: ' + n + ' checks');

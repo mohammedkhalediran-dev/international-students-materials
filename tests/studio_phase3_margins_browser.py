@@ -38,12 +38,14 @@ try:
         # text in the bottom margin
         pg.evaluate("MedixaStudio.setTool('text')"); pg.evaluate("scrollTo(0, document.querySelectorAll('canvas.ink')[0].getBoundingClientRect().bottom + scrollY - 500)"); pg.wait_for_timeout(400); bb = pg.locator('canvas.ink').first.bounding_box(); pg.mouse.click(bb['x'] + 80, bb['y'] + bb['height'] - 150); pg.fill('.st-editor textarea', 'هامش سفلي note'); pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(400)
         chk(any(x['tool'] == 'text' and x['points'][0][1] > 1 for x in stored(pg)), 'text can live in the bottom margin')
-        # reload keeps layout + painting
+        # reload keeps layout + painting (tab position memory cleared so nothing scrolls under the test)
+        pg.evaluate("localStorage.removeItem('medixa.studio.tabs.v1')")
         pg.reload(); pg.wait_for_function("document.querySelectorAll('section.page').length===5", timeout=15000); pg.wait_for_timeout(900)
         chk(pg.evaluate("MedixaStudio.marginsOf(1).r") == 0.5, 'margins survive reload')
         painted = pg.evaluate("(()=>{const c=document.querySelectorAll('canvas.ink')[0],d=c.getContext('2d').getImageData(Math.floor(c.width*0.67),0,Math.floor(c.width*0.33),c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>0)n++;return n})()")
         chk(painted > 100, f'margin ink repainted after reload ({painted}px)')
         # shrink protection
+        pg.wait_for_timeout(1500); pg.evaluate("document.querySelectorAll('section.page')[0].scrollIntoView()"); pg.wait_for_timeout(900)
         set_margins(pg, {'r': 0, 'b': 0}); chk('كتابة' in pg.inner_text('#margin-msg') or pg.evaluate("MedixaStudio.marginsOf(1).r") > 0, 'shrinking below existing writing is refused')
         chk(pg.evaluate("MedixaStudio.marginsOf(1).r") >= 0.5 - 1e-9 or pg.evaluate("MedixaStudio.marginsOf(1).r") >= 0.45, f'right margin kept big enough ({pg.evaluate("MedixaStudio.marginsOf(1).r")})')
         pg.click('#margin-apply') if False else None; pg.keyboard.press('Escape')

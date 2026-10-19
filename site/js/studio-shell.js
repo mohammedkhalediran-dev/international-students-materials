@@ -22,5 +22,11 @@
     document.body.append(z); M.reader.on('zoom', v => { lab.textContent = Math.round(v * 100) + '%'; });
   }
   zoomUi();
+  /* focus mode: keep the save status visible (the header is hidden) */
+  (function () {
+    const st = document.createElement('div'); st.id = 'st-focus-status'; st.setAttribute('role', 'status'); document.body.append(st);
+    const src = $('status'); if (!src) return; const mirror = () => { st.textContent = src.textContent; };
+    new MutationObserver(mirror).observe(src, { childList: true, characterData: true, subtree: true }); mirror();
+  })();
   if (!adopt()) { const mo = new MutationObserver(() => { if (adopt()) mo.disconnect(); }); mo.observe(document.body, { childList: true }); setTimeout(() => mo.disconnect(), 8000); }
 })();

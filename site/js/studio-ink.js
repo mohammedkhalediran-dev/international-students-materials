@@ -8,7 +8,7 @@
   const DPR = () => Math.min(3, window.devicePixelRatio || 1);
   const $ = id => document.getElementById(id);
   const S = {
-    layout: { v: 1, margins: {} },
+    layout: { v: 1, margins: {}, blanks: [], order: null }, nSources: 0,
     tool: 'pen', color: '#e43d56', width: 3, snap: false,
     penOnly: false, items: [], hist: null, pages: new Map(), deleted: new Set(),
     guard: null, key: '', src: '', docHash: '', raf: 0, saveTimer: 0, state: 'idle', listeners: {}
@@ -56,6 +56,8 @@
   }
   async function saveDraft() { try { const d = await idb(); d.transaction('drafts', 'readwrite').objectStore('drafts').put({ at: Date.now(), items: S.items }, S.key); } catch {} }
   async function clearDraft() { try { const d = await idb(); d.transaction('drafts', 'readwrite').objectStore('drafts').delete(S.key); } catch {} }
+  /* Keys of every document that currently has an unsaved draft (used by the tab strip's dirty marker). */
+  async function draftKeys() { try { const d = await idb(); return await new Promise(r => { const q = d.transaction('drafts').objectStore('drafts').getAllKeys(); q.onsuccess = () => r(new Set(q.result)); q.onerror = () => r(new Set()); }); } catch { return new Set(); } }
   async function readDraft() { try { const d = await idb(); return await new Promise(r => { const q = d.transaction('drafts').objectStore('drafts').get(S.key); q.onsuccess = () => r(q.result || null); q.onerror = () => r(null); }); } catch { return null; } }
   function mergeAndSave() {
     const fresh = openGuard();
@@ -298,29 +300,40 @@
     for (const s of S.items) { if (!s || !C.validStroke(s)) continue; const b = C.bounds(s); if (b[0] < 0 || b[1] < 0 || b[2] > 1 || b[3] > 1) { strokes++; pages.add(s.page); } }
     return { strokes, pages: [...pages].sort((a, b) => a - b), hasMargins: Object.keys(S.layout.margins).length > 0 };
   }
+  /* Output page list: every source page (in place) plus the virtual blank pages in display order. */
   async function exportPdf(bytes, opts) {
     opts = opts || {};
     const { PDFDocument, rgb, LineCapStyle, LineJoinStyle } = window.PDFLib;
-    const out = await PDFDocument.load(bytes), pagesN = out.getPageCount();
+    const hasSrc = !!bytes && S.nSources > 0;                         /* a notebook has no source pages (pdf-lib would add one to an empty file) */
+    const out = hasSrc ? await PDFDocument.load(bytes) : await PDFDocument.create(), nSrc = hasSrc ? out.getPageCount() : 0;
     const textPages = [], expand = opts.margins === 'expand';
-    for (let i = 0; i < pagesN; i++) {
-      const strokes = S.items.filter(x => x && x.page === i + 1 && C.validStroke(x)); if (!strokes.length) continue;
-      const page = out.getPage(i), box = page.getCropBox ? page.getCropBox() : page.getMediaBox(), rot = page.getRotation().angle;
+    const srcPages = Array.from({ length: nSrc }, (_, i) => out.getPage(i)), map = new Map();
+    const order = pageOrder(nSrc);
+    order.forEach((id, k) => {
+      if (id < C.BLANK_ID0) { map.set(id, srcPages[id - 1]); return; }
+      const bl = S.layout.blanks.find(x => x.id === id), pg = out.insertPage(k, [bl.w, bl.h]);
+      const geo = C.templateGeometry(bl.template, bl.w, bl.h), c = rgb(0.74, 0.82, 0.86);
+      for (const [x1, y1, x2, y2] of geo.lines) pg.drawLine({ start: { x: x1, y: bl.h - y1 }, end: { x: x2, y: bl.h - y2 }, thickness: 0.5, color: c });
+      for (const [x, y] of geo.dots) pg.drawCircle({ x, y: bl.h - y, size: 0.9, color: c });
+      map.set(id, pg);
+    });
+    for (const [id, page] of map) {
+      const strokes = S.items.filter(x => x && x.page === id && C.validStroke(x)); if (!strokes.length) continue;
+      const box = page.getCropBox ? page.getCropBox() : page.getMediaBox(), rot = page.getRotation().angle;
       const [dw, dh] = C.displaySize(box, rot);
-      if (expand && S.layout.margins[i + 1]) growBoxes(page, box, rot, S.layout.margins[i + 1]);
+      if (expand && S.layout.margins[id]) growBoxes(page, box, rot, S.layout.margins[id]);
       const P = p => { const q = C.viewToPdf(p[0], p[1], box, rot); return [q[0], q[1]]; };
       const path = pts => pts.map((p, k) => { const q = P(p); return (k ? 'L' : 'M') + q[0].toFixed(3) + ' ' + (-q[1]).toFixed(3); }).join(' ');
       const wpt = (s, pr) => C.widthAt(s.width || 3, pr, s.tool === 'highlight' ? 'highlight' : s.tool === 'pen' ? 'pen' : 'shape') / 800 * dw;
       for (const s of strokes) {
-        if (s.tool === 'text' || s.tool === 'sticky') { textPages.push([i, s]); continue; }
+        if (s.tool === 'text' || s.tool === 'sticky') { textPages.push({ page, box, rot, s }); continue; }
         const [r, g, b] = hex(s.color), color = rgb(r, g, b), op = s.tool === 'highlight' ? 0.3 : 1;
         const draw = (d, width) => page.drawSvgPath(d, { x: 0, y: 0, borderColor: color, borderWidth: width, borderOpacity: op, borderLineCap: LineCapStyle.Round, borderLineJoin: LineJoinStyle.Round });
         const segs = C.shapeSegments(s);
         if (segs) {
-          const pts = s.tool === 'line' ? s.points.slice(0, 1).concat(s.points.slice(-1)) : s.tool === 'rectangle' ? segs.map(x => x[0]).concat([segs[0][0]]) : segs.map(x => x[0]).concat([segs[0][0]]);
+          const pts = s.tool === 'line' ? s.points.slice(0, 1).concat(s.points.slice(-1)) : segs.map(x => x[0]).concat([segs[0][0]]);
           draw(path(pts), wpt(s, 1));
         } else if (s.pr && s.pr.length === s.points.length && s.points.length > 1) {
-          const pts = quadFlatten(s.points);
           for (let k = 1; k < s.points.length; k++) draw(path([s.points[k - 1], s.points[k]]), wpt(s, (s.pr[k] + s.pr[k - 1]) / 2));
         } else if (s.points.length === 1) draw(path([s.points[0], [s.points[0][0] + 0.0001, s.points[0][1]]]), wpt(s, 0.5));
         else draw(path(quadFlatten(s.points)), wpt(s, 0.5));
@@ -331,8 +344,8 @@
   }
   /* Text and sticky notes: rasterised by the browser at 3x so Arabic shaping and RTL are exact, then placed by box. */
   async function exportText(out, list) {
-    for (const [i, s] of list) {
-      const page = out.getPage(i), box = page.getCropBox ? page.getCropBox() : page.getMediaBox(), rot = page.getRotation().angle, [dw, dh] = C.displaySize(box, rot);
+    for (const { page, box, rot, s } of list) {
+      const [dw, dh] = C.displaySize(box, rot);
       const b = C.bounds(s), W = Math.round((b[2] - b[0]) * 1200), H = Math.round((b[3] - b[1]) * 1200 * dh / dw);
       const cv = document.createElement('canvas'); cv.width = Math.max(4, W); cv.height = Math.max(4, H);
       const cx = cv.getContext('2d'); cx.translate(-b[0] * 1200, -b[1] * 1200 * dh / dw); drawTextBox(cx, s, 1200, 1200 * dh / dw);
@@ -353,8 +366,8 @@
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
     });
-    addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
-    addEventListener('pagehide', flush); addEventListener('beforeunload', flush);
+    addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { flush(); saveHist(); } });
+    addEventListener('pagehide', () => { flush(); saveHist(); }); addEventListener('beforeunload', flush);
   }
 
   /* ---------- recovery banner (conflict / failed write / unsaved draft) ---------- */
@@ -375,6 +388,25 @@
   });
   on('draft', d => banner('وُجدت مسودة رسومات لم تُحفظ (' + d.items.length + ' عنصراً). هل تريد استعادتها ودمجها؟', [['استعادة', () => { const n = recoverDraft(); setState('saved', ' — أُضيف ' + n); }], ['تجاهل', () => { S.draft = null; clearDraft(); }]]));
 
+  /* ---------- per-document undo history that survives switching tabs (sessionStorage, validated by a fingerprint) ---------- */
+  const fp = () => { let h = 0x811c9dc5; for (const s of S.items) { const t = (s && s.id ? s.id : '?') + ':' + (s && s.rev || 1); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } } return S.items.length + ':' + h.toString(36); };
+  const histKey = () => 'medixa.studio.hist.v1:' + S.key;
+  function saveHist() {
+    try {
+      let u = S.hist.undoStack, r = S.hist.redoStack, json = JSON.stringify({ fp: fp(), undo: u, redo: r });
+      while (json.length > 1500000 && u.length > 1) { u = u.slice(Math.ceil(u.length / 4)); json = JSON.stringify({ fp: fp(), undo: u, redo: r.length > 20 ? [] : r }); }
+      sessionStorage.setItem(histKey(), json);
+    } catch {}
+  }
+  function restoreHist() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem(histKey()) || 'null'); if (!v || v.fp !== fp() || !Array.isArray(v.undo) || !Array.isArray(v.redo)) return;
+      const ok = ops => Array.isArray(ops) && ops.every(o => o && (o.k === 'add' || o.k === 'del' || o.k === 'edit'));
+      if (v.undo.every(ok) && v.redo.every(ok)) { S.hist.undoStack = v.undo; S.hist.redoStack = v.redo; }
+    } catch {}
+  }
+  let ht = 0; function histSoon() { clearTimeout(ht); ht = setTimeout(saveHist, 600); }
+
   /* ---------- init ---------- */
   async function init(o) {
     S.src = o.src; S.key = 'medixa.pdf.annotations.v1:' + new URL(o.src, location.href).href;
@@ -382,7 +414,7 @@
     const loaded = S.guard.value;
     const m = C.migrate(Array.isArray(loaded) ? loaded : []);
     S.items = m.list; S.invalid = m.invalid; S.dirty = false;      /* migration is in-memory; first real edit persists it */
-    S.hist = new C.History(S.items); S.hist.onchange = () => emit('history');
+    S.hist = new C.History(S.items); restoreHist(); S.hist.onchange = () => { emit('history'); histSoon(); };
     rebuildIndex(); bindUi(); setTool('pen'); emit('init');
     S.state = 'idle';
     if (o.bytes && window.crypto && crypto.subtle) { try { const h = await crypto.subtle.digest('SHA-256', o.bytes); S.docHash = [...new Uint8Array(h)].slice(0, 8).map(x => x.toString(16).padStart(2, '0')).join(''); } catch {} }
@@ -403,7 +435,9 @@
   function loadLayout() {
     S.layoutKey = 'medixa.studio.layout.v1:' + new URL(S.src, location.href).href;
     S.layoutGuard = MedixaGuard.open(localStorage, S.layoutKey, { fallback: () => ({ v: 1, margins: {} }), valid: v => v && typeof v === 'object' && !Array.isArray(v) && v.margins && typeof v.margins === 'object' });
-    const v = S.layoutGuard.value, out = { v: 1, margins: {} };
+    const v = S.layoutGuard.value, out = { v: 1, margins: {}, blanks: [], order: null };
+    if (Array.isArray(v.blanks)) { const seen = new Set(); for (const b of v.blanks) if (C.validBlank(b) && !seen.has(b.id)) { seen.add(b.id); out.blanks.push({ id: b.id, template: b.template, w: b.w, h: b.h, after: Number.isInteger(b.after) ? b.after : 0 }); } }
+    if (Array.isArray(v.order) && v.order.every(Number.isInteger)) out.order = v.order.slice();
     for (const [k, e] of Object.entries(v.margins || {})) if (e && ['l', 't', 'r', 'b'].every(f => typeof e[f] === 'number' && e[f] >= 0 && e[f] <= 1)) out.margins[k] = { l: e.l, t: e.t, r: e.r, b: e.b };
     S.layout = out;
   }
@@ -427,6 +461,28 @@
     if (!opts || !opts.defer) saveLayout();
     return { ext: fin, clamped };
   }
+  /* ---- virtual blank pages: ids >= 100001, never renumber source pages ---- */
+  const pageOrder = (nSrc) => C.displayOrder(nSrc == null ? S.nSources : nSrc, S.layout.blanks, S.layout.order);
+  function addBlank(afterId, template, size) {
+    const used = S.layout.blanks.map(b => b.id), id = Math.max(C.BLANK_ID0 - 1, ...used) + 1, order = pageOrder();
+    const ref = size || { w: 595, h: 842 }, rec = { id, template: C.TEMPLATES.includes(template) ? template : 'lined', w: ref.w, h: ref.h, after: afterId < C.BLANK_ID0 ? afterId : 0 };
+    const at = afterId === 0 ? 0 : order.indexOf(afterId) + 1; order.splice(Math.max(0, at), 0, id); S.layout.order = order;
+    rec.after = 0; for (let k = order.indexOf(id) - 1; k >= 0; k--) if (order[k] < C.BLANK_ID0) { rec.after = order[k]; break; }   /* fallback hint if the explicit order is ever lost */
+    S.layout.blanks.push(rec);
+    saveLayout(); emit('pages', { added: id }); return rec;
+  }
+  function removeBlank(id) {
+    const i = S.layout.blanks.findIndex(b => b.id === id); if (i < 0) return false;
+    S.layout.blanks.splice(i, 1); S.layout.order = pageOrder().filter(x => x !== id); delete S.layout.margins[id];
+    const gone = S.items.filter(s => s && s.page === id); for (const s of gone) S.deleted.add(s.id);
+    for (let k = S.items.length - 1; k >= 0; k--) if (S.items[k] && S.items[k].page === id) S.items.splice(k, 1);
+    S.index.delete(id); S.hist.setItems(S.items); S.dirty = true; flush(); saveLayout(); emit('pages', { removed: id }); return true;
+  }
+  function moveBlank(id, dir) {
+    const order = pageOrder(), i = order.indexOf(id), j = i + (dir < 0 ? -1 : 1); if (i < 0 || j < 0 || j >= order.length) return false;
+    [order[i], order[j]] = [order[j], order[i]]; S.layout.order = order; saveLayout(); emit('pages', { moved: id }); return true;
+  }
+  function detachPage(id) { S.pages.delete(id); }
   const marginsOf = n => Object.assign({}, zeroExt, S.layout.margins[n] || {});
   /* Programmatic edits used by tool modules. Every call returns ops for one history command. */
   function addItem(s) { S.items.push(s); idx(s.page).insert(s); invalidate(s.page); return { k: 'add', s }; }
@@ -439,7 +495,7 @@
   function patchItem(id, props) { const i = S.items.findIndex(x => x && x.id === id); if (i < 0) return null; const before = {}; for (const k of Object.keys(props)) before[k] = S.items[i][k]; S.items[i] = Object.assign({}, S.items[i], props); rebuildIndexPage(S.items[i].page); invalidate(S.items[i].page); return { k: 'edit', id, before, after: props }; }
   function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   const api = {
-    S, C, init, setPageActive, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
+    S, C, init, draftKeys, setPageActive, pageOrder, addBlank, removeBlank, moveBlank, detachPage, setSources(n) { S.nSources = n; }, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, commit, fitTextHeight, rebuildIndexPage, setState, banner,
     page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox,
     setPenOnly(v) { S.penOnly = !!v; try { localStorage.setItem('medixa.penOnly', String(S.penOnly)); } catch {} emit('penonly', S.penOnly); },
     setSnap(v) { S.snap = !!v; },
