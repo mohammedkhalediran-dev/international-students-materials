@@ -43,6 +43,7 @@ try:
             pg.click('#undo'); pg.wait_for_timeout(500); chk(len(stored(pg)) == 6, f'dpr{dpr}: undo restores the erased stroke')
             pg.click('#redo'); pg.wait_for_timeout(500); chk(len(stored(pg)) == 5, f'dpr{dpr}: redo erases again'); pg.click('#undo'); pg.wait_for_timeout(500)
             # export → independent reopen
+            pg.click('#st-docmenu-btn')
             with pg.expect_download() as dl: pg.click('#download')
             path = os.path.join(FX, f'export{dpr}.pdf'); dl.value.save_as(path); data = open(path, 'rb').read()
             chk(data[:5] == b'%PDF-' and len(data) > 3000, f'dpr{dpr}: exported a PDF ({len(data)} bytes)')

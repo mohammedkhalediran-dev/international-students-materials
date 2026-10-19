@@ -12,7 +12,7 @@ try:
         opened = []; ctx.route('https://translate.google.com/**', lambda r: (opened.append(r.request.url), r.fulfill(body='ok')))
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(reader(BASE, DOC)); pg.wait_for_selector('section.page .st-text span', timeout=20000); pg.wait_for_timeout(800)
-        pg.locator('[data-tool="select"], button[aria-label="تحديد نص"]').first.click(); pg.wait_for_timeout(400)
+        pg.click('#studio-settings'); pg.click('#studio-toolbar .st-morepop [data-tool="select"]')   # «تحديد نص» lives in the toolbar's «المزيد»; pg.wait_for_timeout(400)
         chk(pg.evaluate("document.body.classList.contains('st-selecting')"), 'select-text tool on')
         chk('اضغط على سطر' in pg.inner_text('body'), 'first-use hint explains how to select')
         sp = pg.locator('section.page .st-text span').filter(has_text='e').first; txt = sp.inner_text().strip()

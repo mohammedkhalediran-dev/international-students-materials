@@ -26,6 +26,8 @@ try:
         pg.evaluate("MedixaStudio.setTool('pen')"); stroke(pg); chk(len(stored(pg, nkey)) == 1, 'notebook has its own stroke store'); chk(len(stored(pg, AKEY)) == 1, 'document A untouched by notebook')
         # switch back: position + history restored
         pg.click('#st-tabs .st-tab:not(.current) .st-tab-b'); pg.wait_for_function("location.search.includes('mixed')", timeout=10000); pg.wait_for_function("document.querySelectorAll('section.page').length===5"); pg.wait_for_timeout(1500)
+        try: pg.wait_for_function("scrollY > 150", timeout=3000)   # restore runs 1.5 s after the reader opens
+        except Exception: pass
         chk(pg.evaluate("scrollY") > 150, f'reading position restored ({pg.evaluate("scrollY")})')
         chk(pg.evaluate("MedixaStudio.S.hist.undoStack.length") == 1, 'undo history of document A survived the tab switch'); pg.evaluate("MedixaStudio.undo()"); pg.wait_for_timeout(500); chk(len(stored(pg, AKEY)) == 0, 'undo works across tab switches'); pg.evaluate("MedixaStudio.redo()"); pg.wait_for_timeout(500)
         # dirty indicator on a failing save
@@ -39,7 +41,7 @@ try:
         pg.click('#st-tab-plus'); pg.wait_for_selector('#st-tabmenu[open]'); chk('دفتر الفسيولوجيا' in pg.inner_text('#st-tabmenu'), 'closed notebook can be reopened from the menu'); pg.keyboard.press('Escape')
         # ---------- split view ----------
         pg.evaluate("MedixaStudio.setTool('pen')")
-        pg.click('#medixa-split-toggle'); pg.wait_for_selector('#st-tabmenu[open]'); pg.click('#st-tabmenu .st-menu-b >> text=دفتر الفسيولوجيا'); pg.wait_for_selector('#st-split.open'); pg.wait_for_timeout(1800)
+        pg.click('#st-docmenu-btn'); pg.click('#medixa-split-toggle'); pg.wait_for_selector('#st-tabmenu[open]'); pg.click('#st-tabmenu .st-menu-b >> text=دفتر الفسيولوجيا'); pg.wait_for_selector('#st-split.open'); pg.wait_for_timeout(1800)
         fr = pg.frame_locator('#st-pane2'); w0 = pg.evaluate("document.getElementById('st-split').getBoundingClientRect().width")
         chk(w0 > 280, f'second pane opens ({w0:.0f}px)')
         inner = [f for f in pg.frames if 'embed=1' in f.url][0]; inner.wait_for_function("document.querySelectorAll('#pages > section').length>=1"); inner.wait_for_timeout(500)
@@ -65,7 +67,7 @@ try:
         # same document in both panes is refused
         pg.evaluate("window.__alert = null; window.alert = m => { window.__alert = m }"); pg.evaluate("MedixaStudio.split.open(new URLSearchParams(location.search).get('file'))"); chk(pg.evaluate("window.__alert") is not None and pg.locator('#st-split.open').count() == 0, 'opening the same document twice is refused')
         # ---------- focus mode ----------
-        pg.click('#medixa-focus'); pg.wait_for_timeout(300)
+        pg.click('#st-docmenu-btn'); pg.click('#medixa-focus'); pg.wait_for_timeout(300)
         vis = lambda sel: pg.evaluate(f"(()=>{{const e=document.querySelector('{sel}');if(!e)return false;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);return cs.display!=='none'&&cs.visibility!=='hidden'&&r.width>0&&r.height>0}})()")
         chk(not vis('header') and not vis('#st-tabs') and not vis('.st-panel.open'), 'focus mode removes secondary navigation')
         chk(vis('#studio-toolbar') and vis('#st-focus-status') and vis('#medixa-focus-exit'), 'tools, save status and an exit button stay'); chk(vis('#mx-reader-nav'), 'page controls stay')
