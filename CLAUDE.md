@@ -94,3 +94,10 @@
 - إشعارات Web Push: الزائر وصاحب الحساب. المحاضرة الجديدة (type lecture، وليست مخفية من «أحدث المحاضرات») لطلاب كورسها فقط، والتبليغ للجميع. التفاصيل والإعداد في PUSH-NOTIFICATIONS.md.
 - يلزم: جدول push_subs (migrations/0003_push.sql) في D1، ومتغيرا VAPID_PUBLIC_KEY وVAPID_PRIVATE_KEY (سرّي) يولّدهما محمد من admin.html ويضعهما بنفسه في Cloudflare. بدونهما يبقى الزر مخفياً.
 - بعد تعديل courses.js شغّل node scripts/gen-course-semesters.cjs.
+
+## Step 52 (2026-10-19): تجربة الإشعارات (فرع محلي، لم يُنشر)
+- آلية الإرسال لم تتغير. تغيّرت الرسائل (functions/_lib/push.js: lectureMessage/lectureNotice/announcementMessage)، وعرضها في sw.js (أيقونة، شارة assets/notify-badge.png، أزرار حيث تُدعم، فتح المحاضرة مباشرة).
+- وسم واحد لكل مادة (course-<id>) + منع تكرار وتجميع عبر KV (push/recent/<id>). الاختبارات وأسئلة السنوات السابقة صارت ترسل إشعاراً (الفئة resource).
+- تفضيلات لكل جهاز (ms.push.prefs) من زر «تخصيص» في القائمة الجانبية؛ الخادم يقرأ push_subs.prefs (migrations/0004_push_prefs.sql — يلزم تطبيقه على D1 الحقيقي بموافقة محمد؛ بدونه يعمل كل شيء كـStep 51).
+- التبليغ يعيد reach (عدد الأجهزة) ويظهر في announce.html.
+- فحوص: tests/sw_notify_check.cjs (ضمن npm test)، tests/step52_notify_browser.py (يستعمل Chromium الكامل channel='chromium' لأن headless shell لا يدعم الإشعارات).

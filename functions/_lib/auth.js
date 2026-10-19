@@ -6,7 +6,7 @@
 //           GET /api/announcements (عام)، POST /api/announcements وPOST /api/announcements/delete (ممثل الدفعة أو المشرف).
 // الأدوار: student (الأصل) | uploader (رفع الملفات) | rep (ممثل الدفعة: رفع + تبليغات) | admin (من ADMIN_EMAILS).
 
-import { notify, announcementMessage } from "./push.js";
+import { notify, announcementMessage, audience } from "./push.js";
 
 export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
@@ -214,9 +214,11 @@ async function announcementAdd(req, user, env, now, opts = {}) {
     .bind(title, body, user.id, user.name, now).run();
   const id = r.meta && r.meta.last_row_id;
   // إشعار لكل المشتركين (لا يؤخّر الرد؛ على Cloudflare عبر waitUntil)
-  const task = notify(env, announcementMessage({ id, title, body }), opts.pushFetch || fetch).catch(() => null);
+  const msg = announcementMessage({ id, title, body });
+  const reach = await audience(env, msg).catch(() => 0); // عدد الأجهزة المشتركة التي سيصلها (يظهر لمن نشر)
+  const task = notify(env, msg, opts.pushFetch || fetch).catch(() => null);
   if (opts.waitUntil) opts.waitUntil(task); else await task;
-  return json({ ok: true, id });
+  return json({ ok: true, id, reach });
 }
 
 async function announcementDelete(req, env) {

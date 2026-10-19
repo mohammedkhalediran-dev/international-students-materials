@@ -43,7 +43,12 @@
     $("send").disabled = true;
     MSAuth.api("POST", "announcements", { title: title, body: $("body").value.trim() }).then(function (r) {
       $("send").disabled = false;
-      if (r.status === 200) { $("title").value = ""; $("body").value = ""; msg("نُشر التبليغ.", true); load(); }
+      if (r.status === 200) {
+        $("title").value = ""; $("body").value = "";
+        var reach = r.data && typeof r.data.reach === "number" ? r.data.reach : null;
+        msg(reach ? "نُشر التبليغ. الأجهزة المشتركة التي يصلها إشعاره: " + reach : "نُشر التبليغ.", true);
+        load();
+      }
       else if (r.status === 403) msg("ليس لديك صلاحية نشر التبليغات.");
       else if (r.status === 401) location.href = "login.html?next=announce.html";
       else msg("تأكد من العنوان (حتى 120 حرفاً) والنص (حتى 2000 حرف).");
