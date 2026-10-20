@@ -45,9 +45,15 @@
   const PENS = [['ballpoint', 'حبر جاف'], ['fountain', 'قلم حبر'], ['pencil', 'رصاص'], ['technical', 'تقني']];
   /* tools that have a settings sheet, and the engine style group behind each (shapes share one, text and sticky share one) */
   const SETG = { pen: 'pen', highlight: 'highlight', eraser: 'eraser', line: 'shape', rectangle: 'shape', ellipse: 'shape', arrow: 'shape', text: 'text', sticky: 'text' };
-  const TITLES = { pen: 'إعدادات القلم', highlight: 'إعدادات التظليل', eraser: 'إعدادات الممحاة', line: 'إعدادات الخط', rectangle: 'إعدادات المستطيل', ellipse: 'إعدادات الدائرة', arrow: 'إعدادات السهم', text: 'إعدادات النص', sticky: 'إعدادات الملاحظة اللاصقة' };
+  const TITLES = { pen: 'إعدادات القلم', highlight: 'إعدادات التظليل', eraser: 'إعدادات الممحاة', line: 'إعدادات الخط', rectangle: 'إعدادات المستطيل', ellipse: 'إعدادات الدائرة', arrow: 'إعدادات السهم', text: 'إعدادات النص', sticky: 'إعدادات الملاحظة اللاصقة', lasso: 'إعدادات التحديد' };
   const HOLD = 500, HEX6 = /^#[0-9a-f]{6}$/i;
-  let lpAt = 0, ts = null, upd = [];                       /* lpAt: a long press just fired, so its trailing click is not a tap */
+  /* lp: the tool a long press just opened; only ITS trailing click is swallowed, so the next tool can be tapped at once */
+  let lp = { id: '', at: 0 }, ts = null, upd = [];
+  const lpFresh = id => lp.at && Date.now() - lp.at < 700 && (id == null || lp.id === id);
+  /* the lasso sheet appears only once the selection module offers modes (it is developed separately) */
+  const selModes = () => !!(M.selection && typeof M.selection.setMode === 'function' && typeof M.selection.mode === 'function');
+  const hasSet = id => id === 'lasso' ? selModes() : !!SETG[id];
+  const groupFor = id => id === 'lasso' ? 'lasso' : SETG[id];
 
   const root = $('studio-toolbar'); if (!root) return;
   const btn = (cls, label, inner, id) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.setAttribute('aria-label', label); b.title = label; b.innerHTML = inner; if (id) b.id = id; return b; };
@@ -55,10 +61,10 @@
   const txt = (tag, cls, t) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = t; return e; };
   function toolButton(t) {
     const on = S.tool === t.id, b = btn('st-btn', t.name, svg(t.icon) + '<span class="st-lab">' + t.name + '</span>'); b.dataset.tool = t.id; b.setAttribute('aria-pressed', String(on)); if (on) b.classList.add('active');
-    if (SETG[t.id]) { b.classList.add('st-has-set'); if (on) { b.title = t.name + ' — اضغط مرة أخرى للإعدادات'; b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); } }
+    if (hasSet(t.id)) { b.classList.add('st-has-set'); if (on) { b.title = t.name + ' — اضغط مرة أخرى للإعدادات'; b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); } }
     b.onclick = e => {
-      if (Date.now() - lpAt < 700) return;
-      if (S.tool === t.id && SETG[t.id]) return toggleSet(e && e.detail === 0);   /* second tap on the active tool = its settings */
+      if (lpFresh(t.id)) { lp.at = 0; return; }
+      if (S.tool === t.id && hasSet(t.id)) return toggleSet(e && e.detail === 0);   /* second tap on the active tool = its settings */
       closePops(); M.setTool(t.id);
     };
     holdable(b, t.id); return b;
@@ -68,7 +74,7 @@
     let tm = 0, x0 = 0, y0 = 0; const stop = () => { clearTimeout(tm); tm = 0; };
     b.addEventListener('pointerdown', e => {
       if (e.button > 0) return; x0 = e.clientX; y0 = e.clientY; stop();
-      tm = setTimeout(() => { tm = 0; lpAt = Date.now(); try { navigator.vibrate && navigator.vibrate(8); } catch {} if (S.tool !== id) { closePops(); M.setTool(id); } if (SETG[id]) openSet(); }, HOLD);
+      tm = setTimeout(() => { tm = 0; lp = { id, at: Date.now() }; try { navigator.vibrate && navigator.vibrate(8); } catch {} if (S.tool !== id) { closePops(); M.setTool(id); } if (hasSet(id)) openSet(); }, HOLD);
     });
     b.addEventListener('pointermove', e => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
@@ -163,7 +169,7 @@
   if (window.ResizeObserver) { new ResizeObserver(reserve).observe(root); const hd = document.querySelector('header'); if (hd) new ResizeObserver(reserve).observe(hd); }
   addEventListener('click', e => {
     const t = e.target; if (!t.closest || t.closest('.st-pop')) return;
-    if (Date.now() - lpAt < 700 || t.closest('#studio-toolbar [data-tool]')) return;   /* tool buttons open / close their own sheet */
+    if (t.closest('#studio-toolbar [data-tool]') || (lpFresh() && t.closest('#studio-toolbar'))) return;   /* tool buttons open / close their own sheet */
     const own = t.closest('[aria-haspopup="true"]'); if (own && own.nextElementSibling && own.nextElementSibling.classList.contains('st-pop')) return; closePops();
   });
   /* Escape closes the open popover and gives focus back to the button that opened it */
@@ -193,8 +199,8 @@
   const anchor = () => root.querySelector('.st-tools [data-tool="' + S.tool + '"]');
   function toggleSet(kbd) { const open = ts && !ts.hidden; closePops(); if (!open) openSet(kbd); }
   function openSet(kbd) {
-    if (!ts || !SETG[S.tool]) return;
-    closePops(); build(SETG[S.tool]); ts.hidden = false;
+    if (!ts || !hasSet(S.tool)) return;
+    closePops(); build(groupFor(S.tool)); ts.hidden = false;
     const a = anchor(); ts._anchor = a || null; if (a) a.setAttribute('aria-expanded', 'true');
     place(); refreshSet();
     if (kbd) { const f = ts.querySelector('button:not(.ts-x),input,select'); if (f) f.focus(); }
@@ -245,7 +251,7 @@
     const head = div('ts-head'); head.innerHTML = svg(t.icon, 20); head.append(txt('p', 'ts-title', TITLES[t.id]));
     const x = btn('ts-x', 'إغلاق', svg('<path d="M18 6 6 18M6 6l12 12"/>', 20), 'ts-close'); x.onclick = () => { const a = ts._anchor; closePops(); if (a && a.isConnected) a.focus(); };
     head.append(x); ts.append(head);
-    if (g !== 'eraser') { const cv = document.createElement('canvas'); cv.id = 'ts-preview'; cv.className = 'ts-preview'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'معاينة'); ts.append(cv); }
+    if (g !== 'eraser' && g !== 'lasso') { const cv = document.createElement('canvas'); cv.id = 'ts-preview'; cv.className = 'ts-preview'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'معاينة'); ts.append(cv); }
     if (g === 'pen') {
       const pr = div('ts-presets'); pr.setAttribute('role', 'group'); pr.setAttribute('aria-label', 'نوع القلم');
       for (const [id, name] of PENS) { const b = btn('ts-preset', name, '<canvas class="ts-chip" aria-hidden="true"></canvas><span>' + name + '</span>'); b.dataset.pen = id; b.onclick = () => put({ pen: id }); pr.append(b); }
@@ -289,7 +295,15 @@
       upd.push(() => { const s = sty(), cur = Math.round(s.size || 18); if (sel.value !== String(cur)) fill(cur); B.setAttribute('aria-pressed', String(!!s.bold)); It.setAttribute('aria-pressed', String(!!s.italic)); });
       fill(Math.round(sty().size || 18)); row.append(lab, sel, B, It); sec('النص').append(row);
       sec('اللون').append(colors(INKS));
+    } else if (g === 'lasso') {
+      sec('طريقة التحديد').append(seg('طريقة التحديد', 'smode', [['free', 'تحديد حر', 'ارسم حول ما تريد'], ['rect', 'تحديد مستطيل', 'اسحب مستطيلاً حوله']], selMode, setSelMode));
     }
+  }
+  /* the selection module's own names may differ ('free' / 'lasso', 'rect' / 'rectangle'): read loosely, try each */
+  function selMode() { let m = ''; try { m = String(M.selection.mode() || ''); } catch {} return /rect|box/i.test(m) ? 'rect' : 'free'; }
+  function setSelMode(v) {
+    for (const c of v === 'rect' ? ['rect', 'rectangle', 'box'] : ['free', 'lasso', 'freehand']) { try { M.selection.setMode(c); } catch {} if (selMode() === v) break; }
+    refreshSet();
   }
   /* ---- live preview: the engine's own renderer draws a sample, so what you see is exactly what you will write ---- */
   function surface(cv, fw, fh) {
@@ -312,7 +326,7 @@
   }
   function paintPreview() {
     if (!ts || ts.hidden || !M.drawStroke) return;
-    const g = SETG[S.tool], s = sty(), cv = $('ts-preview');
+    const g = groupFor(S.tool), s = sty(), cv = $('ts-preview');
     try {
       if (cv) {
         const { ctx, cw, ch, d, PW, H } = surface(cv, 260, 70); let item = null;
