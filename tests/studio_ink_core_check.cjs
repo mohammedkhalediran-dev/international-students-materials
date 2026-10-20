@@ -14,7 +14,7 @@ let seed2 = 11; const rnd2 = () => { seed2 = (seed2 * 16807) % 2147483647; retur
 // 1. constants (old order kept, new entries appended)
 ok(JSON.stringify(C.TOOLS) === JSON.stringify(['pen', 'highlight', 'line', 'rectangle', 'ellipse', 'text', 'sticky', 'texthl', 'arrow', 'image']), 'TOOLS appended arrow,image');
 ok(JSON.stringify(C.SHAPES) === JSON.stringify(['line', 'rectangle', 'ellipse', 'arrow']), 'SHAPES order');
-ok(JSON.stringify(C.PENS) === JSON.stringify(['ballpoint', 'fountain', 'pencil', 'technical']), 'PENS exported');
+ok(JSON.stringify(C.PENS) === JSON.stringify(['ballpoint', 'fountain', 'brush', 'pencil', 'technical']), 'PENS exported');
 ok(JSON.stringify(C.OPS) === JSON.stringify(['add', 'del', 'edit', 'mv']), 'OPS exported');
 
 // 2. validation: legacy unchanged, optional ink fields, arrow and image records
@@ -28,7 +28,7 @@ ok(C.migrate([ink]).list[0].pen === 'fountain' && C.migrate([ink]).list[0].wr ==
 const txt = { page: 1, tool: 'text', text: 'Aorta', points: [[0.2, 0.2]], bold: true, italic: false, size: 18 };
 ok(C.validStroke(txt), 'text styling valid');
 const bad = (base, patch, m) => ok(!C.validStroke(Object.assign({}, base, patch)), m);
-bad(ink, { pen: 'brush' }, 'unknown pen rejected');
+bad(ink, { pen: 'marker' }, 'unknown pen rejected');
 bad(ink, { op: 0.01 }, 'op below 0.02 rejected'); bad(ink, { op: 1.5 }, 'op above 1 rejected'); bad(ink, { op: NaN }, 'op NaN rejected'); bad(ink, { op: '0.5' }, 'op string rejected');
 bad(ink, { wr: [0.05, 1] }, 'wr min < 0.1 rejected'); bad(ink, { wr: [2, 1] }, 'wr min > max rejected'); bad(ink, { wr: [1, 5] }, 'wr max > 4 rejected'); bad(ink, { wr: [1] }, 'wr length rejected'); bad(ink, { wr: [NaN, 1] }, 'wr NaN rejected');
 bad(ink, { rot: 51 }, 'rot > 50 rejected'); bad(ink, { rot: -Infinity }, 'rot infinite rejected');

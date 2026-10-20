@@ -17,9 +17,10 @@
   /* =============================== selection =============================== */
   const types = { ink: true, shape: true, text: true, img: true, hl: true };
   try { Object.assign(types, JSON.parse(localStorage.getItem('medixa.studio.lasso.v1') || '{}')); } catch {}
-  const kind = s => s.tool === 'text' || s.tool === 'sticky' ? 'text' : s.tool === 'image' ? 'img' : s.tool === 'texthl' ? 'hl' : C.SHAPES.includes(s.tool) ? 'shape' : 'ink';
-  const MODE_KEY = 'medixa.studio.lassomode.v1';
+  const kind = s => s.tool === 'text' || s.tool === 'sticky' ? 'text' : s.tool === 'image' ? 'img' : (s.tool === 'texthl' || s.tool === 'highlight') ? 'hl' : C.SHAPES.includes(s.tool) ? 'shape' : 'ink';
+  const MODE_KEY = 'medixa.studio.lassomode.v1', HIT_KEY = 'medixa.studio.lassohit.v1';
   let selMode = 'free'; try { if (localStorage.getItem(MODE_KEY) === 'rect') selMode = 'rect'; } catch {}
+  let hitMode = 'inside'; try { if (localStorage.getItem(HIT_KEY) === 'touch') hitMode = 'touch'; } catch {}
   const sel = { page: 0, ids: [] };
   let drag = null;   /* the gesture in progress: draw (lasso / rectangle) | move | resize | rotate | crop */
   let crop = null;   /* crop mode for one picture: {id, r:[a0,b0,a1,b1]} fractions of its box in its own (rotated) frame */
@@ -70,10 +71,13 @@
   const hitR = e => (e && e.pointerType === 'mouse' && !TOUCH ? 16 : 22);
   function frame(pg) {
     const items = selItems().filter(movable).map(liveOf); if (!items.length || !pg) return null;
-    const b = boxOf(items), pu = PAD / pg.cssW, pv = PAD / pg.cssH, x0 = b[0] - pu, y0 = b[1] - pv, x1 = b[2] + pu, y1 = b[3] + pv, cx = (x0 + x1) / 2;
+    const b = boxOf(items), pu = PAD / pg.cssW, pv = PAD / pg.cssH, x0 = b[0] - pu, y0 = b[1] - pv, x1 = b[2] + pu, y1 = b[3] + pv, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     const gap = ROT_GAP / pg.cssH, above = y0 - gap >= -pg.ext.t;   /* no room above the page: the handle goes below */
     const turns = items.some(s => s.tool !== 'text' && s.tool !== 'sticky');   /* notes stay upright: nothing to turn */
-    return { b, x0, y0, x1, y1, c: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], h: { nw: [x0, y0], ne: [x1, y0], sw: [x0, y1], se: [x1, y1] }, rot: turns ? [cx, above ? y0 - gap : Math.min(1 + pg.ext.b, y1 + gap)] : null, stem: [cx, above ? y0 : y1] };
+    const h = { nw: [x0, y0], ne: [x1, y0], sw: [x0, y1], se: [x1, y1] };
+    if ((x1 - x0) * pg.cssW > 42) { h.n = [cx, y0]; h.s = [cx, y1]; }
+    if ((y1 - y0) * pg.cssH > 42) { h.w = [x0, cy]; h.e = [x1, cy]; }
+    return { b, x0, y0, x1, y1, c: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], h, rot: turns ? [cx, above ? y0 - gap : Math.min(1 + pg.ext.b, y1 + gap)] : null, stem: [cx, above ? y0 : y1] };
   }
   function handleAt(pg, f, p, r) {
     if (f.rot && dpx(pg, f.rot, p) <= r) return 'rot';
@@ -95,7 +99,7 @@
     const bb = poly.reduce((a, q) => [Math.min(a[0], q[0]), Math.min(a[1], q[1]), Math.max(a[2], q[0]), Math.max(a[3], q[1])], [Infinity, Infinity, -Infinity, -Infinity]);
     return S.items.filter(s => {
       if (!s || s.page !== pg.n || !types[kind(s)] || !C.validStroke(s)) return false;
-      const b = C.bounds(s); return b[2] >= bb[0] && b[0] <= bb[2] && b[3] >= bb[1] && b[1] <= bb[3] && C.lassoHit(s, poly);
+      const b = C.bounds(s); return b[2] >= bb[0] && b[0] <= bb[2] && b[3] >= bb[1] && b[1] <= bb[3] && C.lassoHit(s, poly, hitMode);
     });
   }
   const rectPoly = (a, b) => [[a[0], a[1]], [b[0], a[1]], [b[0], b[1]], [a[0], b[1]]];
@@ -154,11 +158,12 @@
       }
       D.ang = a; return live(pg, { rot: a, cx: c[0], cy: c[1], k: M.aspect(pg.n) });
     }
-    const b = D.box, h = D.handle, ax = h.includes('w') ? b[2] : b[0], ay = h.includes('n') ? b[3] : b[1];
+    const b = D.box, h = D.handle, ax = h.includes('w') ? b[2] : h.includes('e') ? b[0] : (b[0] + b[2]) / 2, ay = h.includes('n') ? b[3] : h.includes('s') ? b[1] : (b[1] + b[3]) / 2;
     const ow = Math.max(0.01, Math.abs(D.start[0] - ax)), oh = Math.max(0.01, Math.abs(D.start[1] - ay));
-    let sx = Math.max(0.05, Math.abs(p[0] - ax) / ow), sy = Math.max(0.05, Math.abs(p[1] - ay) / oh);
+    let sx = h === 'n' || h === 's' ? 1 : Math.max(0.05, Math.abs(p[0] - ax) / ow);
+    let sy = h === 'e' || h === 'w' ? 1 : Math.max(0.05, Math.abs(p[1] - ay) / oh);
     const one = D.orig.size === 1 ? [...D.orig.values()][0] : null;
-    if (!(one && !['pen', 'highlight', 'image'].includes(one.tool) && !e.shiftKey)) sx = sy = Math.max(sx, sy);   /* ink, pictures and groups keep their proportions */
+    if (h.length === 2 && !(one && !['pen', 'highlight', 'image'].includes(one.tool) && !e.shiftKey)) sx = sy = Math.max(sx, sy);   /* corner handles keep proportions */
     live(pg, { sx, sy, cx: ax, cy: ay });
   }
   /* Live preview: the selection is hidden from the committed ink layer once (S.skip) and drawn on the page's live
@@ -220,7 +225,7 @@
     const a0 = P(f.x0, f.y0), a1 = P(f.x1, f.y1);
     ctx.save(); ctx.strokeStyle = TEAL; ctx.lineWidth = 1.6 * k; ctx.setLineDash([5 * k, 4 * k]);
     ctx.strokeRect(a0[0], a0[1], a1[0] - a0[0], a1[1] - a0[1]); ctx.setLineDash([]);
-    for (const q of Object.values(f.h)) { const x = P(...q); dot(ctx, x[0], x[1], hr, '#fff'); }
+    for (const [hk, q] of Object.entries(f.h)) { const x = P(...q); dot(ctx, x[0], x[1], hk.length === 1 ? hr * 0.78 : hr, hk.length === 1 ? '#e3f3f1' : '#fff'); }
     if (f.rot) {                                                  /* rotate handle: a teal knob on a stem, with a small turning arrow */
       const st = P(...f.stem), ro = P(...f.rot); ctx.beginPath(); ctx.moveTo(st[0], st[1]); ctx.lineTo(ro[0], ro[1]); ctx.stroke();
       dot(ctx, ro[0], ro[1], hr + 1.5 * k, TEAL);
@@ -241,7 +246,7 @@
     let cur = '';
     if (sel.page === pg.n && sel.ids.length && !crop) {
       const r = c.getBoundingClientRect(), x = pg.ext, p = [(e.clientX - r.left) / r.width * (1 + x.l + x.r) - x.l, (e.clientY - r.top) / r.height * (1 + x.t + x.b) - x.t], f = frame(pg);
-      if (f) { const h = handleAt(pg, f, p, hitR(e)); cur = h === 'rot' ? 'grab' : h === 'nw' || h === 'se' ? 'nwse-resize' : h ? 'nesw-resize' : inside([f.x0, f.y0, f.x1, f.y1], p) ? 'move' : ''; }
+      if (f) { const h = handleAt(pg, f, p, hitR(e)); cur = h === 'rot' ? 'grab' : h === 'nw' || h === 'se' ? 'nwse-resize' : h === 'ne' || h === 'sw' ? 'nesw-resize' : h === 'n' || h === 's' ? 'ns-resize' : h === 'e' || h === 'w' ? 'ew-resize' : inside([f.x0, f.y0, f.x1, f.y1], p) ? 'move' : ''; }
     }
     if (c.style.cursor !== cur) c.style.cursor = cur;
   }, { passive: true });
@@ -283,11 +288,13 @@
   }
   /* Restyle every selected item that supports the property: texthl colour/opacity, pictures opacity, ink and shapes
      colour/width, text colour. One history step; returns the number of items changed. */
+  const canDash = s => s.tool === 'pen' || C.SHAPES.includes(s.tool);
   function styleProps(s, props) {
     const p = {};
     if (typeof props.color === 'string' && HEX6.test(props.color) && canColor(s) && s.color !== props.color) p.color = props.color;
     if (typeof props.width === 'number' && props.width > 0 && canWidth(s)) { const w = Math.min(40, props.width); if (s.width !== w) p.width = w; }
-    if (typeof props.op === 'number' && Number.isFinite(props.op) && canOp(s)) { const o = Math.round(C.clamp(props.op, 0.1, 1) * 100) / 100; if ((s.op || defOp(s)) !== o) p.op = o; }
+    if (typeof props.op === 'number' && Number.isFinite(props.op) && (canOp(s) || s.tool === 'pen' || C.SHAPES.includes(s.tool))) { const o = Math.round(C.clamp(props.op, 0.1, 1) * 100) / 100; if ((s.op || defOp(s)) !== o) p.op = o; }
+    if (typeof props.dash === 'string' && (C.DASHES || ['solid', 'dashed', 'dotted']).includes(props.dash) && canDash(s)) { const d = props.dash === 'solid' ? null : props.dash; if ((s.dash || null) !== d) p.dash = d; }
     return Object.keys(p).length ? p : null;
   }
   let preview = null;                                            /* a slider being dragged: originals, so release is one step */
@@ -318,11 +325,36 @@
   /* the picture's own frame (rotated with it): (a, b) in 0..1 of its box <-> page point */
   const toPage = (s, a, b) => { const q = [s.points[0][0] + a * s.w, s.points[0][1] + b * s.h]; return s.rot ? C.rotateIso(q, centreOf(s), s.rot, s.k) : q; };
   const toLocal = (s, p) => { const q = s.rot ? C.rotateIso(p, centreOf(s), -s.rot, s.k) : p; return [(q[0] - s.points[0][0]) / s.w, (q[1] - s.points[0][1]) / s.h]; };
-  function flip(axis) { const s = oneImage(); if (!s) return 0; const f = axis === 'y' ? 'fy' : 'fx'; return record(editOps([s], x => ({ [f]: !x[f] }))); }
+  function flip(axis) {
+    const one = oneImage();
+    if (one) { const f = axis === 'y' ? 'fy' : 'fx'; return record(editOps([one], x => ({ [f]: !x[f] }))); }
+    const items = selItems().filter(movable), pg = sel.page && M.page(sel.page);
+    if (!items.length || !pg) return 0;
+    const b = boxOf(items), cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
+    const m = Object.assign({ sx: axis === 'x' ? -1 : 1, sy: axis === 'y' ? -1 : 1, cx, cy }, bounds(pg));
+    return record(editOps(items, x => {
+      if (x.tool === 'image') { const f = axis === 'y' ? 'fy' : 'fx', t = C.transformStroke(x, m); delete t.rev; t[f] = !x[f]; return t; }
+      const t = C.transformStroke(x, m); delete t.rev; return t;
+    }));
+  }
   function rotate90() {
-    const s = oneImage(), pg = s && M.page(s.page); if (!pg) return 0;
-    const c = centreOf(s), m = Object.assign({ rot: Math.PI / 2, cx: c[0], cy: c[1], k: M.aspect(s.page) }, bounds(pg));
-    return record(editOps([s], x => { const t = C.transformStroke(x, m); delete t.rev; return t; }));
+    const one = oneImage();
+    if (one) {
+      const pg = M.page(one.page); if (!pg) return 0;
+      const c = centreOf(one), m = Object.assign({ rot: Math.PI / 2, cx: c[0], cy: c[1], k: M.aspect(one.page) }, bounds(pg));
+      return record(editOps([one], x => { const t = C.transformStroke(x, m); delete t.rev; return t; }));
+    }
+    const items = selItems().filter(movable), pg = sel.page && M.page(sel.page);
+    if (!items.length || !pg) return 0;
+    const b = boxOf(items), c = [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
+    const m = Object.assign({ rot: Math.PI / 2, cx: c[0], cy: c[1], k: M.aspect(sel.page) }, bounds(pg));
+    return record(editOps(items, x => { const t = C.transformStroke(x, m); delete t.rev; return t; }));
+  }
+  function cut() { if (!copy()) return 0; return del(); }
+  function selectAll(page) {
+    const n = page || currentPage(), list = S.items.filter(s => s && s.page === n && types[kind(s)] && C.validStroke(s));
+    if (!list.length) return 0;
+    return select(list.map(s => s.id), n);
   }
   /* Crop: r = the part of the box to keep, in the picture's own frame. The kept part stays exactly where it was; the
      stored crop is in fractions of the source bitmap, through the flips (drawImageItem mirrors inside the box). */
@@ -474,8 +506,11 @@
     B.rect = mk(gm, 'sel-mode-rect', 'تحديد بمستطيل', IC.rect, () => setMode('rect'), 'مستطيل');
     const ga = B.acts = group('sel-acts', 'إجراءات');
     B.copy = mk(ga, 'sel-copy', 'نسخ', IC.copy, () => copy());
+    B.cut = mk(ga, 'sel-cut', 'قص', '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/>', () => cut());
     B.paste = mk(ga, 'sel-paste', 'لصق', IC.paste, () => paste());
     B.dup = mk(ga, 'sel-dup', 'تكرار', IC.dup, () => duplicate());
+    B.rotAny = mk(ga, 'sel-rot-any', 'تدوير 90°', IC.rot, () => rotate90(), '90°');
+    B.fliphAny = mk(ga, 'sel-fliph-any', 'قلب أفقي', IC.fx, () => flip('x'), '');
     B.front = mk(ga, 'sel-front', 'إلى الأمام', IC.front, () => zorder(true));
     B.back = mk(ga, 'sel-back', 'إلى الخلف', IC.back, () => zorder(false));
     B.del = mk(ga, 'sel-del', 'حذف', IC.del, () => del());
@@ -521,7 +556,9 @@
     const img = oneImage(), mov = items.some(movable);
     B.mode.hidden = has || !!crop; B.style.hidden = !has || !!crop; B.acts.hidden = !!crop || !(has || (clip && clip.items.length));
     B.colors.hidden = !items.some(canColor); B.widthL.hidden = !items.some(canWidth); B.opL.hidden = !items.some(canOp);
-    for (const el of [B.copy, B.dup, B.front, B.back]) el.hidden = !mov;
+    for (const el of [B.copy, B.cut, B.dup, B.front, B.back]) if (el) el.hidden = !mov;
+    if (B.rotAny) B.rotAny.hidden = !mov || !!img;
+    if (B.fliphAny) B.fliphAny.hidden = !mov || !!img;
     B.del.hidden = !has; B.paste.hidden = !(clip && clip.items.length);
     B.img.hidden = !img || !!crop; B.uncrop.hidden = !(img && img.crop); B.crop.hidden = !crop;
     B.types.hidden = has; B.clear.hidden = !has || !!crop;
@@ -531,7 +568,34 @@
       if (f.color && HEX6.test(f.color)) B.color.value = f.color;
       for (const sw of B.colors.querySelectorAll('.sel-sw')) sw.setAttribute('aria-pressed', String(!!f.color && sw.dataset.color.toLowerCase() === f.color.toLowerCase()));
     }
+    placeSelBar();
   }
+  function placeSelBar() {
+    if (!bar || !bar.classList.contains('open')) return;
+    if (matchMedia('(max-width: 720px)').matches || !sel.ids.length || !sel.page) {
+      bar.style.top = ''; bar.style.left = ''; bar.style.right = ''; bar.style.marginInline = '';
+      return;
+    }
+    const pg = M.page(sel.page); if (!pg || !pg.ink) return;
+    const f = frame(pg), r = pg.ink.getBoundingClientRect();
+    if (!f || r.width < 2) return;
+    const kx = 1 + pg.ext.l + pg.ext.r, ky = 1 + pg.ext.t + pg.ext.b;
+    const sx = u => r.left + (u + pg.ext.l) / kx * r.width;
+    const sy = v => r.top + (v + pg.ext.t) / ky * r.height;
+    const topV = f.rot ? Math.min(f.y0, f.rot[1]) : f.y0, botV = f.rot ? Math.max(f.y1, f.rot[1]) : f.y1;
+    const boxTop = sy(topV), boxBot = sy(botV), boxCx = (sx(f.x0) + sx(f.x1)) / 2;
+    const bw = bar.offsetWidth || 420, bh = bar.offsetHeight || 52;
+    const minTop = document.body.classList.contains('st-compact') ? 74 : 124, maxBot = innerHeight - 76;
+    let y = boxTop - bh - 14;
+    if (y < minTop) y = boxBot + 14;
+    if (y + bh > maxBot) y = Math.max(minTop, Math.min(maxBot - bh, boxTop + 12));
+    const x = Math.max(12, Math.min(innerWidth - bw - 12, Math.round(boxCx - bw / 2)));
+    bar.style.top = Math.round(y) + 'px';
+    bar.style.left = x + 'px';
+    bar.style.right = 'auto';
+    bar.style.marginInline = '0';
+  }
+  addEventListener('scroll', () => { if (sel.ids.length && bar && bar.classList.contains('open')) placeSelBar(); }, { passive: true, capture: true });
   function setMode(m) {
     selMode = m === 'rect' ? 'rect' : 'free';
     try { localStorage.setItem(MODE_KEY, selMode); } catch {}
@@ -755,12 +819,23 @@
   M.on('change', () => { if (zw.open) zwDraw(); });
   addEventListener('resize', () => zwSync());
   M.zoomWriting = { zw, open: zwOpen, close: zwClose, newLine };
+  function setHitMode(m) {
+    hitMode = m === 'touch' ? 'touch' : 'inside';
+    try { localStorage.setItem(HIT_KEY, hitMode); } catch {}
+    updateBar(); return hitMode;
+  }
+  function setType(k, on) {
+    if (!(k in types)) return;
+    types[k] = !!on;
+    try { localStorage.setItem('medixa.studio.lasso.v1', JSON.stringify(types)); } catch {}
+    updateBar();
+  }
   M.selection = {
-    sel, types, clear: clearSel, duplicate, del, nudge, select, copy, paste, applyStyle,
+    sel, types, setType, clear: clearSel, duplicate, del, cut, selectAll, nudge, select, copy, paste, applyStyle,
     front: () => zorder(true), back: () => zorder(false), count: () => selItems().length, items: selItems,
-    mode: () => selMode, setMode, hasClip: () => !!(clip && clip.items.length),
+    mode: () => selMode, setMode, hitMode: () => hitMode, setHitMode, hasClip: () => !!(clip && clip.items.length),
     /* page-coordinate positions of the frame and its handles (null when nothing movable is selected) */
-    handles() { const pg = M.page(sel.page), f = frame(pg); return f ? { box: [f.x0, f.y0, f.x1, f.y1], nw: f.h.nw, ne: f.h.ne, sw: f.h.sw, se: f.h.se, rot: f.rot, centre: f.c } : null; },
+    handles() { const pg = M.page(sel.page), f = frame(pg); return f ? { box: [f.x0, f.y0, f.x1, f.y1], nw: f.h.nw, ne: f.h.ne, sw: f.h.sw, se: f.h.se, n: f.h.n, s: f.h.s, e: f.h.e, w: f.h.w, rot: f.rot, centre: f.c } : null; },
     handleRadius: pointerType => hitR({ pointerType }),
     crop: { start: cropStart, apply: cropApply, cancel: cropCancel, reset: uncrop, get rect() { return crop ? crop.r.slice() : null; }, set rect(r) { if (crop && Array.isArray(r) && r.length === 4) { crop.r = r.map(C.clamp01); const s = byId(crop.id); if (s) M.paint(M.page(s.page)); } } },
     flip, rotate90

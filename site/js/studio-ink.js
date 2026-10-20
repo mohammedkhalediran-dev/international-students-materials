@@ -19,25 +19,81 @@
 
   /* ---------- per-tool styles and input preferences (device settings, not part of the document) ---------- */
   const STYLE_KEY = 'medixa.studio.styles.v1', INPUT_KEY = 'medixa.studio.input.v1', PEN_SEEN_KEY = 'medixa.studio.penSeen';
+  const DEF_PEN_PRESETS = [
+    { pen: 'ballpoint', color: '#18334b', width: 2.5, op: 1, dash: 'solid' },
+    { pen: 'fountain', color: '#2f6fed', width: 3, op: 1, dash: 'solid' },
+    { pen: 'brush', color: '#e43d56', width: 4.5, op: 1, dash: 'solid' },
+    { pen: 'technical', color: '#168c8c', width: 2, op: 1, dash: 'solid' }
+  ];
+  const DEF_HL_PRESETS = [
+    { color: '#f2c230', width: 3, op: 0.3, tip: 'round' },
+    { color: '#7bd88f', width: 4, op: 0.3, tip: 'flat' },
+    { color: '#6fb1ff', width: 3.5, op: 0.28, tip: 'round' },
+    { color: '#ff8fa3', width: 4, op: 0.3, tip: 'flat' }
+  ];
   const DEF_STYLES = {
-    pen: { color: '#e43d56', width: 3, pen: 'ballpoint', smooth: 0.45, wr: [0.25, 2.2] },
-    highlight: { color: '#f2c230', width: 3, op: 0.3, straight: true, hsnap: true },
-    shape: { color: '#2f6fed', width: 3, head: 'end' },
+    pen: { color: '#e43d56', width: 3, pen: 'ballpoint', smooth: 0.45, wr: [0.25, 2.2], op: 1, dash: 'solid', presets: DEF_PEN_PRESETS },
+    highlight: { color: '#f2c230', width: 3, op: 0.3, straight: true, hsnap: true, alwaysStraight: false, tip: 'round', blend: 'multiply', shapeSnap: true, presets: DEF_HL_PRESETS },
+    shape: { color: '#2f6fed', width: 3, head: 'end', dash: 'solid' },
     text: { color: '#18334b', width: 3, size: 18, bold: false, italic: false },
-    eraser: { mode: 'stroke', size: 12 }
+    eraser: { mode: 'stroke', size: 12, target: 'all', keepShapes: false, autoSize: true, autoBack: false }
   };
   const DEF_INPUT = { fingerDraw: true, stylusOnly: false, palm: true, palmSens: 'medium', twoFinger: true, autoStylus: true, shapeSnap: true };
   const num = (v, a, b, d) => (typeof v === 'number' && Number.isFinite(v) && v >= a && v <= b ? v : d);
   function cleanStyle(g, v) {
     const d = DEF_STYLES[g], o = Object.assign({}, d);
+    if (d.presets) o.presets = d.presets.map(p => Object.assign({}, p));
     if (!v || typeof v !== 'object') return o;
     if ('color' in d && typeof v.color === 'string' && HEX6.test(v.color)) o.color = v.color;
     if ('width' in d) o.width = num(v.width, 0.5, 40, d.width);
-    if (g === 'pen') { if ((C.PENS || []).includes(v.pen)) o.pen = v.pen; o.smooth = num(v.smooth, 0, 1, d.smooth); if (Array.isArray(v.wr) && v.wr.length === 2 && v.wr[0] >= 0.1 && v.wr[0] <= v.wr[1] && v.wr[1] <= 4) o.wr = [v.wr[0], v.wr[1]]; }
-    if (g === 'highlight') { o.op = num(v.op, 0.05, 1, d.op); o.straight = v.straight !== false; o.hsnap = v.hsnap !== false; }
-    if (g === 'shape') o.head = v.head === 'both' ? 'both' : 'end';
+    if (g === 'pen') {
+      if ((C.PENS || []).includes(v.pen)) o.pen = v.pen;
+      o.smooth = num(v.smooth, 0, 1, d.smooth);
+      o.op = num(v.op, 0.1, 1, d.op);
+      o.dash = (C.DASHES || ['solid', 'dashed', 'dotted']).includes(v.dash) ? v.dash : 'solid';
+      if (Array.isArray(v.wr) && v.wr.length === 2 && v.wr[0] >= 0.1 && v.wr[0] <= v.wr[1] && v.wr[1] <= 4) o.wr = [v.wr[0], v.wr[1]];
+      if (Array.isArray(v.presets) && v.presets.length) {
+        o.presets = v.presets.slice(0, 6).filter(p => p && typeof p === 'object' && HEX6.test(p.color || '')).map(p => ({
+          pen: (C.PENS || []).includes(p.pen) ? p.pen : 'ballpoint',
+          color: p.color,
+          width: num(p.width, 0.5, 20, 3),
+          op: num(p.op, 0.1, 1, 1),
+          dash: (C.DASHES || ['solid', 'dashed', 'dotted']).includes(p.dash) ? p.dash : 'solid'
+        }));
+        if (!o.presets.length) o.presets = d.presets.map(p => Object.assign({}, p));
+      }
+    }
+    if (g === 'highlight') {
+      o.op = num(v.op, 0.05, 1, d.op);
+      o.straight = v.straight !== false;
+      o.hsnap = v.hsnap !== false;
+      o.alwaysStraight = !!v.alwaysStraight;
+      o.tip = v.tip === 'flat' ? 'flat' : 'round';
+      o.blend = v.blend === 'normal' ? 'normal' : 'multiply';
+      o.shapeSnap = v.shapeSnap !== false;
+      if (Array.isArray(v.presets) && v.presets.length) {
+        o.presets = v.presets.slice(0, 6).filter(p => p && typeof p === 'object' && HEX6.test(p.color || '')).map(p => ({
+          color: p.color,
+          width: num(p.width, 1, 10, 3),
+          op: num(p.op, 0.05, 1, 0.3),
+          tip: p.tip === 'flat' ? 'flat' : 'round'
+        }));
+        if (!o.presets.length) o.presets = d.presets.map(p => Object.assign({}, p));
+      }
+    }
+    if (g === 'shape') {
+      o.head = v.head === 'both' ? 'both' : 'end';
+      o.dash = (C.DASHES || ['solid', 'dashed', 'dotted']).includes(v.dash) ? v.dash : 'solid';
+    }
     if (g === 'text') { o.size = num(v.size, 6, 96, d.size); o.bold = !!v.bold; o.italic = !!v.italic; }
-    if (g === 'eraser') { o.mode = v.mode === 'precise' ? 'precise' : 'stroke'; o.size = num(v.size, 4, 60, d.size); }
+    if (g === 'eraser') {
+      o.mode = ['stroke', 'precise', 'lasso'].includes(v.mode) ? v.mode : 'stroke';
+      o.size = num(v.size, 4, 60, d.size);
+      o.target = ['all', 'highlight', 'ink'].includes(v.target) ? v.target : 'all';
+      o.keepShapes = !!v.keepShapes;
+      o.autoSize = v.autoSize !== false;
+      o.autoBack = !!v.autoBack;
+    }
     return o;
   }
   function loadStyles() { const v = rd(STYLE_KEY, {}), out = {}; for (const g of Object.keys(DEF_STYLES)) out[g] = cleanStyle(g, v && v[g]); return out; }
@@ -191,45 +247,75 @@
       ctx.globalAlpha = s.op || 0.35; ctx.beginPath(); for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill();
       ctx.restore(); return;
     }
-    if (s.tool === 'arrow') { ctx.lineWidth = base; ctx.beginPath(); for (const [a, b] of arrowSegs(s, w, h)) { ctx.moveTo(a[0] * w, a[1] * h); ctx.lineTo(b[0] * w, b[1] * h); } ctx.stroke(); ctx.restore(); return; }
+    const applyDash = d => {
+      if (d === 'dashed') ctx.setLineDash([Math.max(4, base * 2.8), Math.max(3, base * 2)]);
+      else if (d === 'dotted') ctx.setLineDash([Math.max(0.8, base * 0.15), Math.max(3, base * 2.1)]);
+    };
+    if (s.tool === 'arrow') {
+      ctx.lineWidth = base; ctx.globalAlpha = s.op || 1;
+      const segsA = arrowSegs(s, w, h);
+      if (s.dash && s.dash !== 'solid' && segsA.length) {
+        applyDash(s.dash); ctx.beginPath(); ctx.moveTo(segsA[0][0][0] * w, segsA[0][0][1] * h); ctx.lineTo(segsA[0][1][0] * w, segsA[0][1][1] * h); ctx.stroke();
+        ctx.setLineDash([]); ctx.beginPath(); for (let i = 1; i < segsA.length; i++) { const [a, b] = segsA[i]; ctx.moveTo(a[0] * w, a[1] * h); ctx.lineTo(b[0] * w, b[1] * h); } ctx.stroke();
+      } else {
+        ctx.beginPath(); for (const [a, b] of segsA) { ctx.moveTo(a[0] * w, a[1] * h); ctx.lineTo(b[0] * w, b[1] * h); } ctx.stroke();
+      }
+      ctx.restore(); return;
+    }
     const segs = C.shapeSegments(s);
     if (segs) {
-      ctx.lineWidth = base; const a = s.points[0], b = s.points[s.points.length - 1];
+      ctx.lineWidth = base; ctx.globalAlpha = s.op || 1; applyDash(s.dash);
+      const a = s.points[0], b = s.points[s.points.length - 1];
       ctx.beginPath();
       if (s.tool === 'line') { ctx.moveTo(a[0] * w, a[1] * h); ctx.lineTo(b[0] * w, b[1] * h); }
       else if (s.tool === 'ellipse') ctx.ellipse((a[0] + b[0]) / 2 * w, (a[1] + b[1]) / 2 * h, Math.max(0.1, Math.abs(b[0] - a[0]) / 2 * w), Math.max(0.1, Math.abs(b[1] - a[1]) / 2 * h), s.rot || 0, 0, 2 * Math.PI);
       else if (!s.rot) ctx.rect(a[0] * w, a[1] * h, (b[0] - a[0]) * w, (b[1] - a[1]) * h);
       else { segs.forEach(([p], i) => i ? ctx.lineTo(p[0] * w, p[1] * h) : ctx.moveTo(p[0] * w, p[1] * h)); ctx.closePath(); }
+      if (s.fill && (s.tool === 'rectangle' || s.tool === 'ellipse')) {
+        ctx.save(); ctx.fillStyle = s.fill; ctx.globalAlpha = Math.min(0.28, (s.op || 1) * 0.25); ctx.fill(); ctx.restore();
+      }
       ctx.stroke(); ctx.restore(); return;
     }
     if (s.tool === 'highlight') {
       /* One path, one stroke(): overlapping segments of the same stroke never darken. */
+      if (!document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal')) ctx.globalCompositeOperation = 'multiply';
+      if (s.tip === 'flat') { ctx.lineCap = 'butt'; ctx.lineJoin = 'bevel'; }
       ctx.globalAlpha = s.op || 0.3; ctx.lineWidth = C.widthAt(s.width || 3, 1, 'highlight') * w / 800; drawPath(ctx, s.points, w, h); ctx.stroke();
+    } else if (s.dash && s.dash !== 'solid') {
+      const st = s.pen ? C.penStyle(s.pen) : { alpha: 1 };
+      ctx.globalAlpha = (st.alpha || 1) * (s.op || 1); ctx.lineWidth = base; applyDash(s.dash);
+      drawPath(ctx, s.points, w, h); ctx.stroke();
     } else if (s.pen) {
       /* Pen presets: a filled variable-width ribbon (pressure / speed / nib / taper from studio-core). */
       const st = C.penStyle(s.pen); ctx.globalAlpha = (st.alpha || 1) * (s.op || 1);
       ctx.fillStyle = s.pen === 'pencil' ? grain(ctx, col) : col; fillPolys(ctx, penGeometry(s, w, h));
     } else if (s.pr && s.pr.length === s.points.length && s.points.length > 1) {
       /* Legacy pressure pen: per-segment width, opaque so overlaps are invisible. */
+      ctx.globalAlpha = s.op || 1;
       for (let i = 1; i < s.points.length; i++) {
         ctx.lineWidth = C.widthAt(s.width || 3, (s.pr[i] + s.pr[i - 1]) / 2, 'pen') * w / 800;
         ctx.beginPath(); ctx.moveTo(s.points[i - 1][0] * w, s.points[i - 1][1] * h);
         const m = [(s.points[i - 1][0] + s.points[i][0]) / 2 * w, (s.points[i - 1][1] + s.points[i][1]) / 2 * h];
         ctx.quadraticCurveTo(s.points[i - 1][0] * w, s.points[i - 1][1] * h, m[0], m[1]); ctx.lineTo(s.points[i][0] * w, s.points[i][1] * h); ctx.stroke();
       }
-    } else { ctx.lineWidth = base; drawPath(ctx, s.points, w, h); ctx.stroke(); }
+    } else { ctx.globalAlpha = s.op || 1; ctx.lineWidth = base; drawPath(ctx, s.points, w, h); ctx.stroke(); }
     ctx.restore();
   }
-  /* Consecutive highlights are painted per colour/opacity group with ONE fill/stroke each, so where highlights overlap
+  /* Consecutive highlights are painted per colour/opacity/tip group with ONE fill/stroke each, so where highlights overlap
      the colour does not stack up into a darker band (a marker over a marker looks like one marker). */
   function drawHighlights(ctx, list, w, h) {
     const groups = new Map();
-    for (const s of list) { const key = s.tool + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
+    for (const s of list) { const key = s.tool + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
+    const mult = !document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal');
     for (const g of groups.values()) {
       const s0 = g[0]; ctx.save(); ctx.fillStyle = ctx.strokeStyle = s0.color || '#f2c230';
+      if (mult) ctx.globalCompositeOperation = 'multiply';
       if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; ctx.beginPath(); for (const s of g) for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill('nonzero'); }
       else {
-        ctx.globalAlpha = s0.op || 0.3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = C.widthAt(s0.width || 3, 1, 'highlight') * w / 800;
+        ctx.globalAlpha = s0.op || 0.3;
+        ctx.lineCap = s0.tip === 'flat' ? 'butt' : 'round';
+        ctx.lineJoin = s0.tip === 'flat' ? 'bevel' : 'round';
+        ctx.lineWidth = C.widthAt(s0.width || 3, 1, 'highlight') * w / 800;
         ctx.beginPath(); for (const s of g) addPath(ctx, s.points, w, h); ctx.stroke();
       }
       ctx.restore();
@@ -323,7 +409,10 @@
       pg.needsPaint = false;
       const ctx = pg.over.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, pg.over.width, pg.over.height);
       if (pg.live) { ctx.save(); ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t); drawStroke(ctx, pg.live, pg.pw, pg.ph); ctx.restore(); }
-      if (G.hover && G.hover.pg === pg) drawCursor(ctx, pg, G.hover.p);
+      if (pg.active && pg.active.tool === 'eraser') {
+        if (pg.active.lasso && pg.active.lasso.length > 1) drawEraserLasso(ctx, pg, pg.active.lasso);
+        else if (pg.active.last) drawCursor(ctx, pg, pg.active.last, pg.active.dynR);
+      } else if (G.hover && G.hover.pg === pg) drawCursor(ctx, pg, G.hover.p, G.hover.r);
       emit('overlay', { pg, ctx });
     }
   }
@@ -470,21 +559,35 @@
   /* ----- tools on a page ----- */
   function beginTool(pg, e, rec) {
     if (pg.active) return false;                                    /* one gesture per page at a time */
-    const p = posOf(pg, e), tool = rec && rec.eraserTip ? 'eraser' : S.tool, a = { id: e.pointerId, type: e.pointerType, tool, ops: [], last: p, px: e.clientX, py: e.clientY, t0: now(), anchor: [e.clientX, e.clientY] };
+    const p = posOf(pg, e), tool = rec && rec.eraserTip ? 'eraser' : S.tool, a = { id: e.pointerId, type: e.pointerType, tool, ops: [], last: p, px: e.clientX, py: e.clientY, t0: now(), lt: now(), anchor: [e.clientX, e.clientY] };
     pg.active = a; if (rec) { rec.pg = pg; rec.len = 0; rec.lx = e.clientX; rec.ly = e.clientY; }
     setG(stateFor(tool));
     if (TOOLS[tool]) { a.custom = TOOLS[tool]; setState('editing'); if (TOOLS[tool].down(pg, e, p) === false) { pg.active = null; if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); return false; } return true; }
-    if (tool === 'eraser') { setState('editing'); erase(pg, p); return true; }
+    if (tool === 'eraser') {
+      setState('editing');
+      a.dynR = eraseSize();
+      if (S.styles.eraser.mode === 'lasso' && !(rec && rec.eraserTip)) { a.lasso = [p]; paint(pg); }
+      else { erase(pg, p, a.dynR); paint(pg); }
+      return true;
+    }
     if (['pen', 'highlight', 'line', 'rectangle', 'ellipse', 'arrow'].includes(tool)) {
       setState('editing');
       const st = S.styles[groupOf(tool)], k = aspect(pg.n);
       const L = { id: C.newId(), v: 2, rev: 1, page: pg.n, tool, color: st.color, width: st.width, points: [p] };
       if (tool === 'pen') {
         L.pen = st.pen; L.wr = st.wr.slice();
+        if (st.op && st.op < 1) L.op = st.op;
+        if (st.dash && st.dash !== 'solid') L.dash = st.dash;
         if (e.pointerType === 'pen') L.pr = [C.clamp01(e.pressure)];
         a.filter = st.smooth > 0 && C.InkFilter ? new C.InkFilter(st.smooth, k) : null;
       }
-      if (tool === 'highlight') { L.op = st.op; a.filter = C.InkFilter ? new C.InkFilter(0.3, k) : null; }
+      if (tool === 'highlight') {
+        L.op = st.op;
+        if (st.tip === 'flat') L.tip = 'flat';
+        if (st.alwaysStraight) { a.straight = true; a.hsnap = st.hsnap; }
+        else a.filter = C.InkFilter ? new C.InkFilter(0.3, k) : null;
+      }
+      if (C.SHAPES.includes(tool) && st.dash && st.dash !== 'solid') L.dash = st.dash;
       if (tool === 'arrow' && st.head === 'both') L.head = 'both';
       if (a.filter) a.filter.push(p, e.timeStamp || now());
       pg.live = L; paint(pg); return true;
@@ -493,12 +596,31 @@
   }
   function moveTool(rec, e) {
     const pg = rec.pg, a = pg && pg.active; if (!a || a.id !== e.pointerId) return;
-    rec.len += Math.hypot(e.clientX - rec.lx, e.clientY - rec.ly); rec.lx = e.clientX; rec.ly = e.clientY;
+    const stepPx = Math.hypot(e.clientX - rec.lx, e.clientY - rec.ly), tNow = now(), dt = Math.max(4, tNow - (a.lt || tNow));
+    rec.len += stepPx; rec.lx = e.clientX; rec.ly = e.clientY; a.lt = tNow;
+    if (a.tool === 'eraser') {
+      const baseR = eraseSize();
+      if (S.styles.eraser.autoSize !== false) {
+        const v = stepPx / dt; /* px per ms */
+        const targetR = baseR * C.clamp(1 + (v - 0.35) * 0.65, 1, 2.25);
+        a.dynR = (a.dynR || baseR) * 0.72 + targetR * 0.28;
+      } else a.dynR = baseR;
+    }
     const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
     for (const ev of (evs.length ? evs : [e])) {
       const p = posOf(pg, ev);
       if (a.custom) { a.custom.move(pg, ev, p); a.last = p; continue; }
-      if (a.tool === 'eraser') { erase(pg, p); a.last = p; continue; }
+      if (a.tool === 'eraser') {
+        if (a.lasso) { a.lasso.push(p); a.last = p; continue; }
+        if (a.last) {
+          const dist = Math.hypot((p[0] - a.last[0]) * pg.cssW, (p[1] - a.last[1]) * pg.cssH), step = Math.max(3, (a.dynR || eraseSize()) * 0.6);
+          if (dist > step) {
+            const n = Math.min(12, Math.ceil(dist / step));
+            for (let k = 1; k < n; k++) erase(pg, [a.last[0] + (p[0] - a.last[0]) * k / n, a.last[1] + (p[1] - a.last[1]) * k / n], a.dynR);
+          }
+        }
+        erase(pg, p, a.dynR); a.last = p; continue;
+      }
       const L = pg.live;
       if (!L) continue;
       if (C.SHAPES.includes(L.tool)) { L.points = [L.points[0], snapEnd(L.points[0], p, L.tool, pg)]; continue; }
@@ -517,10 +639,22 @@
   function onHold(pg, a) {
     const L = pg.live; if (!L || pg.active !== a) return;
     const k = aspect(pg.n);
-    if (a.tool === 'highlight' && S.styles.highlight.straight) { a.straight = true; a.hsnap = S.styles.highlight.hsnap; L.points = C.straighten(L.points, { horizontal: a.hsnap, k }); paint(pg); emit('snap', 'line'); return; }
+    if (a.tool === 'highlight') {
+      if (S.styles.highlight.shapeSnap !== false && C.recognizeShape) {
+        const r = C.recognizeShape(L.points, k);
+        if (r && (r.tool === 'rectangle' || r.tool === 'ellipse')) {
+          a.snapped = r.tool; L.tool = r.tool; L.points = r.points; L.fill = L.color; L.op = S.styles.highlight.op || 0.3; L.width = Math.max(2, S.styles.highlight.width || 3);
+          delete L.tip; paint(pg); emit('snap', r.tool); return;
+        }
+      }
+      if (S.styles.highlight.straight) { a.straight = true; a.hsnap = S.styles.highlight.hsnap; L.points = C.straighten(L.points, { horizontal: a.hsnap, k }); paint(pg); emit('snap', 'line'); return; }
+    }
     if (a.tool === 'pen' && S.input.shapeSnap && C.recognizeShape) {
       const r = C.recognizeShape(L.points, k); if (!r) return;
-      a.snapped = r.tool; L.tool = r.tool; L.points = r.points; delete L.pr; delete L.pen; delete L.wr; paint(pg); emit('snap', r.tool);
+      a.snapped = r.tool; L.tool = r.tool;
+      if (r.tool === 'line') L.points = C.straighten(r.points, { horizontal: true, k });
+      else L.points = r.points;
+      delete L.pr; delete L.pen; delete L.wr; paint(pg); emit('snap', r.tool);
     }
   }
   function endTool(rec, how, e) {
@@ -530,7 +664,13 @@
     pg.active = null;
     const cancelled = how === 'discard', p = e ? posOf(pg, e) : a.last;
     if (a.custom) { a.custom.up(pg, e || { pointerId: rec.id, clientX: a.px, clientY: a.py }, cancelled, p); if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); return; }
-    if (a.tool === 'eraser') { if (a.ops.length) { S.hist.push(a.ops); markDirty(); } else if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); invalidate(pg.n); return; }
+    if (a.tool === 'eraser') {
+      if (!cancelled && a.lasso && a.lasso.length >= 3) eraseLasso(pg, a.lasso, a);
+      if (a.ops.length) { S.hist.push(a.ops); markDirty(); } else if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved');
+      invalidate(pg.n);
+      if (!cancelled && S.styles.eraser.autoBack && !(rec && rec.eraserTip) && S.lastDrawTool && S.lastDrawTool !== 'eraser') setTool(S.lastDrawTool);
+      return;
+    }
     const L = pg.live; pg.live = null;
     if (!L) return;
     if (cancelled) { paint(pg); setState(S.dirty ? 'pending' : 'saved'); return; }      /* an accidental / rejected contact leaves nothing */
@@ -550,12 +690,20 @@
     paint(pg); markDirty();
   }
 
-  /* ----- erasing: whole strokes, or precisely (the stroke is split; one undo restores it) ----- */
+  /* ----- erasing: whole strokes, precise split, or lasso area; filtered by target ----- */
   const eraseSize = () => C.clamp(S.styles.eraser.size || 12, 4, 60);
+  function canErase(s) {
+    if (!s) return false;
+    const st = S.styles.eraser || {};
+    if (st.keepShapes && (C.SHAPES.includes(s.tool) || s.tool === 'image' || s.tool === 'text' || s.tool === 'sticky')) return false;
+    if (st.target === 'highlight') return s.tool === 'highlight' || s.tool === 'texthl';
+    if (st.target === 'ink') return s.tool === 'pen';
+    return true;
+  }
   function halfInk(s, pg) { return ((s.width || 3) * (s.tool === 'highlight' ? 6 : s.pen ? 1.3 : 1)) / 2 * pg.cssW / 800; }
-  function erase(pg, p) {
-    const a = pg.active, r = eraseSize(), ru = r / Math.min(pg.cssW, pg.cssH) + 0.03, k = aspect(pg.n);
-    const hits = idx(pg.n).query(p[0], p[1], ru).filter(s => s.page === pg.n && S.items.includes(s));
+  function erase(pg, p, dynR) {
+    const a = pg.active, r = dynR || eraseSize(), ru = r / Math.min(pg.cssW, pg.cssH) + 0.03, k = aspect(pg.n);
+    const hits = idx(pg.n).query(p[0], p[1], ru).filter(s => s.page === pg.n && canErase(s) && S.items.includes(s));
     let changed = false;
     for (const s of hits) {
       const reach = r + halfInk(s, pg);
@@ -567,6 +715,24 @@
       if (C.distToStroke(s, p[0], p[1], pg.cssW, pg.cssH) <= reach) { removeOne(pg, s, a); changed = true; }
     }
     if (changed) { pg.dirty = true; paint(pg); }
+  }
+  function eraseLasso(pg, poly, a) {
+    const bb = poly.reduce((acc, q) => [Math.min(acc[0], q[0]), Math.min(acc[1], q[1]), Math.max(acc[2], q[0]), Math.max(acc[3], q[1])], [Infinity, Infinity, -Infinity, -Infinity]);
+    const hits = S.items.filter(s => {
+      if (!s || s.page !== pg.n || !canErase(s) || !C.validStroke(s)) return false;
+      const b = C.bounds(s);
+      return b[2] >= bb[0] && b[0] <= bb[2] && b[3] >= bb[1] && b[1] <= bb[3] && C.lassoHit(s, poly, 'touch');
+    });
+    for (const s of hits) removeOne(pg, s, a);
+    if (hits.length) pg.dirty = true;
+  }
+  function clearPage(n, onlyTarget) {
+    const pageId = n || (api.reader && api.reader.current ? api.reader.current() : 1);
+    const ids = S.items.filter(s => s && s.page === pageId && (!onlyTarget || canErase(s))).map(s => s.id);
+    if (!ids.length) return 0;
+    const ops = removeItems(ids);
+    commit(ops);
+    return ops.length;
   }
   function removeOne(pg, s, a) { const i = S.items.indexOf(s); if (i < 0) return; S.items.splice(i, 1); idx(pg.n).remove(s); S.deleted.add(s.id); a.ops.push({ k: 'del', s, i }); }
   /* Each replacement is recorded where it happened (del at i, pieces added at i, i+1, ...), so replaying the gesture
@@ -583,13 +749,24 @@
   function hover(e) {
     if (e.pointerType === 'touch') return;
     const ink = e.target && e.target.closest && e.target.closest('canvas.ink'), pg = ink ? inkPages.get(ink) : null;
-    const want = S.tool === 'eraser' && pg ? { pg, p: posOf(pg, e) } : null;
+    const want = S.tool === 'eraser' && S.styles.eraser.mode !== 'lasso' && pg ? { pg, p: posOf(pg, e), r: eraseSize() } : null;
     if (!want && !G.hover) return;
     const old = G.hover && G.hover.pg; G.hover = want; if (old && old !== (want && want.pg)) paint(old); if (want) paint(want.pg);
   }
-  function drawCursor(ctx, pg, p) {
-    const k = pg.ink.width / pg.totW, q = pg.px(p[0], p[1]), r = eraseSize() * k;
-    ctx.save(); ctx.lineWidth = 1.5 * k; ctx.strokeStyle = '#168c8c'; ctx.fillStyle = 'rgba(22,140,140,.08)'; ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+  function drawCursor(ctx, pg, p, customR) {
+    const k = pg.ink.width / pg.totW, q = pg.px(p[0], p[1]), r = (customR || eraseSize()) * k;
+    const onlyHl = S.styles.eraser && S.styles.eraser.target === 'highlight';
+    ctx.save(); ctx.lineWidth = 1.6 * k;
+    ctx.strokeStyle = onlyHl ? '#d99b00' : '#168c8c';
+    ctx.fillStyle = onlyHl ? 'rgba(242,194,48,.14)' : 'rgba(22,140,140,.08)';
+    if (S.styles.eraser && S.styles.eraser.mode === 'precise') ctx.setLineDash([3 * k, 2 * k]);
+    ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+  function drawEraserLasso(ctx, pg, pts) {
+    const k = pg.ink.width / pg.totW;
+    ctx.save(); ctx.setLineDash([5 * k, 4 * k]); ctx.strokeStyle = '#e43d56'; ctx.fillStyle = 'rgba(228,61,86,.09)'; ctx.lineWidth = 1.6 * k;
+    ctx.beginPath(); pts.forEach((p, i) => { const a = pg.px(p[0], p[1]); i ? ctx.lineTo(a[0], a[1]) : ctx.moveTo(a[0], a[1]); });
+    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
   }
   document.addEventListener('pointerleave', () => { if (G.hover) { const pg = G.hover.pg; G.hover = null; paint(pg); } }, true);
 
@@ -938,7 +1115,7 @@
   function setStyle(tool, props) { const g = GROUPS[tool] || tool; if (!S.styles[g]) return null; S.styles[g] = cleanStyle(g, Object.assign({}, S.styles[g], props)); saveStyles(); emit('style'); return S.styles[g]; }
   function setInput(props) { Object.assign(S.input, props || {}); S.input = Object.assign({}, DEF_INPUT, S.input); wr(INPUT_KEY, S.input); try { localStorage.setItem('medixa.penOnly', String(!!S.input.stylusOnly)); } catch {} emit('input', S.input); emit('penonly', S.input.stylusOnly); }
   const api = {
-    S, C, init, draftKeys, setPageActive, pageOrder, addBlank, removeBlank, moveBlank, detachPage, setSources(n) { S.nSources = n; }, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, patchItem, reorder, commit, fitTextHeight, rebuildIndexPage, setState, banner,
+    S, C, init, draftKeys, setPageActive, pageOrder, addBlank, removeBlank, moveBlank, detachPage, setSources(n) { S.nSources = n; }, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, clearPage, patchItem, reorder, commit, fitTextHeight, rebuildIndexPage, setState, banner,
     page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox, aspect, downloadJson,
     style: tool => S.styles[GROUPS[tool] || tool] || null, setStyle, input: () => S.input, setInput, penMode, markPen,
     gesture: { get state() { return G.state; }, get pointers() { return [...G.ptrs.values()].map(r => ({ id: r.id, type: r.type, role: r.role })); }, get penSeen() { return penSeenAt; }, forgetPen() { penSeenAt = 0; wr(PEN_SEEN_KEY, 0); emit('input', S.input); } },

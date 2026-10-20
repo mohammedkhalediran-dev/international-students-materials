@@ -31,11 +31,11 @@
 .ts-hint{margin:0;font:500 12px/1.5 system-ui;color:var(--ts-muted)}
 .ts-shared{margin-top:6px}
 /* pen presets: each chip is drawn by the real renderer */
-.ts-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ts-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .ts-preset{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:64px;padding:6px 2px;border:1px solid var(--ts-line);border-radius:12px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui;cursor:pointer}
 .ts-preset:hover{background:var(--ts-soft)}
 .ts-preset[aria-pressed=true]{border-color:var(--ts-teal);background:var(--ts-teal-soft);box-shadow:inset 0 0 0 1px var(--ts-teal);color:var(--ts-teal-2)}
-.ts-chip{display:block;width:56px;height:24px;border-radius:6px;background:#fff}
+.ts-chip{display:block;width:46px;height:22px;border-radius:6px;background:#fff}
 /* colours */
 .ts-colors{display:flex;flex-wrap:wrap;align-items:center;gap:0}
 .ts-sw{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer}
@@ -54,7 +54,7 @@
 .ts-row input[type=range]{width:100%;min-width:0;height:44px;margin:0;accent-color:var(--ts-teal);cursor:pointer}
 .ts-row output{font:600 12px system-ui;color:var(--ts-muted);text-align:end;font-variant-numeric:tabular-nums;direction:ltr}
 /* segmented choice (eraser type, arrow heads) */
-.ts-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--ts-line);border-radius:12px;background:var(--ts-soft)}
+.ts-seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));gap:4px;padding:4px;border:1px solid var(--ts-line);border-radius:12px;background:var(--ts-soft)}
 .ts-seg button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;padding:6px 8px;border:0;border-radius:9px;background:transparent;color:var(--ts-ink);font:600 13px system-ui;cursor:pointer}
 .ts-seg button small{font:500 11px/1.35 system-ui;color:var(--ts-muted);text-align:center}
 .ts-seg button[aria-pressed=true]{background:var(--ts-bg);color:var(--ts-teal-2);box-shadow:0 1px 4px #12304a29,inset 0 0 0 1px var(--ts-teal)}
@@ -111,3 +111,22 @@ body.medixa-dark #studio-toolbar .st-pop .st-swatch[aria-pressed=true]::before{b
 body.medixa-dark #studio-toolbar .st-colorlab input{background:var(--ts-soft);border-color:var(--ts-line)}
 body.medixa-dark .ts-preview,body.medixa-dark .ts-eprev{border-color:var(--ts-line)}
 @media(prefers-reduced-motion:reduce){#studio-toolbar .st-pop .st-check input[type=checkbox]{transition:none}}
+
+/* Notewise favorite presets, quick sizes, and tool colour indicators */
+#studio-toolbar .st-tools .st-btn[data-tool=pen]::before,#studio-toolbar .st-tools .st-btn[data-tool=highlight]::before{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--tool-c,transparent);box-shadow:0 0 0 1px #0002;pointer-events:none}
+.ts-favs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ts-fav{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:4px 10px;border:1px solid var(--ts-line);border-radius:999px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui;cursor:pointer;transition:background-color .12s,border-color .12s}
+.ts-fav:hover{background:var(--ts-soft)}
+.ts-fav[aria-pressed=true]{border-color:var(--ts-teal);background:var(--ts-teal-soft);color:var(--ts-teal-2);box-shadow:inset 0 0 0 1px var(--ts-teal)}
+.ts-fav-dot{width:12px;height:12px;border-radius:50%;background:var(--fc,#168c8c);box-shadow:inset 0 0 0 1px #0003;flex:0 0 auto}
+.ts-fav-rm{display:inline-grid;place-items:center;width:16px;height:16px;margin-inline-start:2px;border-radius:50%;color:var(--ts-muted);font-size:13px;line-height:1}
+.ts-fav-rm:hover{background:#e43d5622;color:#a32727}
+.ts-fav-add{border-style:dashed;color:var(--ts-teal-2);background:transparent}
+.ts-qsizes{display:flex;gap:5px;margin-bottom:4px}
+.ts-qsize{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:5px;min-height:34px;padding:4px 6px;border:1px solid var(--ts-line);border-radius:10px;background:var(--ts-bg);color:var(--ts-ink);font:600 11px system-ui;cursor:pointer}
+.ts-qsize:hover{background:var(--ts-soft)}
+.ts-qsize[aria-pressed=true]{border-color:var(--ts-teal);background:var(--ts-teal-soft);color:var(--ts-teal-2)}
+.ts-qdot{display:block;width:var(--qd,6px);height:var(--qd,6px);border-radius:50%;background:currentColor;flex:0 0 auto}
+.ts-danger-btn{color:#a32727!important;border-color:#f1c5cb!important;background:#fff8f9!important;text-align:center!important}
+.ts-danger-btn:hover{background:#ffecef!important}
+body.medixa-dark .ts-danger-btn{color:#ff8a8a!important;border-color:#5c2b33!important;background:#2d1a1f!important}
