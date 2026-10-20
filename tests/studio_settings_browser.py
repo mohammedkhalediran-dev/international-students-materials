@@ -120,6 +120,10 @@ try:
         # ---------- long press: choose + open in one gesture ----------
         bb = pg.locator(bar('pen')).bounding_box(); pg.mouse.move(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2); pg.mouse.down(); pg.wait_for_timeout(650); pg.mouse.up(); pg.wait_for_timeout(250)
         chk(pg.evaluate("MedixaStudio.S.tool") == 'pen' and is_open(pg) and title(pg) == 'إعدادات القلم', 'long press on a tool selects it and opens its settings (the trailing click does not close it)')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
+        bb = pg.locator(bar('pen')).bounding_box()   # the bar re-rendered: the pen button moved
+        pg.mouse.move(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2); pg.mouse.down(); pg.wait_for_timeout(1500); pg.mouse.up(); pg.wait_for_timeout(250)
+        chk(is_open(pg) and title(pg) == 'إعدادات القلم', 'a long hold (1.5 s) on the active tool still leaves its settings open')
         pg.keyboard.press('Escape')
         # ---------- hand tool ----------
         more(pg); pg.click('#studio-toolbar .st-morepop [data-tool=hand]'); pg.wait_for_timeout(150)
@@ -128,11 +132,13 @@ try:
         # ---------- text ----------
         more(pg); pg.click('#studio-toolbar .st-morepop [data-tool=text]'); pg.click(bar('text')); pg.wait_for_timeout(150)
         chk(is_open(pg) and title(pg) == 'إعدادات النص', 'text sheet')
+        chk(pg.evaluate("[...document.querySelectorAll('#studio-toolbar .st-size, #width')].every(e => !e.offsetParent)"), 'text: the bar hides the stroke sizes (a text has no stroke width)')
         pg.select_option('#ts-size', '24'); pg.click('#ts-bold'); pg.wait_for_timeout(60)
         chk(style(pg, 'text')['size'] == 24 and style(pg, 'text')['bold'] is True and pg.get_attribute('#ts-bold', 'aria-pressed') == 'true', 'text size 24 + bold')
         pg.click('#ts-italic'); chk(style(pg, 'text')['italic'] is True and style(pg, 'sticky')['italic'] is True, 'italic (sticky notes share the text style)')
         pg.click('#ts-bold'); pg.click('#ts-italic'); chk(painted(pg, '#ts-preview') > 40, 'text preview painted')
         pg.keyboard.press('Escape'); pg.evaluate("MedixaStudio.setTool('pen')")
+        chk(pg.locator('#studio-toolbar .st-sizes .st-size').count() == 3 and all(pg.is_visible(f'#studio-toolbar .st-size[data-w="{w}"]') for w in (2, 3, 6)), 'pen: the stroke sizes are back on the bar')
         # ---------- lasso: quick colours restyle the selection ----------
         has_sel = pg.evaluate("!!MedixaStudio.selection")
         if has_sel:
@@ -232,6 +238,21 @@ try:
         pg.locator('#studio-settings').tap(); pg.wait_for_timeout(150)
         mb = pg.evaluate("(()=>{const t=document.querySelector('.st-morepop').getBoundingClientRect();return [t.left,t.top,t.right,t.bottom]})()")
         chk(is_open(pg, '.st-morepop') and mb[0] >= 0 and mb[1] >= 0 and mb[2] <= 390 and mb[3] <= 844, f'phone: «المزيد» sheet inside the viewport {mb}')
+        hs = pg.evaluate("Math.round(document.getElementById('studio-palm-sens').getBoundingClientRect().height)"); chk(hs >= 44, f'phone: palm sensitivity select is a 44px target ({hs})')
+        # long press on a tool inside «المزيد»: the sheet opens where the finger is; the trailing tap must not close it or press a control
+        n0 = pg.evaluate("MedixaStudio.S.items.length"); s0 = json.dumps([style(pg, 'shape'), pg.evaluate("MedixaStudio.S.snap")])
+        ab = pg.locator('#studio-toolbar .st-morepop [data-tool=arrow]').bounding_box(); x, y = ab['x'] + ab['width'] / 2, ab['y'] + ab['height'] / 2
+        cdp.send('Input.dispatchTouchEvent', dict(type='touchStart', touchPoints=[dict(x=x, y=y)])); pg.wait_for_timeout(700)
+        cdp.send('Input.dispatchTouchEvent', dict(type='touchEnd', touchPoints=[])); pg.wait_for_timeout(300)
+        chk(pg.evaluate("MedixaStudio.S.tool") == 'arrow' and is_open(pg) and title(pg) == 'إعدادات السهم', 'phone: long press on a tool in «المزيد» opens its sheet and keeps it open')
+        chk(json.dumps([style(pg, 'shape'), pg.evaluate("MedixaStudio.S.snap")]) == s0 and pg.evaluate("MedixaStudio.S.items.length") == n0, 'phone: that long press changes no setting and draws nothing')
+        pg.locator('#ts-close').tap(); pg.wait_for_timeout(150)
+        # a long finger hold (1.5 s) on a bar tool: still open after the finger lifts, no text selected, nothing drawn
+        eb = pg.locator(bar('eraser')).bounding_box(); x, y = eb['x'] + eb['width'] / 2, eb['y'] + eb['height'] / 2
+        cdp.send('Input.dispatchTouchEvent', dict(type='touchStart', touchPoints=[dict(x=x, y=y)])); pg.wait_for_timeout(1500)
+        cdp.send('Input.dispatchTouchEvent', dict(type='touchEnd', touchPoints=[])); pg.wait_for_timeout(300)
+        chk(pg.evaluate("MedixaStudio.S.tool") == 'eraser' and is_open(pg) and title(pg) == 'إعدادات الممحاة' and pg.evaluate("String(getSelection())") == '' and pg.evaluate("MedixaStudio.S.items.length") == n0, 'phone: a 1.5 s hold opens the eraser sheet and leaves it open')
+        pg.locator(bar('eraser')).tap(); pg.wait_for_timeout(150); chk(not is_open(pg), 'phone: the next tap on the tool closes it as usual')
         chk(not errs, f'phone: no page errors {errs[:3]}')
         b.close()
 finally:

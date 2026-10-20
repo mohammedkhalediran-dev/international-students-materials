@@ -7,6 +7,7 @@
 #studio-toolbar .st-btn.st-has-set.active::after{content:"";position:absolute;bottom:4px;left:50%;width:5px;height:5px;margin-left:-3.5px;border:solid currentColor;border-width:0 1.8px 1.8px 0;transform:rotate(45deg);opacity:.9;pointer-events:none}
 #studio-toolbar .st-grid .st-btn.st-has-set.active::after{bottom:auto;top:7px;left:9px;margin:0}
 #studio-toolbar .st-btn[data-tool]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}   /* long press = settings, not a text callout */
+#studio-toolbar .st-sizes[hidden],#studio-toolbar .st-width[hidden]{display:none}   /* text / notes: no stroke width to set */
 
 /* popovers in the toolbar: never taller than the room under it, scroll inside */
 #studio-toolbar .st-pop>*{flex-shrink:0}
@@ -50,7 +51,7 @@
 /* sliders: label · track · value */
 .ts-row{display:grid;grid-template-columns:5.6em 1fr 3.4em;align-items:center;gap:10px;min-height:44px;font-size:13px}
 .ts-row label{color:var(--ts-ink)}
-.ts-row input[type=range]{width:100%;min-width:0;height:32px;margin:0;accent-color:var(--ts-teal);cursor:pointer}
+.ts-row input[type=range]{width:100%;min-width:0;height:44px;margin:0;accent-color:var(--ts-teal);cursor:pointer}
 .ts-row output{font:600 12px system-ui;color:var(--ts-muted);text-align:end;font-variant-numeric:tabular-nums;direction:ltr}
 /* segmented choice (eraser type, arrow heads) */
 .ts-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--ts-line);border-radius:12px;background:var(--ts-soft)}
@@ -78,7 +79,7 @@
 .st-inputset{display:flex;flex-direction:column;gap:0;margin-top:6px;padding-top:4px;border-top:1px solid var(--ts-line)}
 .st-subrow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding-inline:18px 2px;font-size:13px;color:var(--ts-ink)}   /* belongs to «تجاهل راحة اليد» above it */
 .st-subrow:has(select:disabled){color:var(--ts-muted)}
-#studio-palm-sens{flex:0 0 auto;min-width:96px;min-height:36px;padding:0 6px;border:1px solid var(--ts-line);border-radius:8px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui}
+#studio-palm-sens{flex:0 0 auto;min-width:96px;min-height:44px;padding:0 6px;border:1px solid var(--ts-line);border-radius:8px;background:var(--ts-bg);color:var(--ts-ink);font:600 12px system-ui}
 #studio-palm-sens:disabled{opacity:.5}
 .st-penstat{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:12px;color:var(--ts-muted)}
 .st-penstat>span::before{content:"";display:inline-block;width:8px;height:8px;margin-inline-end:6px;border-radius:50%;background:var(--ts-off);vertical-align:middle}
@@ -88,10 +89,9 @@
 .st-input-note{margin:2px 2px 4px;font-size:12px;line-height:1.5;color:var(--ts-muted)}
 #studio-toolbar .st-pop .st-pop-h{color:var(--ts-muted)}
 
-/* ---- phones: the settings open as a bottom sheet above the one-row bar ---- */
+/* ---- phones: the settings open as a bottom sheet above the one-row bar (no drag handle: it closes with ✕, the tool or a tap outside) ---- */
 @media(max-width:720px){
-  #studio-toolbar .st-toolset{width:auto;border-radius:18px;padding:14px 16px 16px;box-shadow:0 -10px 36px #12304a3d;max-height:min(68vh,calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));max-height:min(68dvh,calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));overscroll-behavior:contain}   /* the page stays in sight above */
-  #studio-toolbar .st-toolset::before{content:"";position:absolute;top:6px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--ts-line)}
+  #studio-toolbar .st-toolset{width:auto;border-radius:18px;padding:8px 16px 16px;box-shadow:0 -10px 36px #12304a3d;max-height:min(68vh,calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));max-height:min(68dvh,calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));overscroll-behavior:contain}   /* the page stays in sight above */
   #studio-toolbar .st-tools .st-btn.st-has-set.active::after{bottom:auto;top:3px;transform:rotate(-135deg)}   /* the sheet opens upwards */
   .ts-presets{gap:8px}
 }

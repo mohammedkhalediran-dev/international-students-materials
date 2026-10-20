@@ -41,11 +41,11 @@
     for (const s of items) { const b = C.bounds(s); x0 = Math.min(x0, b[0]); y0 = Math.min(y0, b[1]); x1 = Math.max(x1, b[2]); y1 = Math.max(y1, b[3]); }
     return [x0, y0, x1, y1];
   }
-  function clearSel() { const p = sel.page; sel.ids = []; sel.page = 0; crop = null; if (p) M.paint(M.page(p)); updateBar(); }
+  function clearSel() { endPreview(); const p = sel.page; sel.ids = []; sel.page = 0; crop = null; if (p) M.paint(M.page(p)); updateBar(); }
   function select(ids, page) {
     const list = (Array.isArray(ids) ? ids : [ids]).map(byId).filter(Boolean), n = page || (list[0] && list[0].page) || 0;
     if (S.tool !== 'lasso') M.setTool('lasso');
-    const old = sel.page, keep = list.filter(s => s.page === n);
+    endPreview(); const old = sel.page, keep = list.filter(s => s.page === n);
     sel.page = keep.length ? n : 0; sel.ids = keep.map(s => s.id); crop = null;
     if (old && old !== sel.page) M.paint(M.page(old)); if (sel.page) M.paint(M.page(sel.page));
     updateBar(); return sel.ids.length;
@@ -72,10 +72,11 @@
     const items = selItems().filter(movable).map(liveOf); if (!items.length || !pg) return null;
     const b = boxOf(items), pu = PAD / pg.cssW, pv = PAD / pg.cssH, x0 = b[0] - pu, y0 = b[1] - pv, x1 = b[2] + pu, y1 = b[3] + pv, cx = (x0 + x1) / 2;
     const gap = ROT_GAP / pg.cssH, above = y0 - gap >= -pg.ext.t;   /* no room above the page: the handle goes below */
-    return { b, x0, y0, x1, y1, c: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], h: { nw: [x0, y0], ne: [x1, y0], sw: [x0, y1], se: [x1, y1] }, rot: [cx, above ? y0 - gap : Math.min(1 + pg.ext.b, y1 + gap)], stem: [cx, above ? y0 : y1] };
+    const turns = items.some(s => s.tool !== 'text' && s.tool !== 'sticky');   /* notes stay upright: nothing to turn */
+    return { b, x0, y0, x1, y1, c: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], h: { nw: [x0, y0], ne: [x1, y0], sw: [x0, y1], se: [x1, y1] }, rot: turns ? [cx, above ? y0 - gap : Math.min(1 + pg.ext.b, y1 + gap)] : null, stem: [cx, above ? y0 : y1] };
   }
   function handleAt(pg, f, p, r) {
-    if (dpx(pg, f.rot, p) <= r) return 'rot';
+    if (f.rot && dpx(pg, f.rot, p) <= r) return 'rot';
     let best = null, bd = r;
     for (const [k, q] of Object.entries(f.h)) { const d = dpx(pg, q, p); if (d <= bd) { bd = d; best = k; } }
     return best;
@@ -110,7 +111,7 @@
           if (h || inside([f.x0, f.y0, f.x1, f.y1], p)) {
             drag = { mode: h === 'rot' ? 'rotate' : h ? 'resize' : 'move', handle: h, page: pg.n, start: p, box: f.b, c: f.c, ang: 0, live: null, out: null,
               orig: new Map(selItems().filter(movable).map(s => [s.id, s])) };
-            drag.order = [...drag.orig.keys()];
+            drag.order = S.items.filter(s => s && drag.orig.has(s.id)).map(s => s.id);   /* the live preview keeps the drawing order */
             return;
           }
         }
@@ -175,8 +176,8 @@
       const t = D.out.get(id), i = S.items.findIndex(x => x && x.id === id); if (!t || i < 0) continue;
       ops.push({ k: 'edit', id, before: pickKeys(o, Object.keys(t)), after: t }); S.items[i] = D.live.get(id);
     }
-    M.rebuildIndexPage(pg.n); pg.dirty = true; M.paint(pg);
-    record(ops);
+    if (D.live) { M.rebuildIndexPage(pg.n); pg.dirty = true; }     /* a press that moved nothing leaves the ink layer alone */
+    M.paint(pg); record(ops);
   }
 
   /* ----- overlay: lasso / rectangle preview, live transform, frame + handles, crop ----- */
@@ -219,10 +220,12 @@
     const a0 = P(f.x0, f.y0), a1 = P(f.x1, f.y1);
     ctx.save(); ctx.strokeStyle = TEAL; ctx.lineWidth = 1.6 * k; ctx.setLineDash([5 * k, 4 * k]);
     ctx.strokeRect(a0[0], a0[1], a1[0] - a0[0], a1[1] - a0[1]); ctx.setLineDash([]);
-    const st = P(...f.stem), ro = P(...f.rot); ctx.beginPath(); ctx.moveTo(st[0], st[1]); ctx.lineTo(ro[0], ro[1]); ctx.stroke();
     for (const q of Object.values(f.h)) { const x = P(...q); dot(ctx, x[0], x[1], hr, '#fff'); }
-    dot(ctx, ro[0], ro[1], hr + 1.5 * k, TEAL);                   /* rotate handle: a teal knob with a small turning arrow */
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * k; ctx.beginPath(); ctx.arc(ro[0], ro[1], hr * 0.5, -Math.PI * 0.9, Math.PI * 0.4); ctx.stroke();
+    if (f.rot) {                                                  /* rotate handle: a teal knob on a stem, with a small turning arrow */
+      const st = P(...f.stem), ro = P(...f.rot); ctx.beginPath(); ctx.moveTo(st[0], st[1]); ctx.lineTo(ro[0], ro[1]); ctx.stroke();
+      dot(ctx, ro[0], ro[1], hr + 1.5 * k, TEAL);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * k; ctx.beginPath(); ctx.arc(ro[0], ro[1], hr * 0.5, -Math.PI * 0.9, Math.PI * 0.4); ctx.stroke();
+    }
     ctx.restore();
   }
   M.on('select-refresh', () => {
@@ -390,8 +393,9 @@
     const A = window.MedixaAssets;
     if (!A || typeof A.put !== 'function') { M.banner('إدراج الصور غير متاح الآن.', [['حسناً', ok]]); return null; }
     if (!file) return null;
-    let rec;
-    try { rec = await A.put(file); } catch (e) { M.banner(e && e.code && e.message ? e.message : 'تعذّر إدراج الصورة. حاول مرة أخرى.', [['حسناً', ok]]); return null; }
+    let rec; const was = S.state; M.setState('editing');           /* re-encoding a large photo takes a moment on an iPad */
+    try { rec = await A.put(file); } catch (e) { M.setState(was); M.banner(e && e.code && e.message ? e.message : 'تعذّر إدراج الصورة. حاول مرة أخرى.', [['حسناً', ok]]); return null; }
+    if (S.state === 'editing') M.setState(was);
     const n = opts.page && M.page(opts.page) ? opts.page : visiblePage(), pg = M.page(n); if (!pg || !rec || !(rec.w > 0 && rec.h > 0)) return null;
     const K = M.aspect(n), ar = rec.h / rec.w;                   /* page fractions: h = (pixel h / w) * w / (page h / w) */
     const w = Math.min(0.5, 0.9 * K / ar), h = ar * w / K, c = opts.at || viewCentre(pg);
@@ -404,7 +408,8 @@
   function pick() {
     if (!picker) {
       picker = document.createElement('input'); picker.type = 'file'; picker.accept = 'image/jpeg,image/png,image/webp'; picker.id = 'studio-image-input';
-      picker.hidden = true; picker.tabIndex = -1; picker.setAttribute('aria-hidden', 'true');
+      picker.tabIndex = -1; picker.setAttribute('aria-hidden', 'true');   /* off-screen, not display:none: older iOS Safari will not open a hidden file input */
+      picker.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
       picker.addEventListener('change', () => { const f = picker.files && picker.files[0]; picker.value = ''; if (f) insert(f); });
       document.body.append(picker);
     }
@@ -461,12 +466,29 @@
     const group = (cls, label) => { const g = document.createElement('div'); g.className = 'sel-g ' + cls; g.setAttribute('role', 'group'); g.setAttribute('aria-label', label); bar.append(g); return g; };
     const mk = (g, id, label, icon, fn, short) => {
       const b = document.createElement('button'); b.type = 'button'; b.id = id; b.className = 'sel-b'; b.title = label; b.setAttribute('aria-label', label);
-      b.innerHTML = (icon ? svg(icon) : '') + '<span class="sel-l"></span>'; b.lastChild.textContent = short || label;
+      b.innerHTML = (icon ? svg(icon) : '') + '<span class="sel-l"></span>'; b.lastChild.textContent = short == null ? label : short; if (!b.lastChild.textContent) b.lastChild.remove();
       b.addEventListener('click', fn); g.append(b); return b;
     };
     const gm = B.mode = group('sel-mode', 'طريقة التحديد');
     B.free = mk(gm, 'sel-mode-free', 'تحديد حر', IC.free, () => setMode('free'), 'حر');
     B.rect = mk(gm, 'sel-mode-rect', 'تحديد بمستطيل', IC.rect, () => setMode('rect'), 'مستطيل');
+    const ga = B.acts = group('sel-acts', 'إجراءات');
+    B.copy = mk(ga, 'sel-copy', 'نسخ', IC.copy, () => copy());
+    B.paste = mk(ga, 'sel-paste', 'لصق', IC.paste, () => paste());
+    B.dup = mk(ga, 'sel-dup', 'تكرار', IC.dup, () => duplicate());
+    B.front = mk(ga, 'sel-front', 'إلى الأمام', IC.front, () => zorder(true));
+    B.back = mk(ga, 'sel-back', 'إلى الخلف', IC.back, () => zorder(false));
+    B.del = mk(ga, 'sel-del', 'حذف', IC.del, () => del());
+    const gi = B.img = group('sel-img', 'الصورة');
+    mk(gi, 'sel-fliph', 'قلب أفقي', IC.fx, () => flip('x'));
+    mk(gi, 'sel-flipv', 'قلب عمودي', IC.fy, () => flip('y'));
+    mk(gi, 'sel-rot90', 'تدوير 90°', IC.rot, () => rotate90(), 'تدوير \u206690°\u2069');
+    mk(gi, 'sel-crop', 'قص الصورة', IC.crop, () => cropStart(), 'قص');
+    B.uncrop = mk(gi, 'sel-uncrop', 'إعادة الصورة كاملة', IC.full, () => uncrop(), 'الصورة كاملة');
+    const gc = B.crop = group('sel-cropping', 'قص الصورة');
+    const hint = document.createElement('span'); hint.className = 'sel-hint'; hint.textContent = 'اسحب الزوايا لاختيار الجزء الظاهر'; gc.append(hint);
+    mk(gc, 'sel-crop-ok', 'تطبيق القص', IC.done, () => cropApply(), 'تم');
+    mk(gc, 'sel-crop-cancel', 'إلغاء القص', IC.clear, () => cropCancel(), 'إلغاء');
     const gs = B.style = group('sel-style', 'تنسيق المحدد');
     B.colors = document.createElement('div'); B.colors.className = 'sel-colors'; gs.append(B.colors);
     for (const [c, n] of SWATCHES) { const b = document.createElement('button'); b.type = 'button'; b.className = 'sel-sw'; b.dataset.color = c; b.title = n; b.setAttribute('aria-label', 'اللون ' + n); b.style.setProperty('--sw', c); b.addEventListener('click', () => applyStyle({ color: c })); B.colors.append(b); }
@@ -482,30 +504,13 @@
     };
     B.widthL = range('sel-width', 'السُمك', 1, 20, 0.5, v => ({ width: v })); B.width = B.widthL.querySelector('input');
     B.opL = range('sel-op', 'الشفافية', 10, 100, 5, v => ({ op: v / 100 })); B.op = B.opL.querySelector('input');
-    const ga = B.acts = group('sel-acts', 'إجراءات');
-    B.copy = mk(ga, 'sel-copy', 'نسخ', IC.copy, () => copy());
-    B.paste = mk(ga, 'sel-paste', 'لصق', IC.paste, () => paste());
-    B.dup = mk(ga, 'sel-dup', 'تكرار', IC.dup, () => duplicate());
-    B.front = mk(ga, 'sel-front', 'إلى الأمام', IC.front, () => zorder(true));
-    B.back = mk(ga, 'sel-back', 'إلى الخلف', IC.back, () => zorder(false));
-    B.del = mk(ga, 'sel-del', 'حذف', IC.del, () => del());
-    const gi = B.img = group('sel-img', 'الصورة');
-    mk(gi, 'sel-fliph', 'قلب أفقي', IC.fx, () => flip('x'));
-    mk(gi, 'sel-flipv', 'قلب عمودي', IC.fy, () => flip('y'));
-    mk(gi, 'sel-rot90', 'تدوير 90°', IC.rot, () => rotate90());
-    mk(gi, 'sel-crop', 'قص الصورة', IC.crop, () => cropStart(), 'قص');
-    B.uncrop = mk(gi, 'sel-uncrop', 'إعادة الصورة كاملة', IC.full, () => uncrop(), 'الصورة كاملة');
-    const gc = B.crop = group('sel-cropping', 'قص الصورة');
-    const hint = document.createElement('span'); hint.className = 'sel-hint'; hint.textContent = 'اسحب الزوايا لاختيار الجزء الظاهر'; gc.append(hint);
-    mk(gc, 'sel-crop-ok', 'تطبيق القص', IC.done, () => cropApply(), 'تم');
-    mk(gc, 'sel-crop-cancel', 'إلغاء القص', IC.clear, () => cropCancel(), 'إلغاء');
     const t = B.types = group('st-types', 'أنواع قابلة للتحديد');
     for (const [k, label] of [['ink', 'رسم'], ['shape', 'أشكال'], ['text', 'نصوص'], ['img', 'صور'], ['hl', 'تظليل النص']]) {
       const l = document.createElement('label'), c = document.createElement('input'); c.type = 'checkbox'; c.checked = types[k]; c.dataset.type = k;
       c.onchange = () => { types[k] = c.checked; try { localStorage.setItem('medixa.studio.lasso.v1', JSON.stringify(types)); } catch {} };
       l.append(c, ' ' + label); t.append(l);
     }
-    B.clear = mk(bar, 'sel-clear', 'إلغاء التحديد', IC.clear, () => clearSel());
+    B.clear = mk(bar, 'sel-clear', 'إلغاء التحديد', IC.clear, () => clearSel(), '');
     document.body.append(bar); return bar;
   }
   function updateBar() {
@@ -514,7 +519,7 @@
     for (const [m, el] of [['free', B.free], ['rect', B.rect]]) el.setAttribute('aria-pressed', String(selMode === m));
     for (const c of B.types.querySelectorAll('input')) c.checked = !!types[c.dataset.type];
     const img = oneImage(), mov = items.some(movable);
-    B.mode.hidden = !!crop; B.style.hidden = !has || !!crop; B.acts.hidden = !!crop || !(has || (clip && clip.items.length));
+    B.mode.hidden = has || !!crop; B.style.hidden = !has || !!crop; B.acts.hidden = !!crop || !(has || (clip && clip.items.length));
     B.colors.hidden = !items.some(canColor); B.widthL.hidden = !items.some(canWidth); B.opL.hidden = !items.some(canOp);
     for (const el of [B.copy, B.dup, B.front, B.back]) el.hidden = !mov;
     B.del.hidden = !has; B.paste.hidden = !(clip && clip.items.length);
@@ -604,6 +609,8 @@
     row.append(okb, cancel);
     if (existing) { const d = document.createElement('button'); d.type = 'button'; d.className = 'st-del'; d.textContent = 'حذف'; d.onclick = () => { editor = null; el.remove(); M.commit(M.removeItems([existing.id])); }; row.append(d); }
     el.append(sr, ta, row); pg.wrap.append(el);
+    { const r = sr.getBoundingClientRect(), wr = pg.wrap.getBoundingClientRect(); let dx = 0;   /* a narrow note: the style row stays on one line, inside the page */
+      if (r.right > wr.right) dx = wr.right - r.right; if (r.left + dx < wr.left) dx = wr.left - r.left; if (dx) sr.style.transform = 'translateX(' + Math.round(dx) + 'px)'; }
     ta.addEventListener('keydown', ev => { if (ev.key === 'Escape') { ev.stopPropagation(); closeEditor(true); } else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); closeEditor(false); } });
     editor = { el, ta, pg, look, commit() {
       const text = ta.value.replace(/\s+$/g, '');

@@ -1,4 +1,5 @@
-# python3 -I tests/studio_translate_browser.py — وضع الكتابة والتظليل: تحديد سطر بلمسة واحدة (iPad) وزر «ترجمة» إلى العربية.
+# python3 -I tests/studio_translate_browser.py — وضع الكتابة والتظليل: تحديد سطر بلمسة واحدة (iPad) وزر «ترجمة» إلى العربية
+# (لوحة الترجمة؛ بلا خدمة MEDIXA على خادم الاختبار يبقى Google Translate بديلاً عند الضغط فقط).
 import os, sys, urllib.parse
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
@@ -19,9 +20,14 @@ try:
         sp.tap(); pg.wait_for_selector('#st-seltools:not([hidden])', timeout=4000)
         chk(pg.evaluate("getSelection().toString().trim()") == txt, f'one tap selects the line: {txt[:40]!r}')
         chk(pg.locator('#st-seltools .st-sel-tr').is_visible(), 'translate button shown')
-        pg.locator('#st-seltools .st-sel-tr').click(); pg.wait_for_timeout(1200)
+        # «ترجمة» opens the translate panel; this dev server has no AI route (api/ai/status 404), so the panel says so and
+        # offers Google Translate, which opens only when that button is pressed
+        pg.locator('#st-seltools .st-sel-tr').click(); pg.wait_for_selector('#st-tx:not([hidden]) #st-tx-google', timeout=6000)
+        chk('غير مفعّلة' in pg.inner_text('#st-tx') and not opened, 'translate panel: service not enabled on this server, nothing opened yet')
+        pg.locator('#st-tx-google').click(); pg.wait_for_timeout(1200)
         q = urllib.parse.parse_qs(urllib.parse.urlparse(opened[0]).query) if opened else {}
         chk(opened and q.get('tl') == ['ar'] and q.get('text', [''])[0].strip() == ' '.join(txt.split()), 'translate opens Arabic translation of the selected text')
+        chk(pg.url.startswith(BASE + 'pdf-notes.html'), 'the reader stays open (Google opens in a new tab)')
         chk(not errs, 'no page errors: ' + '; '.join(errs[:2]))
         b.close()
 finally:

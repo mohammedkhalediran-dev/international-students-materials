@@ -47,8 +47,10 @@
   const SETG = { pen: 'pen', highlight: 'highlight', eraser: 'eraser', line: 'shape', rectangle: 'shape', ellipse: 'shape', arrow: 'shape', text: 'text', sticky: 'text' };
   const TITLES = { pen: 'إعدادات القلم', highlight: 'إعدادات التظليل', eraser: 'إعدادات الممحاة', line: 'إعدادات الخط', rectangle: 'إعدادات المستطيل', ellipse: 'إعدادات الدائرة', arrow: 'إعدادات السهم', text: 'إعدادات النص', sticky: 'إعدادات الملاحظة اللاصقة', lasso: 'إعدادات التحديد' };
   const HOLD = 500, HEX6 = /^#[0-9a-f]{6}$/i;
-  /* lp: the tool a long press just opened; only ITS trailing click is swallowed, so the next tool can be tapped at once */
-  let lp = { id: '', at: 0 }, ts = null, upd = [];
+  /* lp: a long press that just opened a tool. Its trailing click is dropped once, wherever it lands (the bar re-renders and,
+     on phones, the sheet can open under the finger); the short window starts when the finger lifts, however long the hold */
+  const LP0 = { id: '', at: 0, pid: null, x: 0, y: 0 };
+  let lp = LP0, ts = null, upd = [];
   const lpFresh = id => lp.at && Date.now() - lp.at < 700 && (id == null || lp.id === id);
   /* the lasso sheet appears only once the selection module offers modes (it is developed separately) */
   const selModes = () => !!(M.selection && typeof M.selection.setMode === 'function' && typeof M.selection.mode === 'function');
@@ -63,7 +65,6 @@
     const on = S.tool === t.id, b = btn('st-btn', t.name, svg(t.icon) + '<span class="st-lab">' + t.name + '</span>'); b.dataset.tool = t.id; b.setAttribute('aria-pressed', String(on)); if (on) b.classList.add('active');
     if (hasSet(t.id)) { b.classList.add('st-has-set'); if (on) { b.title = t.name + ' — اضغط مرة أخرى للإعدادات'; b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); } }
     b.onclick = e => {
-      if (lpFresh(t.id)) { lp.at = 0; return; }
       if (S.tool === t.id && hasSet(t.id)) return toggleSet(e && e.detail === 0);   /* second tap on the active tool = its settings */
       closePops(); M.setTool(t.id);
     };
@@ -74,7 +75,7 @@
     let tm = 0, x0 = 0, y0 = 0; const stop = () => { clearTimeout(tm); tm = 0; };
     b.addEventListener('pointerdown', e => {
       if (e.button > 0) return; x0 = e.clientX; y0 = e.clientY; stop();
-      tm = setTimeout(() => { tm = 0; lp = { id, at: Date.now() }; try { navigator.vibrate && navigator.vibrate(8); } catch {} if (S.tool !== id) { closePops(); M.setTool(id); } if (hasSet(id)) openSet(); }, HOLD);
+      tm = setTimeout(() => { tm = 0; lp = { id, at: 0, pid: e.pointerId, x: 0, y: 0 }; try { navigator.vibrate && navigator.vibrate(8); } catch {} if (S.tool !== id) { closePops(); M.setTool(id); } if (hasSet(id)) openSet(); }, HOLD);
     });
     b.addEventListener('pointermove', e => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
@@ -108,6 +109,7 @@
     ci.onchange = e => selStyle({ color: e.target.value });                       /* a selection is restyled once, when the picker settles */
     const wl = document.createElement('label'); wl.className = 'st-width'; wl.append('السُمك '); const wi = document.createElement('input'); wi.type = 'range'; wi.id = 'width'; wi.min = 1; wi.max = 20; wi.value = S.width; wi.oninput = e => { if (selOn()) return; S.width = +e.target.value; M.emit('style'); sync(); }; wi.onchange = e => selStyle({ width: +e.target.value }); wl.append(wi);
     const cl = document.createElement('label'); cl.className = 'st-colorlab'; cl.append(ci, 'لون آخر'); custom.append(cl, wl);
+    if (SETG[S.tool] === 'text') sizes.hidden = wl.hidden = true;   /* text and notes have no stroke width (their size is in the sheet) */
     const style = div('st-style'), wrap = div('st-stylewrap');
     if (mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
       const sb = btn('st-btn st-stylebtn', 'اللون والسُمك', '<span class="st-dot"></span>'), p = popFor(sb, 'st-stylepop', 'اللون والسُمك');
@@ -165,9 +167,13 @@
   /* The toolbar floats over the page (under the header; at the bottom on phones); pages reserve its measured height. */
   function reserve() { const h = Math.ceil(root.getBoundingClientRect().height); document.documentElement.style.setProperty('--st-tb-h', h + 'px'); const hd = document.querySelector('header'); if (hd) document.documentElement.style.setProperty('--st-hdr-h', Math.ceil(hd.getBoundingClientRect().height) + 'px'); }
   if (window.ResizeObserver) { new ResizeObserver(reserve).observe(root); const hd = document.querySelector('header'); if (hd) new ResizeObserver(reserve).observe(hd); }
+  /* the hand that held a tool lifts: its click (same spot, right after) must not close or press what is now under it */
+  addEventListener('pointerup', e => { if (lp.pid === e.pointerId) lp = { id: lp.id, at: Date.now(), pid: null, x: e.clientX, y: e.clientY }; }, true);
+  addEventListener('pointercancel', e => { if (lp.pid === e.pointerId) lp = LP0; }, true);
+  addEventListener('click', e => { if (lp.pid == null && lpFresh() && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) < 32) { lp = LP0; e.stopPropagation(); e.preventDefault(); } }, true);
   addEventListener('click', e => {
     const t = e.target; if (!t.closest || t.closest('.st-pop')) return;
-    if (t.closest('#studio-toolbar [data-tool]') || (lpFresh() && t.closest('#studio-toolbar'))) return;   /* tool buttons open / close their own sheet */
+    if (t.closest('#studio-toolbar [data-tool]')) return;   /* tool buttons open / close their own sheet */
     const own = t.closest('[aria-haspopup="true"]'); if (own && own.nextElementSibling && own.nextElementSibling.classList.contains('st-pop')) return; closePops();
   });
   /* Escape closes the open popover and gives focus back to the button that opened it */
