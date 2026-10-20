@@ -1,0 +1,74 @@
+/* Light, document-first shell. Engine canvases, coordinates and storage are unchanged. */
+body.st-compact{--reader-surface:#fff;--reader-text:#292d33;--reader-line:#dcdfe3;--reader-hover:#f1f3f5;--reader-accent:#def3f0;--reader-top:max(12px,env(safe-area-inset-top));--reader-tools-top:var(--reader-top);--reader-reserve:76px;background:#e9e8e4;color:var(--reader-text)}
+html body.st-compact.mx-docked{padding-bottom:84px!important}
+body.st-compact>header{position:fixed;inset:var(--reader-top) 12px auto;height:54px;min-height:0;padding:0;background:transparent;box-shadow:none;border:0;pointer-events:none;z-index:16;display:flex;justify-content:space-between;direction:ltr;gap:0}
+body.st-compact #st-compact-nav,body.st-compact #studio-hdr-actions{pointer-events:auto;display:flex;direction:ltr;align-items:center;gap:0;padding:4px;background:var(--reader-surface);border:1px solid var(--reader-line);border-radius:28px;box-shadow:0 2px 8px #1b243319}
+body.st-compact #st-compact-nav{flex:0 0 auto}
+body.st-compact header .st-lab{display:none}
+body.st-compact header button,body.st-compact header a.st-hdr-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;min-height:44px;border:0;border-radius:50%;background:transparent;color:var(--reader-text);text-decoration:none}
+body.st-compact header button:hover,body.st-compact header a:hover{background:var(--reader-hover)}
+body.st-compact #status{font-size:11px;max-width:135px;padding:0 8px;background:transparent;color:var(--reader-text);direction:rtl}
+body.st-compact #st-docmenu{position:fixed;top:calc(var(--reader-top) + 62px);right:12px;left:auto;width:min(350px,calc(100vw - 24px));max-height:calc(100dvh - 100px);overflow:auto;direction:rtl;background:var(--reader-surface);color:var(--reader-text);border-color:var(--reader-line)}
+body.st-compact #st-docmenu button{width:100%;border-radius:10px;justify-content:flex-start;padding:0 12px;color:var(--reader-text);height:auto}
+body.st-compact #st-docmenu .st-lab{display:inline}
+body.st-compact #st-compact-documents{padding:8px;border-bottom:1px solid var(--reader-line);margin-bottom:6px}
+body.st-compact #st-compact-documents .st-brand{color:var(--reader-text);margin:0 4px 12px}
+body.st-compact #st-compact-documents .st-brand small{color:#168c8c}
+body.st-compact #st-tabs{display:flex;max-width:100%;width:100%;min-width:0;flex-wrap:wrap;direction:rtl}
+body.st-compact .st-tablist{flex-direction:column;max-height:220px;overflow:auto;width:100%}
+body.st-compact .st-tab{flex:0 0 auto;min-width:0;background:var(--reader-hover);border-color:var(--reader-line);color:var(--reader-text)}
+body.st-compact #st-docmenu .st-tab-x,body.st-compact #st-docmenu #st-tab-plus{width:44px;flex:0 0 44px}
+body.st-compact #studio-toolbar{inset:var(--reader-tools-top) 0 auto;margin-inline:auto;width:max-content;max-width:calc(100vw - 500px);padding:4px 8px;min-height:54px;flex-wrap:nowrap;border:1px solid var(--reader-line);border-radius:28px;background:var(--reader-surface);color:var(--reader-text);box-shadow:0 2px 8px #1b243319;direction:ltr;z-index:17}
+body.st-compact #studio-toolbar .st-tools .st-lab,body.st-compact .st-insert>span{display:none}
+body.st-compact #studio-toolbar .st-btn{min-width:44px;width:44px;height:44px;padding:0;color:var(--reader-text);border-radius:12px;font-weight:500}
+body.st-compact #studio-toolbar .st-btn:hover{background:var(--reader-hover)}
+body.st-compact #studio-toolbar .st-btn.active{background:var(--reader-accent);color:#08766e;box-shadow:none}
+body.st-compact .st-hist{order:-2;border:0;margin:0;padding:0}
+body.st-compact .st-tools{order:-1;border-left:1px solid var(--reader-line);padding-left:6px}
+body.st-compact .st-style,body.st-compact .st-settings{border-color:var(--reader-line);margin-left:4px;padding-left:4px}
+body.st-compact .st-pop{direction:rtl;background:var(--reader-surface);color:var(--reader-text);border-color:var(--reader-line);max-height:calc(100dvh - 160px);overflow:auto}
+body.st-compact .st-pop .st-grid .st-btn{width:auto;height:auto;min-height:64px}
+body.st-compact #studio-toolbar .st-pop .st-lab{display:inline}
+body.st-compact .st-dot{box-shadow:0 0 0 1px #0002}
+body.st-compact main#pages{padding-top:var(--reader-reserve);padding-bottom:12px}
+body.st-compact #pages>section{scroll-margin-top:var(--reader-reserve)}
+body.st-compact .page{box-shadow:0 1px 8px #00000012}
+html body.st-compact #mx-dock{top:auto;right:auto;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));width:max-content;max-width:calc(100vw - 24px);padding:4px 8px;gap:4px;border:1px solid var(--reader-line);border-radius:28px;box-shadow:0 2px 8px #1b243319;background:var(--reader-surface);color:var(--reader-text);direction:ltr;flex-wrap:nowrap;justify-content:flex-start;z-index:14}
+html body.st-compact #mx-dock>#mx-reader-nav,html body.st-compact #mx-dock>#st-zoom{margin:0!important;display:flex!important;order:0;direction:rtl}
+html body.st-compact #mx-dock #mx-reader-nav label{font-size:0}
+html body.st-compact #mx-dock #mx-reader-nav input{width:44px;font-size:14px}
+html body.st-compact #mx-dock #mx-reader-nav button,html body.st-compact #mx-dock #mx-reader-nav input,body.st-compact #st-zoom,body.st-compact #st-zoom button{background:transparent;border:0;color:var(--reader-text)}
+html body.st-compact #mx-dock>#st-zoom{border-inline-start:1px solid var(--reader-line);border-radius:0;padding-inline:4px;direction:ltr}
+html body.st-compact #mx-dock:not(.st-dock-open)>#mx-timer-float{display:none!important}
+html body.st-compact #mx-dock.st-dock-open{width:380px;max-height:55dvh;overflow:auto;flex-wrap:wrap;border-radius:18px;justify-content:flex-start}
+html body.st-compact #mx-dock.st-dock-open>#mx-occlusion{flex-wrap:wrap!important;max-width:100%!important}
+body.st-compact .st-panel{top:calc(var(--reader-tools-top) + 64px);bottom:80px;border:1px solid var(--reader-line);border-radius:18px;box-shadow:0 8px 28px #0002;z-index:18}
+body.st-compact #study-panel{bottom:0!important}
+body.st-compact.medixa-dark{--reader-surface:#202a33;--reader-text:#e7edf2;--reader-line:#3b4853;--reader-hover:#303d48;--reader-accent:#174c4c;background:#171e25}
+body.st-compact.medixa-focus #studio-toolbar{top:var(--reader-tools-top)}
+body.st-compact.medixa-focus main#pages{padding-top:var(--reader-reserve)}
+body.st-compact button:focus-visible,body.st-compact a:focus-visible{outline:2px solid #168c8c;outline-offset:2px}
+@media(max-width:1199px){
+ body.st-compact{--reader-tools-top:calc(var(--reader-top) + 62px);--reader-reserve:138px}
+ body.st-compact #studio-toolbar{max-width:calc(100vw - 24px)}
+}
+@media(max-width:720px){
+ body.st-compact{--reader-reserve:76px}
+ body.st-compact>header{inset-inline:8px}
+ body.st-compact #status{display:none}
+ body.st-compact #studio-toolbar,body.st-compact.medixa-focus #studio-toolbar{top:auto;bottom:max(10px,env(safe-area-inset-bottom));max-width:calc(100vw - 16px);padding:4px;flex-wrap:wrap;border-radius:22px}
+ body.st-compact .st-tools{padding-left:2px}
+ body.st-compact .st-style,body.st-compact .st-settings{margin-left:0;padding-left:2px}
+ html body.st-compact.mx-docked{padding-bottom:calc(var(--st-tb-h,60px) + 78px)!important}
+ html body.st-compact #mx-dock{top:auto;bottom:calc(var(--st-tb-h,60px) + 20px + env(safe-area-inset-bottom));left:8px;max-width:calc(100vw - 16px);padding:2px 4px;gap:0}
+ html body.st-compact #mx-dock #mx-reader-nav{gap:0}
+ body.st-compact .st-pop:not(#st-docmenu){position:fixed;inset:auto 8px calc(var(--st-tb-h,60px) + 20px + env(safe-area-inset-bottom));width:auto;max-width:none;max-height:calc(100dvh - var(--st-tb-h,60px) - 110px)}
+ body.st-compact .st-panel{top:76px;bottom:calc(var(--st-tb-h,60px) + 76px);inset-inline:8px;width:auto}
+ body.st-compact.medixa-focus #pages>section{scroll-margin-top:76px}
+}
+@media(prefers-reduced-motion:reduce){body.st-compact *{scroll-behavior:auto!important}}
+/* Embedded split panes retain the original compact embed rules, without navigation islands. */
+html.st-embed body.st-compact>header,html.st-embed body.st-compact #mx-dock{display:none!important}
+
+html body.st-compact #mx-dock:not(.st-dock-open)>#st-compact-dock-close{display:none}
+html body.st-compact #mx-dock.st-dock-open>#st-compact-dock-close{order:-1;min-width:44px;background:var(--reader-hover);color:var(--reader-text);border:0;border-radius:12px}
