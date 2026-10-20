@@ -76,7 +76,8 @@ ok(cleanRows([]).error === "empty", "empty file rejected");
   ok(r.status === 200 && r.body.linked === true && r.body.name === "Student Alpha", "claim with differently written passport links");
   const rowsA = (r.body.batches || []).flatMap((b) => b.rows);
   ok(rowsA.length === 2 && rowsA.every((x) => ["Physiology of Kidney", "Medical immunology"].includes(x.course)) && rowsA.some((x) => x.grade === "88"), "student sees own grades");
-  ok(!JSON.stringify(r.body).includes("61") && !JSON.stringify(r.body).includes("Beta"), "student does not see another student's grades");
+  // لا نبحث عن "61" في النص كله: الطوابع الزمنية (مثل 1792461…) قد تحويه
+  ok(!rowsA.some((x) => x.grade === "61") && !JSON.stringify(r.body).includes("Beta"), "student does not see another student's grades");
   ok((await call("POST", "/api/grades/claim", { passport: "Y7654321" }, alpha)).body.error === "already_linked", "one account links once");
   r = await call("POST", "/api/grades/claim", { passport: "X1234567" }, eve);
   ok(r.status === 409 && r.body.error === "claimed", "second account cannot take a linked passport");
