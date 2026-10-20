@@ -39,7 +39,8 @@
   }
   // أفضل 10 طلاب في الكورس (الرتبة والاسم والمعدل فقط، من الخادم)
   function topBlock(list) {
-    var wrap = el("section", "gr-top"); wrap.appendChild(el("h4", "", t("أفضل 10 طلاب في الكورس")));
+    // مطوية: تفتح عند الضغط على عنوانها
+    var wrap = el("details", "gr-top"), sum = el("summary"); sum.appendChild(el("span", "", t("أفضل 10 طلاب في الكورس"))); wrap.appendChild(sum);
     var ol = el("ol", "gr-top-list");
     list.forEach(function (x) {
       var li = el("li", x.me ? "is-me" : ""), rk = el("span", "gr-top-rank"), nm = el("span", "gr-top-name"), av = el("span", "gr-top-avg");
@@ -60,9 +61,11 @@
     var groups = [], byTitle = {};
     d.batches.forEach(function (bt) {
       var g = byTitle[bt.title];
-      if (!g) { g = byTitle[bt.title] = { title: bt.title, at: bt.at, parts: [] }; groups.push(g); }
-      g.parts.push(bt);
+      if (!g) { g = byTitle[bt.title] = { title: bt.title, at: bt.at, first: bt.at, parts: [] }; groups.push(g); }
+      g.parts.push(bt); if (bt.at < g.first) g.first = bt.at;
     });
+    // الكورس الأقدم أولاً (الكورس الأول قبل الثاني) بطلب محمد 2026-10-20
+    groups.sort(function (a, b) { return a.first - b.first; });
     var stats = {};
     (d.terms || []).forEach(function (s) { stats[s.title] = s; });
     groups.forEach(function (g) {
