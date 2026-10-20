@@ -27,6 +27,8 @@ def painted(pg, sel): return pg.evaluate("s=>{const c=document.querySelector(s);
 def sig(pg, sel): return pg.evaluate("s=>{const c=document.querySelector(s),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=4)h=(Math.imul(h,31)+d[i]+d[i+3])>>>0;return h}", sel)
 def colors(pg, sel): return pg.eval_on_selector_all(sel, 'els => els.map(e => e.dataset.color)')
 def title(pg): return pg.inner_text('#st-toolset .ts-title')
+# a point outside the sheet that is not a control (the header's tab ✕ or back link would navigate away)
+NEUTRAL = "(()=>{for(let y=4;y<innerHeight;y+=6)for(let x=8;x<innerWidth;x+=12){const e=document.elementFromPoint(x,y);if(e&&!e.closest('a,button,input,select,textarea,label,canvas,[role=tab],[tabindex],.st-pop,#studio-toolbar'))return [x,y]}return null})()"
 def more(pg):
     if not is_open(pg, '.st-morepop'): pg.click('#studio-settings'); pg.wait_for_timeout(120)
 try:
@@ -213,7 +215,8 @@ try:
         chk(dims[0] == round(dims[1] * 2) and painted(pg, '#ts-preview') > 150, f'phone: preview is DPR-aware and painted {dims}')
         pg.click('#st-toolset [data-pen=pencil]'); chk(style(pg, 'pen')['pen'] == 'pencil', 'phone: preset chips work')
         tb = pg.locator('#ts-wrmax').bounding_box(); chk(tb['x'] >= 0 and tb['x'] + tb['width'] <= 390, 'phone: sliders fit the sheet')
-        pg.touchscreen.tap(200, 30); pg.wait_for_timeout(150); chk(not is_open(pg), 'phone: tapping outside closes the sheet')
+        spot = pg.evaluate(NEUTRAL); chk(spot is not None, f'phone: a neutral spot outside the sheet {spot}')
+        pg.touchscreen.tap(*spot); pg.wait_for_timeout(150); chk(not is_open(pg) and pg.evaluate("!!window.MedixaStudio"), 'phone: tapping outside closes the sheet')
         # long press with a finger (CDP touch) on the highlighter
         cdp = ctx.new_cdp_session(pg); hb = pg.locator(bar('highlight')).bounding_box(); x, y = hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2
         cdp.send('Input.dispatchTouchEvent', dict(type='touchStart', touchPoints=[dict(x=x, y=y)])); pg.wait_for_timeout(700)

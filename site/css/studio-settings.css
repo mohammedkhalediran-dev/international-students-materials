@@ -90,7 +90,7 @@
 
 /* ---- phones: the settings open as a bottom sheet above the one-row bar ---- */
 @media(max-width:720px){
-  #studio-toolbar .st-toolset{border-radius:18px;padding:14px 16px 16px;box-shadow:0 -10px 36px #12304a3d}
+  #studio-toolbar .st-toolset{border-radius:18px;padding:14px 16px 16px;box-shadow:0 -10px 36px #12304a3d;max-height:min(68vh,calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));max-height:min(68dvh,calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px));overscroll-behavior:contain}   /* the page stays in sight above */
   #studio-toolbar .st-toolset::before{content:"";position:absolute;top:6px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--ts-line)}
   #studio-toolbar .st-tools .st-btn.st-has-set.active::after{bottom:auto;top:3px;transform:rotate(-135deg)}   /* the sheet opens upwards */
   .ts-presets{gap:8px}
