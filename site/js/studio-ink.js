@@ -308,6 +308,7 @@
     const flushHl = () => { if (batch.length) drawHighlights(ctx, batch, pg.pw, pg.ph); batch = []; };
     for (const s of S.items) {
       if (!s || s.page !== pg.n || !C.validStroke(s)) continue;
+      if (S.skip && S.skip.has(s.id)) continue;                    /* being dragged: a tool draws it on the live overlay */
       if (isHl(s)) batch.push(s); else { flushHl(); drawStroke(ctx, s, pg.pw, pg.ph); }
     }
     flushHl(); ctx.setTransform(1, 0, 0, 1, 0, 0);

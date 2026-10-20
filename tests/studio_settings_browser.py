@@ -140,6 +140,9 @@ try:
             pg.evaluate("MedixaStudio.setTool('lasso')"); pg.wait_for_timeout(100); c0 = style(pg, 'pen')['color']
             pg.click('#studio-toolbar .st-colors .st-swatch[data-color="#e43d56"]'); pg.click('#studio-toolbar .st-sizes .st-size[data-w="6"]')
             chk(pg.evaluate("window.__ap") == [{'color': '#e43d56'}, {'width': 6}] and style(pg, 'pen')['color'] == c0, 'lasso + selection: swatch / size restyle the selection')
+            pg.evaluate("(()=>{const w=document.getElementById('width');w.value=9;w.dispatchEvent(new Event('input',{bubbles:true}));w.dispatchEvent(new Event('change',{bubbles:true}))})()")
+            chk(pg.evaluate("window.__ap.slice(2)") == [{'width': 9}] and pg.evaluate("MedixaStudio.S.width") != 9, 'lasso + selection: the width slider restyles the selection once')
+            pg.evaluate("window.__ap.length = 2")
             pg.evaluate("MedixaStudio.selection.count=()=>0"); pg.click('#studio-toolbar .st-colors .st-swatch[data-color="#168c8c"]')
             chk(len(pg.evaluate("window.__ap")) == 2, 'no selection: swatches set the colour as before')
             pg.evaluate("(()=>{const s=MedixaStudio.selection;s.count=window.__sv.c;s.applyStyle=window.__sv.a;if(!s.count)delete s.count;if(!s.applyStyle)delete s.applyStyle})()")
@@ -210,6 +213,7 @@ try:
         pg.locator(bar('pen')).tap(); pg.wait_for_timeout(200)
         box = pg.evaluate("(()=>{const t=document.getElementById('st-toolset').getBoundingClientRect(),b=document.getElementById('studio-toolbar').getBoundingClientRect();return [t.left,t.top,t.right,t.bottom,b.top,getComputedStyle(document.getElementById('st-toolset')).overflowY,getComputedStyle(document.getElementById('st-toolset')).position]})()")
         chk(is_open(pg) and box[0] >= 0 and box[1] >= 0 and box[2] <= 390 and box[3] <= box[4] + 1, f'phone: tapping the active pen opens a sheet inside the viewport, above the bar {box[:5]}')
+        chk(box[0] <= 12 and box[2] >= 378, f'phone: the sheet spans the screen width (8px gutters) {box[:3]}')
         chk(box[5] in ('auto', 'scroll') and box[6] == 'fixed', 'phone: the sheet is a fixed, scrollable bottom sheet')
         dims = pg.evaluate("(()=>{const c=document.getElementById('ts-preview'),r=c.getBoundingClientRect();return [c.width,r.width]})()")
         chk(dims[0] == round(dims[1] * 2) and painted(pg, '#ts-preview') > 150, f'phone: preview is DPR-aware and painted {dims}')

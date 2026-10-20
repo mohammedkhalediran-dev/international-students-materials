@@ -89,11 +89,8 @@
     return p;
   }
   /* lasso with a selection: the quick colours / sizes restyle the selection instead of the next stroke */
-  function selStyle(props) {
-    const sel = M.selection;
-    if (S.tool !== 'lasso' || !sel || typeof sel.count !== 'function' || typeof sel.applyStyle !== 'function' || !(sel.count() > 0)) return false;
-    sel.applyStyle(props); return true;
-  }
+  const selOn = () => { const sel = M.selection; return S.tool === 'lasso' && !!sel && typeof sel.count === 'function' && typeof sel.applyStyle === 'function' && sel.count() > 0; };
+  function selStyle(props) { if (!selOn()) return false; M.selection.applyStyle(props); return true; }
   const check = (id, label, on, fn) => { const l = document.createElement('label'); l.className = 'st-check'; const i = document.createElement('input'); i.type = 'checkbox'; i.id = id; i.checked = !!on; i.onchange = () => fn(i.checked); l.append(i, ' ' + label); return l; };
   function render() {
     root.replaceChildren(); root.dataset.side = cfg.side;
@@ -107,8 +104,9 @@
     const sizes = div('st-sizes'); sizes.setAttribute('role', 'group'); sizes.setAttribute('aria-label', 'السُمك');
     for (const [w, n] of SIZES) { const b = btn('st-size', n, '<span></span>'); b.dataset.w = w; b.style.setProperty('--d', (4 + w * 2) + 'px'); b.onclick = () => { if (selStyle({ width: w })) return; S.width = w; const wi = $('width'); if (wi) wi.value = w; M.emit('style'); sync(); }; sizes.append(b); }
     const custom = div('st-custom');
-    const ci = document.createElement('input'); ci.type = 'color'; ci.id = 'color'; ci.value = HEX6.test(S.color) ? S.color : '#168c8c'; ci.setAttribute('aria-label', 'لون مخصص'); ci.oninput = e => { S.color = e.target.value; M.emit('style'); sync(); };
-    const wl = document.createElement('label'); wl.className = 'st-width'; wl.append('السُمك '); const wi = document.createElement('input'); wi.type = 'range'; wi.id = 'width'; wi.min = 1; wi.max = 20; wi.value = S.width; wi.oninput = e => { S.width = +e.target.value; M.emit('style'); sync(); }; wl.append(wi);
+    const ci = document.createElement('input'); ci.type = 'color'; ci.id = 'color'; ci.value = HEX6.test(S.color) ? S.color : '#168c8c'; ci.setAttribute('aria-label', 'لون مخصص'); ci.oninput = e => { if (selOn()) return; S.color = e.target.value; M.emit('style'); sync(); };
+    ci.onchange = e => selStyle({ color: e.target.value });                       /* a selection is restyled once, when the picker settles */
+    const wl = document.createElement('label'); wl.className = 'st-width'; wl.append('السُمك '); const wi = document.createElement('input'); wi.type = 'range'; wi.id = 'width'; wi.min = 1; wi.max = 20; wi.value = S.width; wi.oninput = e => { if (selOn()) return; S.width = +e.target.value; M.emit('style'); sync(); }; wi.onchange = e => selStyle({ width: +e.target.value }); wl.append(wi);
     const cl = document.createElement('label'); cl.className = 'st-colorlab'; cl.append(ci, 'لون آخر'); custom.append(cl, wl);
     const style = div('st-style'), wrap = div('st-stylewrap');
     if (mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
