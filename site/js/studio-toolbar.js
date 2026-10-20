@@ -37,6 +37,7 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch {} };
   const mqStyle = window.matchMedia ? matchMedia('(max-width: 899px)') : { matches: false, addEventListener() {} };
   const mqPhone = window.matchMedia ? matchMedia('(max-width: 720px)') : { matches: false };
+  const COMPACT = document.body.classList.contains('st-compact');
   const PRIMARY = 3;                                       /* the first tools of the configured order stay on the bar */
   const COLORS = [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر']];
   const MARKERS = [['#f2c230', 'أصفر'], ['#7bd88f', 'أخضر'], ['#6fb1ff', 'أزرق'], ['#ff8fa3', 'وردي'], ['#ffb347', 'برتقالي'], ['#c39bff', 'بنفسجي']];
@@ -95,7 +96,11 @@
   const check = (id, label, on, fn) => { const l = document.createElement('label'); l.className = 'st-check'; const i = document.createElement('input'); i.type = 'checkbox'; i.id = id; i.checked = !!on; i.onchange = () => fn(i.checked); l.append(i, ' ' + label); return l; };
   function render() {
     root.replaceChildren(); root.dataset.side = cfg.side;
-    const shown = cfg.order.filter(id => !cfg.hidden.includes(id)), primary = shown.slice(0, PRIMARY), rest = shown.slice(PRIMARY);
+    const shown = cfg.order.filter(id => !cfg.hidden.includes(id));
+    const primary = COMPACT && !mqPhone.matches
+      ? ['hand', ...shown.filter(id => ['pen', 'highlight', 'eraser', 'lasso', 'select', 'text'].includes(id))].filter(id => shown.includes(id))
+      : shown.slice(0, PRIMARY);
+    const rest = shown.filter(id => !primary.includes(id));
     const tools = div('st-tools'); tools.setAttribute('role', 'toolbar'); tools.setAttribute('aria-label', 'أدوات الرسم');
     primary.forEach(id => tools.append(toolButton(byId[id])));
     if (rest.includes(S.tool)) { const b = toolButton(byId[S.tool]); b.classList.add('st-extra'); tools.append(b); }   /* the active tool is never hidden */
@@ -111,7 +116,7 @@
     const cl = document.createElement('label'); cl.className = 'st-colorlab'; cl.append(ci, 'لون آخر'); custom.append(cl, wl);
     if (SETG[S.tool] === 'text') sizes.hidden = wl.hidden = true;   /* text and notes have no stroke width (their size is in the sheet) */
     const style = div('st-style'), wrap = div('st-stylewrap');
-    if (mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
+    if (COMPACT || mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
       const sb = btn('st-btn st-stylebtn', 'اللون والسُمك', '<span class="st-dot"></span>'), p = popFor(sb, 'st-stylepop', 'اللون والسُمك');
       p.append(colors, sizes, custom); wrap.append(sb, p); style.append(wrap);
     } else {
@@ -128,7 +133,8 @@
     if (rest.length) { const grid = div('st-grid'); rest.forEach(id => grid.append(toolButton(byId[id]))); gp.append(txt('p', 'st-pop-h', 'أدوات أخرى'), grid); }
     const img = btn('st-row-btn st-row-ic', 'إدراج صورة', svg('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>', 20) + '<span>إدراج صورة</span>', 'studio-insert-image');
     img.onclick = () => { closePops(); if (M.images && typeof M.images.pick === 'function') M.images.pick(); else if (M.banner) M.banner('إدراج الصور غير متاح الآن.', [['حسناً', () => {}]]); };
-    gp.append(img, inputSection());
+    if (COMPACT && !mqPhone.matches) { img.className = 'st-btn st-insert'; tools.append(img); } else gp.append(img);
+    gp.append(inputSection());
     const sn = check('studio-snap', 'محاذاة الزاوية', S.snap, v => { M.setSnap(v); refreshSet(); });
     const cs = btn('st-row-btn', 'تخصيص الشريط', 'تخصيص الشريط', 'studio-customize'); cs.onclick = () => { closePops(); openCustomize(); };
     const mg = btn('st-row-btn', 'هوامش الكتابة', 'هوامش الكتابة', 'studio-margins-btn'); mg.onclick = () => { closePops(); openMargins(); };
@@ -195,6 +201,7 @@
   function hs() { if (!S.hist) return; const u = $('undo'), r = $('redo'); if (u) u.disabled = !S.hist.canUndo; if (r) r.disabled = !S.hist.canRedo; }
   M.on('tool', render); M.on('history', hs); M.on('style', () => { sync(); refreshSet(); }); M.on('input', () => { syncInput(); refreshSet(); });
   mqStyle.addEventListener && mqStyle.addEventListener('change', render);
+  if (COMPACT && mqPhone.addEventListener) mqPhone.addEventListener('change', render);
   M.closePops = closePops;
 
   /* =============================== tool settings sheet (#st-toolset) =============================== */

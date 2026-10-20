@@ -222,7 +222,7 @@
     b.onclick = () => toggle('notes'); dock.append(b);
     const t = $('medixa-thumbs-toggle'); if (t) { t.setAttribute('aria-controls', 'st-pages'); t.addEventListener('click', () => toggle('pages'), true); }
     mark('pages', false); mark('notes', false);
-    const p = pref(); if (matchMedia(WIDE).matches && !document.documentElement.classList.contains('st-embed')) { if (!p || p.pages) toggle('pages', true); if (!p || p.notes) toggle('notes', true); }
+    const p = pref(); if (matchMedia(WIDE).matches && !document.documentElement.classList.contains('st-embed')) { if (p ? p.pages : !document.body.classList.contains('st-compact')) toggle('pages', true); if (p ? p.notes : !document.body.classList.contains('st-compact')) toggle('notes', true); }
     return true;
   }
   buildPages(); buildNotes();
