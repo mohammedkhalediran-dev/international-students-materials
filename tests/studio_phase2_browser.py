@@ -24,7 +24,7 @@ try:
         pg = load(ctx); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         # ---------- toolbar ----------
         names = pg.eval_on_selector_all('#studio-toolbar [data-tool]', 'els => els.map(e => e.getAttribute("aria-label"))')
-        chk(len(names) == 12 and all(names), f'toolbar: 12 accessible tools {names}')
+        chk(len(names) == 14 and all(names), f'toolbar: 14 accessible tools {names}')   # arrow and hand joined the 12
         sizes = pg.eval_on_selector_all('#studio-toolbar button', 'els => els.filter(e=>e.offsetParent).map(e => [e.getBoundingClientRect().width, e.getBoundingClientRect().height])')
         chk(all(w >= 43.5 and h >= 43.5 for w, h in sizes), f'toolbar: all targets >= 44px ({[s for s in sizes if s[0] < 43.5 or s[1] < 43.5][:3]})')
         # ---------- shapes ----------
@@ -139,7 +139,7 @@ try:
         pg.reload(); pg.wait_for_function("document.querySelectorAll('section.page').length===5", timeout=15000); pg.wait_for_timeout(500)
         order2 = pg.eval_on_selector_all('#studio-toolbar [data-tool]', 'els => els.map(e => e.dataset.tool)'); chk(order2 == order, 'toolbar config persisted')
         pg.click('#studio-settings'); pg.click('#studio-customize'); pg.wait_for_selector('#studio-cust[open]'); pg.click('#studio-cust >> text=إعادة الضبط'); pg.click('#studio-cust >> text=إغلاق'); pg.wait_for_timeout(200)
-        chk(pg.eval_on_selector_all('#studio-toolbar [data-tool]', 'els => els.length') == 12 and pg.get_attribute('#studio-toolbar', 'data-side') == 'start', 'reset restores defaults')
+        chk(pg.eval_on_selector_all('#studio-toolbar [data-tool]', 'els => els.length') == 14 and pg.get_attribute('#studio-toolbar', 'data-side') == 'start', 'reset restores defaults')
         # compact overflow: active tool is always visible
         pg.set_viewport_size({'width': 390, 'height': 800}); pg.wait_for_timeout(400)
         vis = pg.eval_on_selector_all('#studio-toolbar .st-tools > [data-tool]', 'els => els.map(e => e.dataset.tool)'); chk(len(vis) <= 5 and pg.locator('.st-more').count() == 1, f'compact toolbar collapses to overflow {vis}')

@@ -10,6 +10,8 @@ from playwright.sync_api import sync_playwright
 PORT = 8841 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO SETTINGS')
 URL = 'files/uploaded/studio-mixed.pdf'
 GUEST = "try{localStorage.setItem('ms.guest','1')}catch(e){}"
+# counts window/document listeners added by studio-toolbar.js, so re-rendering the bar cannot leak them
+LEAK = """(()=>{window.__tbL=0;for(const o of [window,document]){const a=o.addEventListener;o.addEventListener=function(){if(String(new Error().stack).includes('studio-toolbar.js'))window.__tbL++;return a.apply(this,arguments)}}})()"""
 MARKERS = ['#f2c230', '#7bd88f', '#6fb1ff', '#ff8fa3', '#ffb347', '#c39bff']
 PENCOL = ['#168c8c', '#e43d56', '#2f6fed', '#f2c230']
 def load(ctx):
@@ -31,8 +33,9 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--no-sandbox'])
         # ======================= desktop =======================
-        ctx = new_context(b, {URL: 'mixed.pdf'}, viewport={'width': 1280, 'height': 900}); ctx.add_init_script(GUEST)
+        ctx = new_context(b, {URL: 'mixed.pdf'}, viewport={'width': 1280, 'height': 900}); ctx.add_init_script(GUEST); ctx.add_init_script(LEAK)
         pg, errs = load(ctx)
+        l0 = pg.evaluate("window.__tbL")
         names = pg.eval_on_selector_all('#studio-toolbar [data-tool]', 'els => els.map(e => e.getAttribute("aria-label"))')
         chk(len(names) == 14 and 'سهم' in names and 'تحريك الصفحة' in names, f'arrow and hand tools added ({len(names)} tools)')
         chk(pg.evaluate("MedixaStudio.S.tool") == 'pen' and not is_open(pg), 'starts with the pen, settings closed')
@@ -107,9 +110,9 @@ try:
         chk(style(pg, 'arrow')['head'] == 'both' and sig(pg, '#ts-preview') != s2, 'arrow head option «طرفان» (preview redraws)')
         pg.check('#ts-snap'); chk(pg.evaluate("MedixaStudio.S.snap") is True, 'angle snap from the sheet')
         more(pg); chk(pg.is_checked('#studio-snap'), '«المزيد» snap checkbox follows'); pg.uncheck('#studio-snap'); chk(pg.evaluate("MedixaStudio.S.snap") is False, '#studio-snap still works')
-        # an arrow drawn on the page carries both heads
-        n0 = pg.evaluate("MedixaStudio.S.items.length"); bx = pg.locator('canvas.ink').first.bounding_box()
-        pg.mouse.move(bx['x'] + 60, bx['y'] + bx['height'] * 0.6); pg.mouse.down(); pg.mouse.move(bx['x'] + 260, bx['y'] + bx['height'] * 0.55, steps=6); pg.mouse.up(); pg.wait_for_timeout(200)
+        # an arrow drawn on the page carries both heads (drawn inside the viewport, with «المزيد» closed first)
+        pg.keyboard.press('Escape'); n0 = pg.evaluate("MedixaStudio.S.items.length"); bx = pg.locator('canvas.ink').first.bounding_box()
+        pg.mouse.move(bx['x'] + 60, bx['y'] + 320); pg.mouse.down(); pg.mouse.move(bx['x'] + 260, bx['y'] + 280, steps=6); pg.mouse.up(); pg.wait_for_timeout(200)
         last = pg.evaluate("MedixaStudio.S.items[MedixaStudio.S.items.length-1]")
         chk(pg.evaluate("MedixaStudio.S.items.length") == n0 + 1 and last['tool'] == 'arrow' and last.get('head') == 'both', 'a drawn arrow uses the chosen heads')
         # ---------- long press: choose + open in one gesture ----------
@@ -118,7 +121,7 @@ try:
         pg.keyboard.press('Escape')
         # ---------- hand tool ----------
         more(pg); pg.click('#studio-toolbar .st-morepop [data-tool=hand]'); pg.wait_for_timeout(150)
-        chk(pg.evaluate("MedixaStudio.S.tool") == 'hand', 'hand tool selectable'); pg.click(bar('hand')); pg.wait_for_timeout(100)
+        chk(pg.evaluate("MedixaStudio.S.tool") == 'hand', 'hand tool selectable right after a long press elsewhere'); pg.click(bar('hand')); pg.wait_for_timeout(100)
         chk(not is_open(pg) and pg.evaluate("document.documentElement.dataset.studioTool") == 'hand', 'hand has no settings sheet; page shows the pan cursor state')
         # ---------- text ----------
         more(pg); pg.click('#studio-toolbar .st-morepop [data-tool=text]'); pg.click(bar('text')); pg.wait_for_timeout(150)
@@ -139,6 +142,25 @@ try:
             chk(len(pg.evaluate("window.__ap")) == 2, 'no selection: swatches set the colour as before')
             pg.evaluate("(()=>{const s=MedixaStudio.selection;s.count=window.__sv.c;s.applyStyle=window.__sv.a;if(!s.count)delete s.count;if(!s.applyStyle)delete s.applyStyle})()")
         pg.evaluate("MedixaStudio.setTool('pen')")
+        # ---------- lasso modes: only when the selection module offers them ----------
+        real = pg.evaluate("!!(MedixaStudio.selection && MedixaStudio.selection.setMode)")
+        if not real:   # without the API the lasso has no sheet (no chevron, re-tap does nothing)
+            pg.evaluate("MedixaStudio.setTool('lasso')"); pg.wait_for_timeout(100); pg.click(bar('lasso')); pg.wait_for_timeout(100)
+            chk(not is_open(pg) and 'st-has-set' not in (pg.get_attribute(bar('lasso'), 'class') or ''), 'lasso without selection modes: no settings sheet')
+            pg.evaluate("(()=>{const s=MedixaStudio.selection;window.__fake=1;let m='free';s.mode=()=>m;s.setMode=v=>{m=v}})()")
+        pg.evaluate("MedixaStudio.setTool('pen')"); pg.evaluate("MedixaStudio.setTool('lasso')"); pg.wait_for_timeout(100); pg.click(bar('lasso')); pg.wait_for_timeout(150)
+        chk(is_open(pg) and title(pg) == 'إعدادات التحديد' and pg.locator('#st-toolset [data-smode]').count() == 2, 'lasso sheet: free / rectangle selection')
+        pg.click('#st-toolset [data-smode=rect]'); pg.wait_for_timeout(60)
+        chk('rect' in str(pg.evaluate("MedixaStudio.selection.mode()")).lower() and pg.get_attribute('#st-toolset [data-smode=rect]', 'aria-pressed') == 'true', 'rectangle selection mode set')
+        pg.click('#st-toolset [data-smode=free]'); pg.wait_for_timeout(60)
+        chk(pg.get_attribute('#st-toolset [data-smode=free]', 'aria-pressed') == 'true' and 'rect' not in str(pg.evaluate("MedixaStudio.selection.mode()")).lower(), 'back to free selection')
+        pg.keyboard.press('Escape')
+        if not real: pg.evaluate("(()=>{const s=MedixaStudio.selection;delete s.mode;delete s.setMode})()")
+        pg.evaluate("MedixaStudio.setTool('pen')")
+        # re-rendering the bar many times adds no window / document listeners
+        for t in ('highlight', 'eraser', 'arrow', 'text', 'hand', 'pen') * 3: pg.evaluate("t => MedixaStudio.setTool(t)", t)
+        pg.click(bar('pen')); pg.keyboard.press('Escape')
+        chk(pg.evaluate("window.__tbL") == l0, f'no listener leak across renders ({l0} -> {pg.evaluate("window.__tbL")})')
         # ---------- «المزيد»: touch & stylus input ----------
         more(pg)
         chk(all(pg.is_visible(s) for s in ('#studio-insert-image', '#studio-finger', '#medixa-pen-only', '#studio-palm', '#studio-palm-sens', '#studio-twofinger', '#studio-autostylus', '#studio-forget-pen', '#studio-snap', '#studio-margins-btn', '#studio-customize')), '«المزيد» has image, input settings and the old settings')
