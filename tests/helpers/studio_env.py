@@ -6,6 +6,8 @@ CDN = os.environ.get('MEDIXA_CDN_DIR')
 if not CDN: sys.exit('set MEDIXA_CDN_DIR to a folder holding pdfjs-dist-3.11.174/ and pdf-lib-1.17.1/ (npm pack)')
 FILES = {'pdf.min.js': 'pdfjs-dist-3.11.174/package/build/pdf.min.js', 'pdf.worker.min.js': 'pdfjs-dist-3.11.174/package/build/pdf.worker.min.js', 'pdf-lib.min.js': 'pdf-lib-1.17.1/package/dist/pdf-lib.min.js'}
 FX = tempfile.mkdtemp(prefix='studio-fx-')
+# Lets several test runs share one machine: every test adds this to its fixed port.
+PORT_OFFSET = int(os.environ.get('STUDIO_PORT_OFFSET') or 0)
 subprocess.run(['node', os.path.join(ROOT, 'tests', 'helpers', 'make_studio_pdfs.cjs'), FX, os.path.join(CDN, FILES['pdf-lib.min.js'])], check=True, stdout=subprocess.DEVNULL)
 def start_server(port):
     srv = subprocess.Popen(['node', '--no-warnings', os.path.join(ROOT, 'tests', 'dev_server.mjs'), str(port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1.5); return srv

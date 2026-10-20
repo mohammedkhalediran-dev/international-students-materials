@@ -4,7 +4,7 @@ import os, sys, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8803; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO PAGES')
+PORT = 8803 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO PAGES')
 URL = 'files/uploaded/studio-mixed.pdf'; KEY = 'medixa.pdf.annotations.v1:' + BASE + URL; LKEY = 'medixa.studio.layout.v1:' + BASE + URL
 NB = 'notebook:t1'; NKEY = 'medixa.pdf.annotations.v1:notebook:t1'
 def stored(pg, key=KEY): return json.loads(pg.evaluate("k => localStorage.getItem(k)", key) or '[]')

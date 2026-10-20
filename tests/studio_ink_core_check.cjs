@@ -186,8 +186,17 @@ const legacyT = (s, m) => {
   return o;
 };
 const fixtures = [pen, Object.assign({}, pen, { tool: 'highlight' }), { page: 1, tool: 'line', points: [[0.2, 0.3], [0.7, 0.8]] }, rect, Object.assign({}, ell, { rot: undefined }),
-  Object.assign({}, ell), text, { page: 1, tool: 'sticky', text: '', points: [[0.6, 0.7]] }, arrow, Object.assign({}, sq, { rev: 9 })];
-let sameAsLegacy = true, noRotKeys = true;
+  text, { page: 1, tool: 'sticky', text: '', points: [[0.6, 0.7]] }, arrow];
+// already-rotated boxes have no legacy behaviour: they scale about the pivot and are moved/clamped by their centre
+// (their stored corners may lie off the page; clamping each corner would resize and shift them)
+const rotBoxes = [Object.assign({}, ell), Object.assign({}, sq, { rev: 9 })];
+const byCentre = (s, m) => {
+  const sx = m.sx == null ? 1 : m.sx, sy = m.sy == null ? 1 : m.sy, cx = m.cx || 0, cy = m.cy || 0, bx = m.bx || [0, 1], by = m.by || [0, 1];
+  const sp = s.points.map(p => [cx + (p[0] - cx) * sx, cy + (p[1] - cy) * sy]), a = sp[0], b = sp[sp.length - 1], c0 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const ox = C.clamp(c0[0] + (m.dx || 0), bx[0], bx[1]) - c0[0], oy = C.clamp(c0[1] + (m.dy || 0), by[0], by[1]) - c0[1];
+  return sp.map(p => [p[0] + ox, p[1] + oy]);
+};
+let sameAsLegacy = true, noRotKeys = true, rotByCentre = true;
 for (let i = 0; i < 40; i++) {
   const m = { sx: 0.2 + rnd2() * 2 * (rnd2() < 0.2 ? -1 : 1), sy: 0.2 + rnd2() * 2, cx: rnd2(), cy: rnd2(), dx: (rnd2() - 0.5) * 0.6, dy: (rnd2() - 0.5) * 0.6 };
   if (i % 3 === 1) { m.bx = [-0.2, 1.2]; m.by = [-0.1, 1.1]; }
@@ -197,9 +206,15 @@ for (let i = 0; i < 40; i++) {
     if (JSON.stringify([t.points, t.w, t.h, t.rev]) !== JSON.stringify([L.points, L.w, L.h, L.rev])) sameAsLegacy = false;
     if ('rot' in t || 'k' in t) noRotKeys = false;
   }
+  for (const s of rotBoxes) {
+    const t = C.transformStroke(s, m), e = byCentre(s, m);
+    if (!(t.points.every((p, j) => nearP(p, e[j], 1e-12)) && t.rev === (s.rev || 1) + 1)) rotByCentre = false;
+    if ('rot' in t || 'k' in t) noRotKeys = false;
+  }
 }
-ok(sameAsLegacy, 'no rotation: scale/translate/clamp identical to the legacy transform (40 random cases x 10 strokes)');
+ok(sameAsLegacy, 'no rotation: scale/translate/clamp identical to the legacy transform (40 random cases x 8 strokes)');
 ok(noRotKeys, 'no rotation: rot/k never written (a rotated shape keeps its own rot)');
+ok(rotByCentre, 'no rotation, already-rotated rectangle/ellipse: scaled about the pivot, moved and clamped by its centre');
 // pen/highlight/line rotate their points in iso space; arrow does too and records k; pr kept by reference
 const hlS = { page: 1, tool: 'highlight', width: 4, points: [[0.3, 0.3], [0.5, 0.35]], pr: [0.4, 0.6] }, lnS = { page: 1, tool: 'line', points: [[0.3, 0.3], [0.5, 0.35]] };
 const pv = { cx: 0.4, cy: 0.4, rot: -Math.PI / 2, k: K };
@@ -455,5 +470,27 @@ ok(final6 === 'z,a,b,c,e' && nearP(items6[4].points[0], [0.2, 0.1]) && items6[4]
 h6.undo(); ok(items6.map(s => s.id).join() === 'a,e,b,c' && items6[1].points === E.points && items6[1].rev === 1, 'undo: add removed, mv reversed, edit reverted');
 h6.redo(); ok(items6.map(s => s.id).join() === final6 && nearP(items6[4].points[0], [0.2, 0.1]), 'redo: same order and geometry');
 ok(C.OPS.every(k => h5.undoStack.concat(h6.undoStack).flat().some(o => o.k === k)), 'every OPS kind exercised through History');
+
+// 9. review fixes (each failed before its fix)
+const nt = { page: 1, tool: 'sticky', text: 'n', points: [[0.2, 0.2]] };
+bad(nt, { w: 'abc' }, 'text box w string rejected (bounds would be NaN)'); bad(nt, { h: Infinity }, 'text box h infinite rejected'); bad(nt, { w: -1 }, 'text box w negative rejected');
+bad(nt, { fill: 'url(https://x.example/a.png)' }, 'sticky fill must be a hex colour (it reaches a CSS background)'); bad(nt, { fill: 3 }, 'sticky fill number rejected');
+ok(C.validStroke(Object.assign({}, nt, { w: 0, h: 0.1, fill: '#fff3a3' })) && C.validStroke(Object.assign({}, nt, { tool: 'text', w: 0.28, h: null })), 'text box w 0 / null and hex fill still valid');
+ok(C.bounds(Object.assign({}, nt, { w: 0.3, h: 0.2 })).every(Number.isFinite), 'valid text box bounds are finite');
+const tallR = { page: 1, tool: 'rectangle', k: 1, rot: Math.PI / 2, points: [[0.1, 0.45], [0.9, 0.55]] };   // drawn as u 0.45..0.55, v 0.1..0.9
+ok(C.lassoHit(tallR, [[0.4, 0.05], [0.6, 0.05], [0.6, 0.95], [0.4, 0.95]]) && !C.lassoHit(tallR, [[0.05, 0.4], [0.15, 0.4], [0.15, 0.5], [0.05, 0.5]]), 'lasso tests a rotated rectangle where it is drawn, not its stored corners');
+ok(C.lassoHit(Object.assign({}, tallR, { tool: 'ellipse' }), [[0.4, 0.05], [0.6, 0.05], [0.6, 0.95], [0.4, 0.95]]) && C.lassoHit(rect, [[0.1, 0.1], [0.3, 0.1], [0.3, 0.25], [0.1, 0.25]]), 'rotated ellipse too; unrotated rectangle unchanged');
+const offR = { page: 1, tool: 'rectangle', k: 1, rot: Math.PI / 2, points: [[-0.25, 0.45], [0.55, 0.55]] }, bo = C.bounds(offR), bm = C.bounds(Object.assign({}, offR, C.transformStroke(offR, { dx: 0.01 })));
+ok(close(bm[0] - bo[0], 0.01) && close(bm[2] - bo[2], 0.01) && close(bm[1], bo[1]) && close(bm[3], bo[3]), 'moving a rotated rectangle whose stored corners are off the page moves it, size kept');
+ok(JSON.stringify(C.displayOrder(3, [{ id: 100001, template: 'lined', w: 595, h: 842, after: 5 }, { id: 100002, template: 'grid', w: 595, h: 842, after: 1 }])) === JSON.stringify([1, 100002, 2, 3, 100001]), 'blank whose page hint no longer exists stays visible (at the end)');
+const noIdS = { page: 'x' }, mc = C.mergeById([noIdS], [{ id: JSON.stringify(noIdS), rev: 1 }]);
+ok(mc.length === 2 && mc.includes(noIdS) && mc.filter(x => x.id).length === 1, 'merge: an id equal to another entry\'s JSON neither duplicates nor hides');
+const pbox = { x: 10, y: 20, width: 600, height: 800 };
+ok([45, 30, -45, NaN, undefined].every(r => JSON.stringify(C.viewToPdf(0.2, 0.3, pbox, r)) === JSON.stringify(C.viewToPdf(0.2, 0.3, pbox, 0)) && C.displaySize(pbox, r)[0] === 600), '/Rotate not a multiple of 90 is ignored like pdf.js');
+ok(JSON.stringify(C.viewToPdf(0.2, 0.3, pbox, -90)) === JSON.stringify(C.viewToPdf(0.2, 0.3, pbox, 270)) && JSON.stringify(C.viewToPdf(0.2, 0.3, pbox, 450)) === JSON.stringify(C.viewToPdf(0.2, 0.3, pbox, 90)), 'negative and >= 360 rotations still normalised');
+for (const gh of [848, 104, 842]) {
+  const g = C.templateGeometry('grid', 595, gh), hz = g.lines.filter(l => l[1] === l[3]), vt = g.lines.filter(l => l[0] === l[2]);
+  ok(vt.length > 0 && vt.every(l => l[1] === 56 && l[3] === hz[hz.length - 1][1]), 'grid h=' + gh + ': vertical lines end on the last horizontal rule');
+}
 
 console.log('STUDIO INK CORE OK: ' + n + ' checks');

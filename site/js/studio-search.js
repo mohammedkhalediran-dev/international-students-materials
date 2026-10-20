@@ -10,7 +10,7 @@
   const RD = () => M.reader;
   const T = {
     label: 'ابحث في الملف', none: 'لا نتائج', busy: 'جارٍ البحث… ', loading: 'جارٍ تحميل الملف…',
-    scan: 'هذا الملف بلا نص قابل للبحث (ممسوح ضوئياً).', raster: 'البحث في النص غير متاح في وضع الصور.', notebook: 'هذا الدفتر بلا نص للبحث فيه.'
+    scan: 'هذا الملف بلا نص قابل للبحث (ممسوح ضوئياً).', partial: 'بعض صفحات هذا الملف صور بلا نص (ممسوحة ضوئياً)، فلا يشملها البحث.', raster: 'البحث في النص غير متاح في وضع الصور.', notebook: 'هذا الدفتر بلا نص للبحث فيه.'
   };
 
   /* ---------- normalisation (one engine for the query and the page, so offsets map back exactly) ---------- */
@@ -24,7 +24,8 @@
     CLUSTER.lastIndex = 0; let m;
     while ((m = CLUSTER.exec(s))) {
       const a = m.index, b = a + m[0].length;
-      for (const ch of m[0].normalize('NFKC').toLowerCase()) {
+      const c0 = m[0].charCodeAt(0), one = m[0].length === 1 && c0 < 128;   /* ASCII fast path: most of a lecture */
+      for (const ch of one ? (c0 > 64 && c0 < 91 ? String.fromCharCode(c0 + 32) : m[0]) : m[0].normalize('NFKC').toLowerCase()) {
         if (drop(ch.codePointAt(0))) continue;
         if (WS.test(ch)) { if (!sp) { put(' ', a, b); sp = true; } continue; }
         const o = AR[ch] || ch; for (let k = 0; k < o.length; k++) put(o[k], a, b); sp = false;
@@ -50,17 +51,25 @@
     for (const it of items) {
       if (typeof it.str !== 'string') continue;
       if (!it.str) { eol = eol || !!it.hasEOL; continue; }
-      out.push({ str: it.str, sp: !!prev && (eol || gap(prev, it)) }); prev = it; eol = !!it.hasEOL;
+      out.push({ str: it.str, sp: !!prev && (eol || gap(prev, it)), t: it.transform, w: it.width || 0, h: it.height || 0, dir: it.dir }); prev = it; eol = !!it.hasEOL;
     }
     return out;
   }
-  function model(segs) {
+  /* The page's normalised text; with `map`, also where each character came from (segment, raw start/end). The map is
+     only built for pages being marked (see mapFor), so a long book costs little memory. */
+  function model(segs, map) {
     let s = ''; const seg = [], st = [], en = []; let sp = true;
+    const put = map ? (ch, a, b, i) => { s += ch; seg.push(i); st.push(a); en.push(b); } : ch => { s += ch; };
     segs.forEach((g, i) => {
-      if (g.sp && !sp) { s += ' '; seg.push(-1); st.push(0); en.push(0); sp = true; }
-      sp = walk(g.str, (ch, a, b) => { s += ch; seg.push(i); st.push(a); en.push(b); }, sp);
+      if (g.sp && !sp) { put(' ', 0, 0, -1); sp = true; }
+      sp = walk(g.str, (ch, a, b) => put(ch, a, b, i), sp);
     });
-    return { segs, norm: s, seg, st, en };
+    return map ? { norm: s, seg: Int32Array.from(seg), st: Int32Array.from(st), en: Int32Array.from(en) } : { segs, norm: s };
+  }
+  const maps = new Map();   /* small LRU: page id -> character map */
+  function mapFor(id, mdl) {
+    let m = maps.get(id); if (m && m.src === mdl) { maps.delete(id); maps.set(id, m); return m; }
+    m = model(mdl.segs, true); m.src = mdl; maps.set(id, m); if (maps.size > 8) maps.delete(maps.keys().next().value); return m;
   }
   function matches(text, q) { const out = []; if (!q) return out; for (let i = text.indexOf(q); i >= 0; i = text.indexOf(q, i + q.length)) out.push([i, i + q.length]); return out; }
 
@@ -76,7 +85,7 @@
 
   /* ---------- state ---------- */
   let card, input, count, msgEl, prevB, nextB, btn;
-  let q = '', per = [], hits = [], cur = -1, busy = null, noText = false, findTok = 0, navTok = 0, primed = null, deb = 0;
+  let q = '', per = [], hits = [], cur = -1, busy = null, noText = false, textless = 0, findTok = 0, navTok = 0, primed = null, deb = 0;
   const posMap = () => new Map(RD().pages.map((p, i) => [p.id, i]));
   function reorder() {
     if (!RD()) return; const pos = posMap(), at = hits[cur];
@@ -110,19 +119,31 @@
     });
     ui();
   }
-  /* A lasting note about the document itself (image mode, notebook, scan) — shown instead of a count. */
-  function note() { const R = RD(); if (!R || !(R.pages.length || R.notebook)) return ''; if (R.notebook && !R.doc) return T.notebook; if (!R.doc) return T.raster; return noText ? T.scan : ''; }
+  /* A note about the document itself: image mode, notebook, a scan (instead of a count), or scanned pages that a
+     search cannot see (beside the count, so a short result list is not mistaken for a complete one). */
+  function note() {
+    const R = RD(); if (!R || !(R.pages.length || R.notebook)) return '';
+    if (R.notebook && !R.doc) return T.notebook; if (!R.doc) return T.raster; if (noText) return T.scan;
+    return q && textless && !busy ? T.partial : '';
+  }
   function ui() {
     if (!card) return; let t = '', ltr = false; const n = note();
-    if (busy) t = busy; else if (n) t = ''; else if (q && !hits.length) t = T.none; else if (hits.length) { t = (cur >= 0 ? cur + 1 : '–') + ' / ' + hits.length; ltr = true; }
+    if (busy) t = busy; else if (n && n !== T.partial) t = ''; else if (q && !hits.length) t = T.none; else if (hits.length) { t = (cur >= 0 ? cur + 1 : '–') + ' / ' + hits.length; ltr = true; }
     count.textContent = t; count.dir = ltr ? 'ltr' : 'rtl'; if (msgEl.textContent !== n) msgEl.textContent = n;
     prevB.disabled = nextB.disabled = !hits.length;
   }
   function addButton() {
     if (btn) return true; let b = $('st-find-btn');
-    if (!b) { const acts = $('studio-hdr-actions'); if (!acts) return false; b = el('button', 'st-find-btn'); b.type = 'button'; b.className = 'st-hdr-btn'; b.innerHTML = svg(ICON.find); b.setAttribute('aria-label', 'بحث في الملف'); b.title = 'بحث في الملف (Ctrl+F)'; acts.prepend(b); }
+    if (!b) { const acts = $('studio-hdr-actions'); if (!acts) return false; b = el('button', 'st-find-btn'); b.type = 'button'; b.className = 'st-hdr-btn'; b.innerHTML = svg(ICON.find); b.setAttribute('aria-label', 'بحث في الملف'); b.title = 'بحث في الملف'; acts.prepend(b); }
     b.setAttribute('aria-controls', 'st-find'); b.setAttribute('aria-expanded', 'false');
-    b.addEventListener('click', () => { if (card && !card.hidden) close(); else open(); }); btn = b; return true;
+    b.addEventListener('click', () => { if (card && !card.hidden) close(); else open(); }); btn = b;
+    /* phones: the header has no room left (the document tab would lose its title), so search lives in «المزيد» */
+    const menu = $('st-docmenu');
+    if (menu && !$('st-find-menu')) {
+      const m = el('button', 'st-find-menu'); m.type = 'button'; m.innerHTML = svg(ICON.find) + '<span class="st-lab">بحث في الملف</span>'; m.setAttribute('aria-label', 'بحث في الملف');
+      m.addEventListener('click', () => open()); menu.prepend(m); document.documentElement.classList.add('st-find-in-menu');
+    }
+    return true;
   }
 
   /* ---------- marks ---------- */
@@ -135,28 +156,46 @@
     for (let i = 0; i < sp.length; i++) if (sp[i].firstChild.data !== mdl.segs[i].str) return null;
     return sp;
   }
+  /* Page-area rectangles [x0, y0, x1, y1] (0..1) of match [s, e): from DOM ranges over the text layer's spans, or —
+     with no spans — from the PDF's own text geometry. The geometry goes through the page viewport, so /Rotate and the
+     CropBox are right even where the text layer is not; it assumes equal character widths, so it is a little looser. */
   function rectsOf(p, mdl, spans, s, e) {
-    const area = p.pdf.getBoundingClientRect(); if (area.width < 2 || area.height < 2) return [];
-    const out = [];
+    const area = p.pdf.getBoundingClientRect(); if (spans && (area.width < 2 || area.height < 2)) return [];
+    const mp = mapFor(p.id, mdl);
+    const out = [], put = (x0, y0, x1, y1) => { x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(1, x1); y1 = Math.min(1, y1); if (x1 > x0 && y1 > y0) out.push([x0, y0, x1, y1]); };
     for (let i = s; i < e;) {
-      const g = mdl.seg[i]; if (g < 0) { i++; continue; }
-      let a = mdl.st[i], b = mdl.en[i], j = i + 1;
-      while (j < e && mdl.seg[j] === g) { a = Math.min(a, mdl.st[j]); b = Math.max(b, mdl.en[j]); j++; }
-      const node = spans[g].firstChild, r = document.createRange();
-      r.setStart(node, Math.min(a, node.length)); r.setEnd(node, Math.min(b, node.length));
-      for (const c of r.getClientRects()) {
-        if (c.width < 0.5 || c.height < 0.5) continue;
-        const x0 = Math.max(0, (c.left - area.left) / area.width), y0 = Math.max(0, (c.top - area.top) / area.height), x1 = Math.min(1, (c.right - area.left) / area.width), y1 = Math.min(1, (c.bottom - area.top) / area.height);
-        if (x1 > x0 && y1 > y0) out.push([x0, y0, x1, y1]);
-      }
+      const g = mp.seg[i]; if (g < 0) { i++; continue; }
+      let a = mp.st[i], b = mp.en[i], j = i + 1;
+      while (j < e && mp.seg[j] === g) { a = Math.min(a, mp.st[j]); b = Math.max(b, mp.en[j]); j++; }
+      if (spans) {
+        const node = spans[g].firstChild, r = document.createRange();
+        r.setStart(node, Math.min(a, node.length)); r.setEnd(node, Math.min(b, node.length));
+        for (const c of r.getClientRects()) if (c.width >= 0.5 && c.height >= 0.5) put((c.left - area.left) / area.width, (c.top - area.top) / area.height, (c.right - area.left) / area.width, (c.bottom - area.top) / area.height);
+      } else geoRect(p, mdl.segs[g], a, b, put);
       i = j;
     }
     return out;
   }
-  /* Marks every match on page p (the current one stronger). Returns false while the text layer is not ready. */
-  function paint(p) {
+  const vts = new Map();
+  function geoRect(p, g, a, b, put) {
+    if (!g.t || !p.proxy || !p.proxy.getViewport || !p.w || !p.h) return;
+    if (!vts.has(p.id)) vts.set(p.id, p.proxy.getViewport({ scale: 1 }).transform);
+    const vt = vts.get(p.id), [ta, tb, tc, td, te, tf] = g.t, nb = Math.hypot(ta, tb) || 1, nu = Math.hypot(tc, td) || 1, h = g.h || nu, n = g.str.length || 1;
+    let f0 = a / n, f1 = b / n; if (g.dir === 'rtl') [f0, f1] = [1 - f1, 1 - f0];
+    const xs = [], ys = [];
+    for (const d of [f0 * g.w, f1 * g.w]) for (const u of [-0.2 * h, 0.85 * h]) {   /* along the baseline × descent..ascent */
+      const x = te + ta / nb * d + tc / nu * u, y = tf + tb / nb * d + td / nu * u;
+      xs.push((vt[0] * x + vt[2] * y + vt[4]) / p.w); ys.push((vt[1] * x + vt[3] * y + vt[5]) / p.h);
+    }
+    put(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
+  }
+  /* pdf.js lays its text layer out unrotated; on a /Rotate page the spans are not over the words, so use geometry */
+  const rotated = p => !!(p.proxy && p.proxy.rotate % 360);
+  /* Marks every match on page p (the current one stronger). Without a ready text layer it waits (returns false),
+     unless `geo` asks for the geometric fallback; rotated pages always use geometry. */
+  function paint(p, geo) {
     const entry = per.find(x => x.id === p.id); if (!entry || !card || card.hidden) return false;
-    const spans = spansFor(p, entry.mdl); if (!spans) return false;
+    const spans = rotated(p) ? null : spansFor(p, entry.mdl); if (!spans && !geo && !rotated(p)) return false;
     clearMarks(p); const h = hits[cur];
     entry.m.forEach(([s, e], k) => {
       for (const r of rectsOf(p, entry.mdl, spans, s, e)) {
@@ -167,7 +206,7 @@
     });
     return true;
   }
-  function paintAll() { const R = RD(); for (const x of per) { const p = R.byId.get(x.id); if (p && p.text) paint(p); } }
+  function paintAll() { const R = RD(); for (const x of per) { const p = R.byId.get(x.id); if (p && (p.text || rotated(p))) paint(p); } }
   /* Bring the current mark into view: at least 150px below the top and clear of the search card. */
   function reveal(p) {
     const m = p.el.querySelector('.st-find-cur'); if (!m) return;
@@ -203,16 +242,16 @@
     let R = RD(); if (R && !R.pages.length && !R.notebook) { busy = T.loading; ui(); R = await whenOpened(); if (my !== findTok) return empty; }
     if (!R) return empty;
     if (!R.doc) { busy = null; ui(); return empty; }      /* image mode or notebook: note() explains */
-    const src = R.pages.filter(p => p.kind === 'src'), found = []; let any = false, n = 0;
+    const src = R.pages.filter(p => p.kind === 'src'), found = []; let any = false, n = 0, bare = 0;
     for (const p of src) {
       const fresh = !cache.has(p.id), mdl = await indexPage(p); n++;
       if (fresh) { if (my === findTok) { busy = T.busy + n + '/' + src.length; ui(); } await tick(); }
-      if (mdl.norm.trim()) any = true;
+      if (mdl.norm.trim()) any = true; else bare++;
       const m = matches(mdl.norm, nq); if (m.length) found.push({ id: p.id, m, mdl });
     }
     const res = { total: found.reduce((s, x) => s + x.m.length, 0), pages: found.map(x => ({ id: x.id, count: x.m.length })) };
     if (my !== findTok) return res;            /* a newer search took over */
-    per = found; reorder(); busy = null; noText = !any; ui(); paintAll();
+    per = found; reorder(); busy = null; noText = !any; textless = bare; ui(); paintAll();
     return res;
   }
   function firstFromHere() {
@@ -225,9 +264,9 @@
     const my = ++navTok, h = hits[cur], R = RD(), p = R.byId.get(h.id), entry = per.find(x => x.id === h.id); if (!p || !entry) return null;
     document.querySelectorAll('.st-find-cur').forEach(m => m.classList.remove('st-find-cur'));
     const r = p.el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) R.goto(h.id, false);
-    if (!(await waitText(p, entry.mdl)) || my !== navTok) return { index: cur, id: h.id, k: h.k };
-    if (paint(p)) reveal(p);
-    return { index: cur, id: h.id, k: h.k };
+    const res = { index: cur, id: h.id, k: h.k }, ok = rotated(p) || await waitText(p, entry.mdl); if (my !== navTok) return res;
+    if (paint(p, !ok)) reveal(p);   /* text layer never came (4 s): geometric marks; the 'text' event refines them later */
+    return res;
   }
   const next = () => go(cur < 0 ? firstFromHere() : cur + 1);
   const prev = () => { if (cur >= 0) return go(cur - 1); const i = firstFromHere(); return go(hits[i] && posMap().get(hits[i].id) === posMap().get(RD().current()) ? i : i - 1); };
@@ -238,8 +277,8 @@
     if (primed) return primed;
     primed = (async () => {
       const R = await whenOpened(); if (!R || !R.doc) { ui(); return; }
-      let any = false; for (const p of R.pages.filter(x => x.kind === 'src')) { const fresh = !cache.has(p.id), mdl = await indexPage(p); if (mdl.norm.trim()) any = true; if (fresh) await tick(); }
-      noText = !any; ui();
+      let any = false, bare = 0; for (const p of R.pages.filter(x => x.kind === 'src')) { const fresh = !cache.has(p.id), mdl = await indexPage(p); if (mdl.norm.trim()) any = true; else bare++; if (fresh) await tick(); }
+      noText = !any; textless = bare; ui();
     })();
     return primed;
   }

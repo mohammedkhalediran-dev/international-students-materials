@@ -4,7 +4,7 @@ import os, sys, re
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8821; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO ASSETS')
+PORT = 8821 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO ASSETS')
 SRC = os.path.join(ROOT, 'site', 'js', 'studio-assets.js')
 ID = re.compile(r'^img_[0-9a-f]{32}$')
 HELP = r"""

@@ -7,7 +7,7 @@ import os, sys, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8830; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO INK ENGINE')
+PORT = 8830 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO INK ENGINE')
 A = 'files/uploaded/studio-mixed.pdf'; KEY = 'medixa.pdf.annotations.v1:' + BASE + A
 JS = r"""
 window.__ptr = (type, kind, id, x, y, extra) => {

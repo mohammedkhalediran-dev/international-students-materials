@@ -36,6 +36,9 @@
     if (s.pr != null && (!Array.isArray(s.pr) || s.pr.length !== s.points.length || !s.pr.every(isNum))) return false;
     if (s.tool === 'text' || s.tool === 'sticky') {
       if (typeof s.text !== 'string' || s.text.length > LIMITS.text) return false;
+      /* the box size feeds bounds() (index, page margins); fill reaches a CSS background in the editor */
+      if ((s.w != null && !(isNum(s.w) && s.w >= 0)) || (s.h != null && !(isNum(s.h) && s.h >= 0))) return false;
+      if (s.fill != null && (typeof s.fill !== 'string' || !COLOR.test(s.fill))) return false;
     }
     if (s.tool === 'texthl') {
       if (!Array.isArray(s.rects) || !s.rects.length || s.rects.length > 400) return false;
@@ -524,11 +527,13 @@
       if (rot) { out.rot = normAngle((s.rot || 0) + rot); out.k = K; }
       return out;
     }
-    if (rot && (s.tool === 'rectangle' || s.tool === 'ellipse')) {
+    if ((rot || s.rot) && (s.tool === 'rectangle' || s.tool === 'ellipse')) {
+      /* a rotated box is clamped by its centre: its stored (unrotated) corners may lie off the page, and clamping
+         them one by one would resize and shift the shape on a plain move */
       const sp = s.points.map(sc), a = sp[0], b = sp[sp.length - 1], c0 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       const c = rt(c0), c1 = cl([c[0] + dx, c[1] + dy]), ox = c1[0] - c0[0], oy = c1[1] - c0[1];
       out.points = sp.map(p => [p[0] + ox, p[1] + oy]);
-      out.rot = normAngle((s.rot || 0) + rot); out.k = K;
+      if (rot) { out.rot = normAngle((s.rot || 0) + rot); out.k = K; }
       return out;
     }
     if (rot && (s.tool === 'text' || s.tool === 'sticky')) {
@@ -559,15 +564,22 @@
     if (poly.length < 3) return false;
     if (s.tool === 'image') { const tl = s.points[0]; return pointInPolygon(tl[0] + (s.w || 0) / 2, tl[1] + (s.h || 0) / 2, poly); }
     if (s.tool === 'text' || s.tool === 'sticky') { const b = bounds(s); return pointInPolygon((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, poly); }
-    let inn = 0; for (const p of s.points) if (pointInPolygon(p[0], p[1], poly)) inn++;
-    return inn >= Math.ceil(s.points.length / 2);
+    let pts = s.points;
+    if (s.rot && (s.tool === 'rectangle' || s.tool === 'ellipse')) {   /* test the corners where they are drawn */
+      const a = pts[0], b = pts[pts.length - 1], c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      pts = pts.map(p => rotateIso(p, c, s.rot, kOf(s.k)));
+    }
+    let inn = 0; for (const p of pts) if (pointInPolygon(p[0], p[1], poly)) inn++;
+    return inn >= Math.ceil(pts.length / 2);
   }
 
   /* ---------- PDF coordinate mapping ---------- */
   /* Canonical (u,v) of the displayed page → PDF user-space point. box = {x,y,width,height} of the CropBox (unrotated),
      rotation = page /Rotate in degrees. Mirrors pdf.js's viewport transform; verified in tests/studio_pdf_export. */
+  /* Same normalisation as pdf.js: a /Rotate that is not a multiple of 90 is ignored, the rest becomes 0..270. */
+  const rot90 = r => (isNum(r) && r % 90 === 0 ? ((r % 360) + 360) % 360 : 0);
   function viewToPdf(u, v, box, rotation) {
-    const W = box.width, H = box.height, r = ((rotation % 360) + 360) % 360;
+    const W = box.width, H = box.height, r = rot90(rotation);
     let x, y;
     if (r === 0) { x = u * W; y = (1 - v) * H; }
     else if (r === 90) { x = v * W; y = u * H; }
@@ -577,7 +589,7 @@
   }
   /* Size of the displayed page in PDF units. */
   function displaySize(box, rotation) {
-    const r = ((rotation % 360) + 360) % 360;
+    const r = rot90(rotation);
     return r === 90 || r === 270 ? [box.height, box.width] : [box.width, box.height];
   }
   /* Legacy v1 points were normalized to the displayed canvas, so they are already canonical. */
@@ -589,7 +601,7 @@
   function templateGeometry(kind, w, h) {
     const lines = [], dots = [], step = 24, top = 56, side = 36;
     if (kind === 'lined') for (let y = top; y < h - 24; y += step) lines.push([side, y, w - side, y]);
-    else if (kind === 'grid') { for (let y = top; y < h - 24; y += step) lines.push([side, y, w - side, y]); for (let x = side; x <= w - side + 0.1; x += step) lines.push([x, top, x, Math.floor((h - 24 - top) / step) * step + top]); }
+    else if (kind === 'grid') { let yEnd = top; for (let y = top; y < h - 24; y += step) { lines.push([side, y, w - side, y]); yEnd = y; } for (let x = side; x <= w - side + 0.1; x += step) lines.push([x, top, x, yEnd]); }   /* verticals stop at the last rule */
     else if (kind === 'dots') for (let y = top; y < h - 24; y += step) for (let x = side; x <= w - side + 0.1; x += step) dots.push([x, y]);
     return { lines, dots };
   }
@@ -603,6 +615,7 @@
     }
     const out = []; const at = a => blanks.filter(b => (b.after || 0) === a).map(b => b.id);
     out.push(...at(0)); for (const n of src) { out.push(n); out.push(...at(n)); }
+    for (const b of blanks) if (!out.includes(b.id)) out.push(b.id);   /* stale hint (e.g. the PDF now has fewer pages): never hide a page */
     return out;
   }
 
@@ -615,12 +628,12 @@
       if (s && s.id) {
         if (del.has(s.id)) return;
         const cur = byId.get(s.id);
-        if (!cur) { byId.set(s.id, s); order.push(s.id); } else if ((s.rev || 1) > (cur.rev || 1)) byId.set(s.id, s);
-      } else { const k = JSON.stringify(s); if (!noId.has(k)) { noId.set(k, s); order.push(k); } }
+        if (!cur) { byId.set(s.id, s); order.push([byId, s.id]); } else if ((s.rev || 1) > (cur.rev || 1)) byId.set(s.id, s);
+      } else { const k = JSON.stringify(s); if (!noId.has(k)) { noId.set(k, s); order.push([noId, k]); } }   /* an id may equal another entry's JSON */
     };
     for (const s of remote) add(s);
     for (const s of local) add(s);
-    return order.map(k => byId.get(k) || noId.get(k));
+    return order.map(([m, k]) => m.get(k));
   }
 
   return { LIMITS, TOOLS, SHAPES, PENS, OPS, MOUSE_PRESSURE, clamp, clamp01, validStroke, validList, migrate, newId, bounds, distToStroke, segDist, shapeSegments, SpatialIndex, thin, widthAt, History, transformStroke, TEMPLATES, BLANK_ID0, templateGeometry, validBlank, displayOrder, pointInPolygon, lassoHit, viewToPdf, displaySize, mergeById,

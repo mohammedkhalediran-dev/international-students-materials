@@ -3,7 +3,7 @@ import os, sys, urllib.parse
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8809; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO TRANSLATE')
+PORT = 8809 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO TRANSLATE')
 DOC = 'files/فسيولوجيا-الكلية/المحاضرة-1-Physiology-of-Kidneys-Session-1.pdf'
 try:
     with sync_playwright() as p:

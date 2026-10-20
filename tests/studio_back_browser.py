@@ -3,7 +3,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8808; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO BACK')
+PORT = 8808 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO BACK')
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--no-sandbox']); ctx = new_context(b, {}, viewport={'width': 820, 'height': 1180}, has_touch=True)
