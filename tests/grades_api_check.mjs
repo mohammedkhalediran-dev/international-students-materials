@@ -143,36 +143,36 @@ ok(cleanRows([]).error === "empty", "empty file rejected");
   const zed = await login({ sub: "z", email: "zed@x.com", name: "Z" });
   let r = await call("GET", "/api/grades/me", null, gam);
   ok(r.body.profile && r.body.profile.complete === false && r.body.profile.passportLinked === false && /^M\d+$/.test(r.body.profile.code), "empty profile reported");
-  ok((await call("POST", "/api/grades/profile", { full_name: "Gamma", passport: "G1234567" }, gam)).body.error === "bad_name", "one-word name refused");
-  ok((await call("POST", "/api/grades/profile", { full_name: "Gamma 7 Student", passport: "G1234567" }, gam)).body.error === "bad_name", "name with digits refused");
-  ok((await call("POST", "/api/grades/profile", { full_name: "Gamma Student" }, gam)).body.error === "bad_passport", "passport required the first time");
-  ok((await call("POST", "/api/grades/profile", { full_name: "Gamma Student", passport: "G1234567" }, gam, { origin: "https://evil.test" })).status === 403, "cross-origin profile refused");
+  ok((await call("POST", "/api/grades/profile", {}, gam)).body.error === "bad_passport", "passport required the first time (no name needed)");
+  ok((await call("POST", "/api/grades/profile", { passport: "G1234567" }, gam, { origin: "https://evil.test" })).status === 403, "cross-origin profile refused");
   // قبل رفع أي درجات: يُحفظ الملف ويُربط مسبقاً
-  r = await call("POST", "/api/grades/profile", { full_name: "Gamma Student", passport: "g-123 4567" }, gam);
-  ok(r.status === 200 && r.body.profile.complete && r.body.linked && r.body.batches.length === 0, "profile saved and pre-linked before any upload " + JSON.stringify(r.body));
+  r = await call("POST", "/api/grades/profile", { passport: "g-123 4567" }, gam);
+  ok(r.status === 200 && r.body.profile.complete && r.body.linked && r.body.batches.length === 0 && r.body.profile.fullName === "", "profile completed by passport alone, pre-linked before any upload " + JSON.stringify(r.body));
   const dump = JSON.stringify(env.DB._db.prepare("SELECT * FROM grade_people").all()) + JSON.stringify(env.DB._db.prepare("SELECT * FROM profiles").all());
   ok(!/G1234567|1234567/.test(dump), "no passport stored by profile");
   // حساب آخر بنفس الجواز يُرفض
-  r = await call("POST", "/api/grades/profile", { full_name: "Fake Person", passport: "G1234567" }, zed);
+  r = await call("POST", "/api/grades/profile", { passport: "G1234567" }, zed);
   ok(r.status === 409 && r.body.error === "claimed", "another account cannot take a pre-linked passport");
   ok((await call("GET", "/api/grades/me", null, zed)).body.profile.complete === false, "refused account stays incomplete");
-  // الاسم قابل للتعديل لاحقاً، والجواز لا يتغير
+  // عميل قديم في الكاش ما زال يرسل الاسم: يُحفظ إن صلح، ولا يمنع الحفظ إن لم يصلح، والجواز لا يتغير
   r = await call("POST", "/api/grades/profile", { full_name: "Gamma A. Student", passport: "Q9999999" }, gam);
-  ok(r.status === 200 && r.body.profile.fullName === "Gamma A. Student", "name editable later; passport ignored once linked");
+  ok(r.status === 200 && r.body.profile.fullName === "Gamma A. Student", "legacy name still stored; passport ignored once linked");
+  r = await call("POST", "/api/grades/profile", { full_name: "x1", passport: "Q9999999" }, gam);
+  ok(r.status === 200 && r.body.profile.fullName === "Gamma A. Student" && r.body.profile.complete, "invalid legacy name is ignored, not an error");
   // الرفع بالجواز: الدرجات تلحق صاحب الملف تلقائياً
   r = await call("POST", "/api/grades/admin/upload", { title: "Term 1", rows: [{ name: "Gamma Student", passport: "G1234567", course: "Anatomy", grade: "90" }] }, boss);
   ok(r.status === 200 && r.body.alreadyLinked === 1, "upload by passport attaches to the pre-linked profile");
   r = await call("GET", "/api/grades/me", null, gam);
   ok(r.body.batches.length === 1 && r.body.batches[0].rows[0].grade === "90" && r.body.name === "Gamma Student", "student sees grades without typing anything again");
   // قائمة الطلاب ثم الرفع برمز الطالب
-  await call("POST", "/api/grades/profile", { full_name: "Delta Student", passport: "D7654321" }, del);
+  await call("POST", "/api/grades/profile", { passport: "D7654321" }, del);
   env.DB._db.prepare("INSERT INTO user_data (user_id, k, v, t) SELECT id, 'ms.sem', '3', 0 FROM users WHERE email = 'delta@x.com'").run();
   ok((await call("GET", "/api/grades/admin/roster", null, gam)).status === 403, "student cannot read roster");
   r = await call("GET", "/api/grades/admin/roster", null, boss);
   const dRow = (r.body.students || []).find((x) => x.email === "delta@x.com");
-  ok(r.status === 200 && r.body.students.length === 2 && dRow && dRow.fullName === "Delta Student" && dRow.semester === 3 && dRow.passportLinked, "roster lists profiles with course " + JSON.stringify(r.body));
+  ok(r.status === 200 && r.body.students.length === 2 && dRow && dRow.fullName === "D" && dRow.semester === 3 && dRow.passportLinked, "roster lists linked students (Google name when no profile name) with course " + JSON.stringify(r.body));
   ok(!/D7654321|7654321|pass_hash|[0-9a-f]{64}/.test(JSON.stringify(r.body)), "roster has no passport or fingerprint");
-  ok(!(r.body.students || []).some((x) => x.email === "zed@x.com"), "incomplete profile not in roster");
+  ok(!(r.body.students || []).some((x) => x.email === "zed@x.com"), "unlinked account not in roster");
   r = await call("POST", "/api/grades/admin/upload", { title: "Term 2", rows: [{ name: "Delta Student", code: dRow.code, course: "Physiology", grade: "77" }, { name: "Gamma Student", passport: "G1234567", course: "Physiology", grade: "81" }] }, boss);
   ok(r.status === 200 && r.body.students === 2 && r.body.alreadyLinked === 2, "upload mixing student code and passport " + JSON.stringify(r.body));
   r = await call("GET", "/api/grades/me", null, del);
@@ -181,7 +181,7 @@ ok(cleanRows([]).error === "empty", "empty file rejected");
   ok(r.status === 400 && r.body.error === "unknown_code", "unknown student code refused");
   // فك الربط لسجل بلا درجات يحذفه، فيستطيع صاحب الحق الربط
   const sum = await call("GET", "/api/grades/admin/summary", null, boss);
-  ok(sum.body.people.some((p) => p.user && p.user.profileName === "Delta Student"), "summary shows profile name");
+  ok(sum.body.people.some((p) => p.user && p.user.email === "gamma@x.com" && p.user.profileName === "Gamma A. Student"), "summary shows legacy profile name when present");
 }
 {
   // 10. بلا جدول الملف الشخصي (0008 غير مطبّق)

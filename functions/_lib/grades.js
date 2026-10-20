@@ -6,7 +6,7 @@
 //
 // المسارات:
 //   GET  /api/grades/me                    درجاتي (أو {linked:false}) + الملف الشخصي (Step 61)
-//   POST /api/grades/profile               {full_name, passport?} الملف الشخصي: الاسم كما في الجامعة + ربط الجواز (مرة واحدة)
+//   POST /api/grades/profile               {passport?, full_name?} الملف الشخصي: ربط الجواز (مرة واحدة). الاسم اختياري ومهمل (حُذف حقله 2026-10-20)
 //   POST /api/grades/claim                 {passport} ربط حسابي برقم جوازي (محاولات محدودة؛ بقي للتوافق)
 //   GET  /api/grades/admin/summary         الدفعات والأشخاص وحالة الربط (بلا بصمات ولا أرقام جواز)
 //   GET  /api/grades/admin/roster          قائمة الطلاب من ملفاتهم الشخصية (رمز M<رقم>، الاسم، البريد، الكورس)
@@ -63,7 +63,7 @@ async function profileOf(env, userId) {
 async function myGrades(env, userId) {
   const prof = await profileOf(env, userId);
   const person = await env.DB.prepare("SELECT id, name, linked_at FROM grade_people WHERE user_id = ?").bind(userId).first();
-  const profile = { fullName: prof ? prof.fullName : "", code: studentCode(userId), passportLinked: !!person, complete: !!(prof && person) };
+  const profile = { fullName: prof ? prof.fullName : "", code: studentCode(userId), passportLinked: !!person, complete: !!person };
   if (!person) return { ok: true, linked: false, profile };
   const rows = (await env.DB.prepare(
     "SELECT b.id AS batch_id, b.title, b.created_at, e.course, e.grade FROM grade_entries e JOIN grade_batches b ON b.id = e.batch_id WHERE e.person_id = ? ORDER BY b.created_at DESC, b.id DESC, e.ord"
@@ -97,8 +97,7 @@ async function recordAttempt(env, userId, now, ok) {
 async function saveProfile(req, env, me, now) {
   const b = await readJson(req);
   if (!b) return fail("bad_request", 400);
-  const fullName = cleanFullName(b.full_name);
-  if (!fullName) return fail("bad_name", 400);
+  const fullName = cleanFullName(b.full_name); // اختياري: عملاء قدامى في الكاش قد يرسلونه؛ غير الصالح يُهمَل ولا يمنع الحفظ
   const mine = await env.DB.prepare("SELECT id FROM grade_people WHERE user_id = ?").bind(me.id).first();
   if (!mine) {
     if (await tooMany(env, me.id, now)) return fail("too_many_attempts", 429);
@@ -118,8 +117,10 @@ async function saveProfile(req, env, me, now) {
     await recordAttempt(env, me.id, now, true);
     await audit(env, me, me, "grades_link", { person: person ? person.id : null, pending: !person }, "ok", now);
   }
-  await env.DB.prepare("INSERT INTO profiles (user_id, full_name, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET full_name = excluded.full_name, updated_at = excluded.updated_at")
-    .bind(me.id, fullName, now, now).run();
+  if (fullName) {
+    await env.DB.prepare("INSERT INTO profiles (user_id, full_name, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET full_name = excluded.full_name, updated_at = excluded.updated_at")
+      .bind(me.id, fullName, now, now).run();
+  }
   return json(await myGrades(env, me.id));
 }
 
@@ -236,12 +237,12 @@ async function summary(env) {
 // Step 61: قائمة الطلاب الذين كتبوا ملفهم الشخصي، لملء الدرجات بجانبها ثم رفعها برمز الطالب
 async function roster(env) {
   const rows = (await env.DB.prepare(
-    "SELECT u.id, u.name AS google_name, u.email, pr.full_name, pr.updated_at, gp.id AS person_id, (SELECT v FROM user_data d WHERE d.user_id = u.id AND d.k = 'ms.sem') AS sem " +
-    "FROM profiles pr JOIN users u ON u.id = pr.user_id LEFT JOIN grade_people gp ON gp.user_id = u.id ORDER BY pr.full_name COLLATE NOCASE LIMIT 5000"
+    "SELECT u.id, u.name AS google_name, u.email, pr.full_name, COALESCE(pr.updated_at, gp.linked_at) AS updated_at, gp.id AS person_id, (SELECT v FROM user_data d WHERE d.user_id = u.id AND d.k = 'ms.sem') AS sem " +
+    "FROM users u JOIN grade_people gp ON gp.user_id = u.id LEFT JOIN profiles pr ON pr.user_id = u.id ORDER BY COALESCE(pr.full_name, u.name) COLLATE NOCASE LIMIT 5000"
   ).all()).results || [];
   return json({ ok: true, students: rows.map((r) => {
     let sem = null; try { sem = r.sem ? JSON.parse(r.sem) : null; } catch {}
-    return { code: studentCode(r.id), fullName: r.full_name, googleName: r.google_name, email: r.email, semester: [1, 2, 3].includes(sem) ? sem : null, passportLinked: !!r.person_id, updatedAt: r.updated_at };
+    return { code: studentCode(r.id), fullName: r.full_name || r.google_name || "", googleName: r.google_name, email: r.email, semester: [1, 2, 3].includes(sem) ? sem : null, passportLinked: !!r.person_id, updatedAt: r.updated_at };
   }) });
 }
 

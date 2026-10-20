@@ -158,9 +158,9 @@
 
 ## Step 62 (2026-10-19): الملف الشخصي (بطلب محمد)
 - site/profile.html + js/profile.js + js/profile-form.js (النموذج مشترك مع «درجاتي»). رابط «الملف الشخصي» في القائمة صار فعّالاً.
-- تلقائياً: الاسم والبريد من Google (/api/auth/me)، الكورس من ms.sem، رمز الطالب M<user id>. يكتبه الطالب: الاسم الكامل كما في الجامعة (جزءان فأكثر، بلا أرقام) + رقم الجواز مرة واحدة.
+- تلقائياً: الاسم والبريد من Google (/api/auth/me)، الكورس من ms.sem، رمز الطالب M<user id>. يكتبه الطالب: رقم الجواز مرة واحدة فقط. حُذف حقل «الاسم الكامل كما في الجامعة» بطلب محمد (2026-10-20)؛ الخادم يقبل full_name اختيارياً من عملاء الكاش القدامى ويهمل غير الصالح، وقائمة الطلاب للمشرف تعرض اسم حساب Google عند غياب الاسم.
 - الخادم في functions/_lib/grades.js: POST /api/grades/profile. الجواز بصمة فقط؛ إن لم تُرفع درجاته بعد يُنشأ سجل grade_people مربوط بلا درجات (name فارغ) فتلحقه الدرجات عند الرفع. الاسم في جدول profiles (migrations/0008_profile.sql — طُبّق على D1 الحقيقي 2026-10-19 بطلب محمد؛ بدونه 503 not_migrated).
-- «درجاتي» لا تعرض الدرجات قبل profile.complete (الاسم + الجواز). /api/grades/claim بقي للتوافق.
+- «درجاتي» لا تعرض الدرجات قبل profile.complete (ربط الجواز وحده يكفي). /api/grades/claim بقي للتوافق.
 - المشرف: GET /api/grades/admin/roster + زر «تحميل قائمة الطلاب (CSV)» (Student code, Full name, Email, Semester, Subject, Grade؛ BOM). الرفع يقبل رمز الطالب M123 في عمود الجواز؛ صف الرمز بلا مادة ولا درجة يُتجاهل؛ رمز غير معروف ← unknown_code. الملخص يُظهر اسم الملف الشخصي وتنبيه اختلاف الاسم.
 - الإصدار: nav.js وi18n.js ?v=step62 في كل الصفحات، وgrades.css وgrades.js وgrades-admin.js وprofile*.js ?v=step62، وV = "medixa-step62" (step61 استعملته الجلسة الأخرى لصفحة الدخول). الفحوص: grades_api_check (70) وstep57_grades_browser.
 ## قارئ PDF — Study Studio Pro (2026-10-19، بطلب محمد؛ على فرع ccr-a0fcdb08-bz6oce، لم يُنشر)
