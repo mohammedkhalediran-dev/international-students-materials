@@ -12,7 +12,8 @@
 .gr-notes { margin: 0; padding-inline-start: var(--space-5); color: var(--tt-muted); font-size: var(--text-sm); display: grid; gap: var(--space-1); }
 
 /* درجات الطالب */
-.gr-who { margin-top: var(--space-4); color: var(--tt-muted); font-size: var(--text-sm); }
+.gr-meta { margin-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); flex-wrap: wrap; }
+.gr-who { margin: 0; color: var(--tt-muted); font-size: var(--text-sm); }
 .gr-who b { color: var(--tt-ink); }
 .gr-batch { margin-top: var(--space-4); border: 1px solid var(--tt-surface-line); border-radius: var(--radius-md); background: var(--tt-surface); overflow: hidden; }
 .gr-batch-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--tt-surface-line); }
@@ -20,8 +21,13 @@
 .gr-batch-head small { color: var(--tt-muted); }
 .gr-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .gr-table th { text-align: start; padding: var(--space-2) var(--space-4); color: var(--tt-muted); font-weight: 600; }
-.gr-table td { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--tt-surface-line); color: var(--tt-card-ink); }
-.gr-table td.gr-grade { width: 1%; white-space: nowrap; font-weight: 700; font-size: var(--text-base); text-align: end; font-variant-numeric: tabular-nums; }
+.gr-table th:last-child { text-align: end; }
+.gr-table td { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--tt-surface-line); color: var(--tt-card-ink); vertical-align: middle; }
+.gr-table td.gr-course { text-align: start; overflow-wrap: anywhere; }
+.gr-table td.gr-grade { width: 1%; white-space: nowrap; text-align: end; }
+.gr-grade bdi { display: inline-block; min-width: 3.6em; padding: 2px var(--space-3); border-radius: var(--radius-pill); border: 1px solid var(--tt-pill-line); background: var(--tt-pill-bg); color: var(--tt-pill-ink); font-weight: 700; font-size: var(--text-base); text-align: center; font-variant-numeric: tabular-nums; }
+.gr-grade.is-text bdi { background: transparent; border-color: var(--tt-surface-line); color: var(--tt-muted); font-weight: 500; font-size: var(--text-sm); }
+.gr-table tbody tr:nth-child(even) td { background: var(--tt-btn-hover); }
 
 /* الإدارة */
 .gr-map { grid-template-columns: repeat(4, minmax(0, 1fr)); }

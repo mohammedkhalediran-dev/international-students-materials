@@ -31,8 +31,9 @@
   function showGrades(d) {
     status(""); $("grGate").hidden = true; $("grProfileBox").hidden = true;
     var box = $("grList"); box.replaceChildren(); box.hidden = false;
-    if (d.name) { var who = el("p", "gr-who"); who.appendChild(document.createTextNode(t("الدرجات المسجلة باسم") + ": ")); var b = el("b", "", d.name); b.dir = "auto"; who.appendChild(b); box.appendChild(who); }
-    var edit = el("a", "gr-edit", t("تعديل الملف الشخصي")); edit.href = "profile.html"; box.appendChild(edit);
+    var meta = el("div", "gr-meta");
+    if (d.name) { var who = el("p", "gr-who"); who.appendChild(document.createTextNode(t("الدرجات المسجلة باسم") + ": ")); var b = el("b", "", d.name); b.dir = "auto"; who.appendChild(b); meta.appendChild(who); }
+    var edit = el("a", "gr-edit", t("تعديل الملف الشخصي")); edit.href = "profile.html"; meta.appendChild(edit); box.appendChild(meta);
     if (!d.batches || !d.batches.length) { box.appendChild(el("div", "tt-empty", t("ملفك مكتمل. ستظهر درجاتك هنا تلقائياً عند رفعها."))); if (window.I18N) I18N.apply(); return; }
     d.batches.forEach(function (bt) {
       var card = el("article", "gr-batch"), head = el("div", "gr-batch-head"), h = el("h3", "", bt.title);
@@ -41,8 +42,10 @@
       hr.appendChild(el("th", "", t("المادة"))); hr.appendChild(el("th", "", t("الدرجة"))); thead.appendChild(hr); table.appendChild(thead);
       var tb = el("tbody");
       bt.rows.forEach(function (r) {
-        var tr = el("tr"), c = el("td", "", r.course), g = el("td", "gr-grade", r.grade);
-        c.dir = "auto"; g.dir = "auto"; tr.appendChild(c); tr.appendChild(g); tb.appendChild(tr);
+        // الخلية ترث اتجاه الصفحة (فتتحاذى مع عنوان العمود)، والنص نفسه معزول بـ<bdi> فيُقرأ بلغته دون أن يقلب المحاذاة
+        var tr = el("tr"), c = el("td", "gr-course"), g = el("td", "gr-grade"), cb = el("bdi", "", r.course), gb = el("bdi", "", r.grade);
+        if (!/^[0-9٠-٩۰-۹.,٫]+$/.test(String(r.grade).trim())) g.className = "gr-grade is-text"; // غير رقمي (مثل «غائب»)
+        c.appendChild(cb); g.appendChild(gb); tr.appendChild(c); tr.appendChild(g); tb.appendChild(tr);
       });
       table.appendChild(tb); card.appendChild(table); box.appendChild(card);
     });
