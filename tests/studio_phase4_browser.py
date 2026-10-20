@@ -5,7 +5,7 @@ import os, sys, json, re
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8805; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO SMART')
+PORT = 8805 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO SMART')
 A = 'files/uploaded/studio-mixed.pdf'; SC = 'files/uploaded/studio-scan.pdf'
 def ab(u): return BASE + u
 INK = lambda u: 'medixa.pdf.annotations.v1:' + ab(u); STUDY = lambda u: 'medixa.study.v1:' + ab(u); OCC = lambda u: 'medixa.occlusion.v1:' + ab(u)

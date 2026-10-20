@@ -5,7 +5,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
 from playwright.sync_api import sync_playwright
-PORT = 8807; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO IPAD MEMORY')
+PORT = 8807 + PORT_OFFSET; BASE = f'http://localhost:{PORT}/'; srv = start_server(PORT); chk = Checker('STUDIO IPAD MEMORY')
 DOC = 'files/فسيولوجيا-الكلية/المحاضرة-1-Kidney-Slides.pdf'  # 17 صفحة ممسوحة (الأثقل في الموقع)
 STATS = """() => { const cs = [...document.querySelectorAll('section.page canvas')]; const live = cs.filter(c => c.width > 4);
   return { maxPx: Math.max(0, ...live.map(c => c.width * c.height)), totalPx: live.reduce((a, c) => a + c.width * c.height, 0),

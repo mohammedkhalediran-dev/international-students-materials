@@ -1,0 +1,121 @@
+/* MEDIXA Study Studio — text actions for selected PDF text (studio-smart.js): the action row #st-seltools
+   (ترجمة | بحث | شرح | نسخ | تظليل, then بطاقة / سؤال / قناع), the translate (#st-tx) and explain (#st-explain) panels,
+   the search menu, the saved-highlight popover (#st-hlpop) and the copy toast. Loaded after studio.css.
+   Phones (<= 720px): the row scrolls sideways inside the screen; panels, menu and popover are bottom sheets above the
+   drawing bar. */
+
+/* ---------- action row ---------- */
+.st-seltools{gap:2px;padding:4px;border:1px solid #ffffff1f;border-radius:14px;background:#122c47;box-shadow:0 10px 30px #0b1c2e59;max-width:calc(100vw - 16px);overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;direction:rtl}
+.st-seltools::-webkit-scrollbar{display:none}
+.st-seltools .st-sel-btn{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:#e8f1f5;font:600 13px/1 system-ui,"Noto Naskh Arabic",sans-serif;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.st-seltools .st-sel-btn svg{flex:0 0 auto}
+.st-seltools .st-sel-btn:hover{background:#ffffff1a;color:#fff}
+.st-seltools .st-sel-btn:active{background:#ffffff26}
+.st-seltools .st-sel-btn:focus-visible{outline:3px solid #7ad0d0;outline-offset:-3px}
+.st-seltools .st-sel-btn[aria-expanded=true]{background:#168c8c;color:#fff}
+.st-sel-grp{flex:0 0 auto;display:inline-flex;align-items:center;margin-inline-start:2px;padding-inline-start:6px;border-inline-start:1px solid #ffffff2b}
+.st-sel-cap{padding-inline-end:2px;color:#a9c3d1;font:600 12px system-ui,"Noto Naskh Arabic",sans-serif;white-space:nowrap}
+.st-seltools .st-sel-hl{width:44px;min-width:44px;padding:0;border:0;border-radius:10px;background:transparent}
+.st-seltools .st-sel-hl::before{content:"";display:block;width:22px;height:22px;margin:auto;border-radius:50%;background:var(--c,#f2c230);box-shadow:0 0 0 2px #ffffffd9}
+.st-seltools .st-sel-hl:hover::before{box-shadow:0 0 0 2px #fff,0 0 0 4px #7ad0d0}
+.st-sel-sep{flex:0 0 1px;align-self:stretch;margin:8px 4px;background:#ffffff2b}
+.st-seltools .st-sel-x{color:#a9c3d1}
+
+/* ---------- panels, menu, popover (white MEDIXA cards) ---------- */
+.st-ta-panel,.st-ta-menu,.st-ta-pop{position:fixed;z-index:26;box-sizing:border-box;margin:0;background:#fff;color:#18334b;border:1px solid #dbe5ea;border-radius:14px;box-shadow:0 14px 36px #12304a33,0 1px 3px #12304a14;direction:rtl;text-align:start;font:500 14px/1.5 system-ui,"Noto Naskh Arabic",sans-serif}
+.st-ta-panel[hidden],.st-ta-menu[hidden],.st-ta-pop[hidden],#st-ta-toast[hidden]{display:none}
+.st-ta-panel{left:12px;top:72px;width:min(420px,calc(100vw - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;padding:10px 14px 14px}
+.st-ta-panel:focus,.st-ta-pop:focus{outline:none}   /* the card takes focus only so screen readers start in it; its buttons show focus */
+.st-ta-head{display:flex;align-items:center;gap:8px;margin:0 0 6px}
+.st-ta-title{flex:1 1 auto;margin:0;color:#122c47;font:700 16px/1.3 system-ui,"Noto Naskh Arabic",sans-serif}
+.st-ta-x{flex:0 0 44px;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;margin-inline-end:-8px;padding:0;border:0;border-radius:10px;background:transparent;color:#5b7382;cursor:pointer}
+.st-ta-x:hover{background:#eef6f7;color:#18334b}
+.st-ta-quote{margin:0 0 10px;padding:8px 10px;border-inline-start:3px solid #168c8c;border-radius:8px;background:#f4f8f9;color:#3d5566;font-size:13px;line-height:1.5;unicode-bidi:plaintext;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+.st-ta-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.st-ta-row .st-ta-seg{margin:0}
+.st-ta-seg{display:inline-flex;gap:2px;margin:0 0 6px;padding:3px;border-radius:12px;background:#eef4f6}
+.st-ta-chip{min-height:44px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:#3d5566;font:600 13px system-ui,"Noto Naskh Arabic",sans-serif;cursor:pointer}
+.st-ta-chip:hover{color:#122c47}
+.st-ta-chip[aria-pressed=true]{background:#fff;color:#0f6b6b;box-shadow:0 1px 3px #12304a26}
+.st-ta-msg{margin:8px 0;color:#3d5566;font-size:13px}
+.st-ta-msg:empty{display:none}
+.st-ta-busy::before{content:"";display:inline-block;width:14px;height:14px;margin-inline-end:8px;vertical-align:-2px;border:2px solid #168c8c40;border-top-color:#168c8c;border-radius:50%;animation:st-ta-spin .8s linear infinite}
+@keyframes st-ta-spin{to{transform:rotate(360deg)}}
+.st-ta-out{margin:4px 0 10px;padding:10px 12px;max-height:42vh;overflow:auto;border:1px solid #dbe5ea;border-radius:10px;background:#fbfdfd;color:#18334b;font-size:15px;line-height:1.75;white-space:pre-wrap;word-break:break-word;unicode-bidi:plaintext;-webkit-user-select:text;user-select:text}
+.st-ta-out[hidden]{display:none}
+.st-ta-acts{display:flex;flex-wrap:wrap;gap:6px}
+.st-ta-acts:empty{display:none}
+.st-ta-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid #dbe5ea;border-radius:10px;background:#fff;color:#18334b;font:600 13px system-ui,"Noto Naskh Arabic",sans-serif;text-decoration:none;cursor:pointer}
+.st-ta-btn:hover{background:#eef6f7}
+.st-ta-btn.st-ta-primary{border-color:#168c8c;background:#168c8c;color:#fff}
+.st-ta-btn.st-ta-primary:hover{background:#127a7a}
+.st-ta-btn:disabled{opacity:.45;cursor:default}
+.st-ta-btn:focus-visible,.st-ta-chip:focus-visible,.st-ta-x:focus-visible,.st-ta-mi:focus-visible,.st-hp-sw:focus-visible,.st-ta-pop .st-sel-btn:focus-visible{outline:3px solid #168c8c;outline-offset:2px}
+.st-ta-note{margin:8px 0 0;color:#5b7382;font-size:12px;line-height:1.5}
+.st-ta-note[hidden]{display:none}
+
+/* search menu */
+.st-ta-menu{z-index:27;display:flex;flex-direction:column;gap:2px;min-width:220px;padding:6px}   /* above the highlight popover it may open from */
+.st-ta-mi{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#18334b;font:600 14px system-ui,"Noto Naskh Arabic",sans-serif;text-align:start;cursor:pointer}
+.st-ta-mi svg{color:#168c8c}
+.st-ta-mi:hover,.st-ta-mi:focus{background:#eef6f7;outline:none}
+.st-ta-menu .st-ta-note{margin:2px 12px 4px}
+
+/* saved highlight popover */
+.st-ta-pop{width:min(300px,calc(100vw - 24px));padding:10px 12px 12px}
+.st-hp-colors{display:flex;gap:4px;margin-bottom:6px}
+.st-hp-sw{width:44px;height:44px;padding:0;border:0;border-radius:10px;background:transparent;cursor:pointer}
+.st-hp-sw::before{content:"";display:block;width:26px;height:26px;margin:auto;border-radius:50%;background:var(--c,#f2c230);box-shadow:0 0 0 1px #12304a26}
+.st-hp-sw:hover{background:#eef6f7}
+.st-hp-sw[aria-pressed=true]::before{box-shadow:0 0 0 2px #fff,0 0 0 4px #168c8c}
+.st-hp-op{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:6px;color:#3d5566;font-size:13px}
+.st-hp-op input{flex:1 1 auto;min-width:0;height:44px;margin:0;accent-color:#168c8c}
+.st-hp-opv{flex:0 0 3.2em;color:#18334b;font:600 13px system-ui;text-align:center;font-variant-numeric:tabular-nums}
+.st-hp-acts{display:flex;flex-wrap:wrap;gap:4px;padding-top:8px;border-top:1px solid #dbe5ea}
+.st-ta-pop .st-sel-btn{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 10px;border:1px solid #dbe5ea;border-radius:10px;background:#fff;color:#18334b;font:600 13px system-ui,"Noto Naskh Arabic",sans-serif;cursor:pointer}
+.st-ta-pop .st-sel-btn:hover{background:#eef6f7}
+.st-ta-pop .st-sel-btn[aria-expanded=true]{border-color:#168c8c;background:#e3f3f1}
+.st-ta-pop .st-hp-del{color:#b42318}
+.st-ta-pop .st-hp-del:hover{background:#fdecea}
+
+/* toast + the off-screen textarea used by the copy fallback */
+#st-ta-toast{position:fixed;z-index:31;left:50%;bottom:24px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;max-width:calc(100vw - 24px);padding:6px 6px 6px 16px;border-radius:12px;background:#122c47;color:#fff;box-shadow:0 10px 30px #0b1c2e59;font:600 14px system-ui,"Noto Naskh Arabic",sans-serif;direction:rtl}
+#st-ta-toast span{padding:8px 0;padding-inline-start:10px}
+.st-ta-toast-b{min-height:40px;padding:0 12px;border:0;border-radius:8px;background:#ffffff1f;color:#8fe0e0;font:700 13px system-ui,"Noto Naskh Arabic",sans-serif;cursor:pointer}
+.st-ta-clip{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* ---------- phones: bottom sheets between the page bar and the drawing bar ---------- */
+@media(max-width:720px){
+  .st-seltools{max-width:calc(100vw - 16px)}
+  .st-ta-panel,.st-ta-menu,.st-ta-pop{left:8px;right:8px;top:auto;bottom:calc(var(--st-tb-h,64px) + 8px);width:auto;max-width:none;max-height:calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px);max-height:calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px);overflow:auto;overscroll-behavior:contain;border-radius:16px;box-shadow:0 -8px 30px #12304a33}
+  .st-ta-out{max-height:34vh}
+  .st-hp-colors{justify-content:space-between}
+  #st-ta-toast{bottom:calc(var(--st-tb-h,64px) + 12px)}
+}
+
+/* ---------- night mode ---------- */
+body.medixa-dark .st-ta-panel,body.medixa-dark .st-ta-menu,body.medixa-dark .st-ta-pop{background:#1b2630;color:#e8eef2;border-color:#34444f;box-shadow:0 14px 36px #0009}
+body.medixa-dark .st-ta-title{color:#e8eef2}
+body.medixa-dark .st-ta-x{color:#a9bcc8}
+body.medixa-dark .st-ta-x:hover,body.medixa-dark .st-ta-mi:hover,body.medixa-dark .st-ta-mi:focus,body.medixa-dark .st-ta-btn:hover,body.medixa-dark .st-hp-sw:hover,body.medixa-dark .st-ta-pop .st-sel-btn:hover{background:#22313c;color:#e8eef2}
+body.medixa-dark .st-ta-quote{background:#22313c;color:#c7d5de}
+body.medixa-dark .st-ta-seg{background:#22313c}
+body.medixa-dark .st-ta-chip{color:#a9bcc8}
+body.medixa-dark .st-ta-chip[aria-pressed=true]{background:#1b2630;color:#8fd8d8;box-shadow:0 0 0 1px #3a4b57}
+body.medixa-dark .st-ta-msg,body.medixa-dark .st-hp-op{color:#c7d5de}
+body.medixa-dark .st-ta-note{color:#a9bcc8}
+body.medixa-dark .st-ta-out{background:#22313c;color:#e8eef2;border-color:#3a4b57}
+body.medixa-dark .st-ta-btn,body.medixa-dark .st-ta-pop .st-sel-btn{background:#1b2630;color:#e8eef2;border-color:#3a4b57}
+body.medixa-dark .st-ta-btn.st-ta-primary{background:#168c8c;border-color:#168c8c;color:#fff}
+body.medixa-dark .st-ta-mi{color:#e8eef2}
+body.medixa-dark .st-ta-mi svg{color:#8fd8d8}
+body.medixa-dark .st-hp-opv{color:#e8eef2}
+body.medixa-dark .st-hp-acts{border-color:#34444f}
+body.medixa-dark .st-ta-pop .st-hp-del{color:#ff9b8f}
+body.medixa-dark .st-ta-pop .st-hp-del:hover{background:#3a2326}
+body.medixa-dark .st-ta-pop .st-sel-btn[aria-expanded=true]{border-color:#168c8c;background:#163a3c}
+body.medixa-dark .st-hp-sw::before{box-shadow:0 0 0 1px #ffffff40}
+body.medixa-dark .st-hp-sw[aria-pressed=true]::before{box-shadow:0 0 0 2px #1b2630,0 0 0 4px #8fd8d8}
+
+@media(prefers-reduced-motion:reduce){.st-ta-busy::before{animation:none;border-top-color:#168c8c80}}
+@media print{.st-seltools,.st-ta-panel,.st-ta-menu,.st-ta-pop,#st-ta-toast{display:none!important}}

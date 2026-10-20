@@ -6,7 +6,7 @@
   },
   "functions/api/[[path]].js": {
     "step": 57,
-    "sha256": "15afce3d0cb42f1c8e4db89aca6e7297e42c3c3fa4a54ecbc90f1a144bb41e55",
-    "reason": "Login integration (Step 39), Web Push (Step 49), and Step 52: after a successful upload the notice goes through lectureNotice (no duplicate for a second file of the same lecture, lectures of one subject within 30 minutes grouped into one notice, quizzes/past questions notify too) before notify(); still waitUntil, does not delay the response. Step 55: the official timetable routes (/api/timetable*) are handled by handleTimetable right after auth; access is checked on the server (course 03 or admin). Step 57: university grades routes (/api/grades*) are handled by handleGrades right after the timetable; each student reads only their own grades, upload/unlink is admin-only, passport numbers are never stored (keyed HMAC fingerprint)."
+    "sha256": "08d2ba68e46bc50cb645db62c1bcaff035a2d3feedde50177c43093ea62e1600",
+    "reason": "Login integration (Step 39), Web Push (Step 49), and Step 52: after a successful upload the notice goes through lectureNotice (no duplicate for a second file of the same lecture, lectures of one subject within 30 minutes grouped into one notice, quizzes/past questions notify too) before notify(); still waitUntil, does not delay the response. Step 55: the official timetable routes (/api/timetable*) are handled by handleTimetable right after auth; access is checked on the server (course 03 or admin). Step 57: university grades routes (/api/grades*) are handled by handleGrades right after the timetable; each student reads only their own grades, upload/unlink is admin-only, passport numbers are never stored (keyed HMAC fingerprint). Study Studio (2026-10-19): /api/ai/* (translate/explain of text the student selected and pressed, Workers AI binding AI, signed-in + same-origin + rate limit) is handled by handleAi right after the grades routes."
   }
 }
