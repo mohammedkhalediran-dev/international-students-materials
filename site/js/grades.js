@@ -28,18 +28,25 @@
     $("grProfileBox").hidden = true; $("grList").hidden = true;
   }
 
-  // معدل الطالب في الكورس وترتيبه بين زملائه (أرقامه هو فقط؛ الخادم لا يرسل شيئاً عن غيره)
+  // معدل الطالب في الكورس (يظهر أسفل الجدول؛ أُلغي عرض الرتبة بطلب محمد 2026-10-20)
   function statsBlock(st) {
     var wrap = el("div", "gr-stats");
-    function stat(label, value) {
-      var box = el("div", "gr-stat"); box.appendChild(el("span", "gr-stat-label", t(label)));
-      var v = el("strong", "gr-stat-value"); v.appendChild(el("bdi", "", value)); box.appendChild(v); wrap.appendChild(box);
-    }
     if (!st.complete) { wrap.appendChild(el("p", "gr-stats-note", t("لا يظهر معدلك ولا ترتيبك لأن إحدى موادك بلا درجة أو «غائب»."))); return wrap; }
-    stat("معدلك في الكورس", String(st.average));
-    if (st.rank) stat("ترتيبك بين زملائك", st.rank + " / " + st.of);
+    var box = el("div", "gr-stat"); box.appendChild(el("span", "gr-stat-label", t("معدلك في الكورس")));
+    var v = el("strong", "gr-stat-value"); v.appendChild(el("bdi", "", String(st.average))); box.appendChild(v); wrap.appendChild(box);
     wrap.appendChild(el("p", "gr-stats-note", t("المعدل متوسط درجات المواد التي رُفعت درجاتها حتى الآن، وقد يتغير عند رفع مواد جديدة.")));
     return wrap;
+  }
+  // أفضل 10 طلاب في الكورس (الرتبة والاسم والمعدل فقط، من الخادم)
+  function topBlock(list) {
+    var wrap = el("section", "gr-top"); wrap.appendChild(el("h4", "", t("أفضل 10 طلاب في الكورس")));
+    var ol = el("ol", "gr-top-list");
+    list.forEach(function (x) {
+      var li = el("li", x.me ? "is-me" : ""), rk = el("span", "gr-top-rank"), nm = el("span", "gr-top-name"), av = el("span", "gr-top-avg");
+      rk.appendChild(el("bdi", "", String(x.rank))); nm.appendChild(el("bdi", "", x.name || "—")); av.appendChild(el("bdi", "", String(x.average)));
+      li.appendChild(rk); li.appendChild(nm); li.appendChild(av); ol.appendChild(li);
+    });
+    wrap.appendChild(ol); return wrap;
   }
 
   function showGrades(d) {
@@ -62,7 +69,6 @@
       var card = el("article", "gr-batch"), head = el("div", "gr-batch-head"), h = el("h3", "", g.title);
       h.dir = "auto"; head.appendChild(h); head.appendChild(el("small", "", fmtDate(g.at))); card.appendChild(head);
       var st = stats[g.title];
-      if (st) card.appendChild(statsBlock(st));
       var table = el("table", "gr-table"), thead = el("thead"), hr = el("tr");
       hr.appendChild(el("th", "", t("المادة"))); hr.appendChild(el("th", "", t("الدرجة"))); thead.appendChild(hr); table.appendChild(thead);
       var tb = el("tbody");
@@ -74,7 +80,9 @@
           c.appendChild(cb); gd.appendChild(gb); tr.appendChild(c); tr.appendChild(gd); tb.appendChild(tr);
         });
       });
-      table.appendChild(tb); card.appendChild(table); box.appendChild(card);
+      table.appendChild(tb); card.appendChild(table);
+      if (st) { card.appendChild(statsBlock(st)); if (st.top && st.top.length) card.appendChild(topBlock(st.top)); }
+      box.appendChild(card);
     });
     if (window.I18N) I18N.apply();
   }

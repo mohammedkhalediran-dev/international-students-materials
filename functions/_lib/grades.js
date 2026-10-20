@@ -64,8 +64,10 @@ async function profileOf(env, userId) {
    «الكورس» = كل الدفعات التي لها العنوان نفسه (مثل «نتائج الكورس الثاني» المرفوعة على مرحلتين).
    المعدل = مجموع درجات المواد ÷ عددها، ولا يُحسب إلا لمن له درجة رقمية في كل مواد الكورس (غائب أو مادة ناقصة ← بلا معدل ولا رتبة).
    الرتبة بين من اكتملت درجاتهم، والمتساوون في المعدل لهم الرتبة نفسها. لا تظهر الرتبة إن قلّ المرتَّبون عن MIN_RANKED.
-   لا يخرج من هنا إلا رقم الطالب نفسه (معدل ورتبة وعدد المرتَّبين)، لا أسماء ولا درجات غيره. */
+   تحديث محمد (2026-10-20): أُلغي عرض الرتبة في الواجهة، وأُضيفت قائمة «أفضل 10 طلاب» في كل كورس تظهر لكل طلاب الكورس
+   (الرتبة والاسم كما في ملف الدرجات والمعدل فقط؛ لا درجات المواد ولا أرقام الجواز). من هم خارج الأفضل 10 لا يُرسل عنهم شيء. */
 const MIN_RANKED = 3;
+const TOP_N = 10;
 export function gradeNumber(g) {
   const s = String(g == null ? "" : g).trim()
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x6f0))
@@ -95,7 +97,16 @@ export function termStats(entries, mePid) {
       for (const c of courses) { const v = m.get(c); if (v == null) { all = false; break; } sum += v; }
       if (all) sums.set(pid, sum);
     }
-    const st = { title, subjects: courses.length, complete: sums.has(mePid), average: null, rank: null, of: null };
+    const st = { title, subjects: courses.length, complete: sums.has(mePid), average: null, rank: null, of: null, top: [] };
+    if (sums.size >= MIN_RANKED) {
+      const names = new Map(list.map((e) => [e.pid, e.name || ""]));
+      const sorted = [...sums.entries()].sort((a, b) => b[1] - a[1]);
+      let rank = 0;
+      sorted.forEach(([pid, v], i) => {
+        if (!i || v !== sorted[i - 1][1]) rank = i + 1; // المتساوون لهم الرتبة نفسها
+        if (rank <= TOP_N) st.top.push({ rank, name: names.get(pid) || "", average: Math.round(v / courses.length) / 100, me: pid === mePid });
+      });
+    }
     if (st.complete) {
       const mine = sums.get(mePid);
       st.average = Math.round(mine / courses.length) / 100;
@@ -107,7 +118,7 @@ export function termStats(entries, mePid) {
 }
 async function myTerms(env, personId) {
   const rows = (await env.DB.prepare(
-    "SELECT e.person_id AS pid, b.title AS title, e.course AS course, e.grade AS grade FROM grade_entries e JOIN grade_batches b ON b.id = e.batch_id " +
+    "SELECT e.person_id AS pid, p.name AS name, b.title AS title, e.course AS course, e.grade AS grade FROM grade_entries e JOIN grade_batches b ON b.id = e.batch_id JOIN grade_people p ON p.id = e.person_id " +
     "WHERE b.title IN (SELECT b2.title FROM grade_entries e2 JOIN grade_batches b2 ON b2.id = e2.batch_id WHERE e2.person_id = ?)"
   ).bind(personId).all()).results || [];
   return termStats(rows, personId);

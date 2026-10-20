@@ -19,11 +19,20 @@
 .gr-batch-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--tt-surface-line); }
 .gr-batch-head h3 { margin: 0; font-size: var(--text-base); color: var(--tt-ink); }
 .gr-batch-head small { color: var(--tt-muted); }
-.gr-stats { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: stretch; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--tt-surface-line); }
+.gr-stats { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: stretch; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--tt-surface-line); }
 .gr-stat { flex: 1 1 0; min-width: 7em; display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--tt-pill-line); border-radius: var(--radius-md); background: var(--tt-pill-bg); }
 .gr-stat-label { color: var(--tt-muted); font-size: var(--text-xs); }
 .gr-stat-value { color: var(--tt-pill-ink); font-size: var(--text-xl); font-variant-numeric: tabular-nums; }
 .gr-stats-note { flex-basis: 100%; margin: 0; color: var(--tt-muted); font-size: var(--text-xs); }
+.gr-top { padding: var(--space-3) var(--space-4) var(--space-4); border-top: 1px solid var(--tt-surface-line); }
+.gr-top h4 { margin: 0 0 var(--space-2); font-size: var(--text-sm); color: var(--tt-ink); }
+.gr-top-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.gr-top-list li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--tt-card-ink); font-size: var(--text-sm); }
+.gr-top-list li:nth-child(odd) { background: var(--tt-btn-hover); }
+.gr-top-list li.is-me { border: 1px solid var(--tt-pill-line); background: var(--tt-pill-bg); font-weight: 700; }
+.gr-top-rank { color: var(--tt-muted); font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+.gr-top-name { overflow-wrap: anywhere; }
+.gr-top-avg { color: var(--tt-pill-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
 .gr-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .gr-table th { text-align: start; padding: var(--space-2) var(--space-4); color: var(--tt-muted); font-weight: 600; }
 .gr-table th:last-child { text-align: end; }
