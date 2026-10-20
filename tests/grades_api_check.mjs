@@ -1,6 +1,6 @@
 // node --no-warnings tests/grades_api_check.mjs — Step 57: درجاتي الجامعية على قاعدة D1 وهمية (بيانات وهمية فقط).
 import { handleAuth } from "../functions/_lib/auth.js";
-import { handleGrades, normPassport, cleanRows } from "../functions/_lib/grades.js";
+import { handleGrades, normPassport, cleanRows, gradeNumber, termStats } from "../functions/_lib/grades.js";
 import { createMockD1 } from "./mock_d1.mjs";
 import { mint, fakeFetch, CLIENT_ID } from "./google_token.mjs";
 
@@ -188,6 +188,53 @@ ok(cleanRows([]).error === "empty", "empty file rejected");
   const old = setup({ without: ["0008"] });
   const u = await old.login({ sub: "o", email: "o@x.com", name: "O" });
   ok((await old.call("GET", "/api/grades/me", null, u)).body.error === "not_migrated", "before 0008: not_migrated");
+}
+
+{
+  // 11. المعدل والرتبة (2026-10-20): متوسط عادي، رتبة بين من اكتملت درجاتهم، بلا أسماء الآخرين
+  ok(gradeNumber("13.25") === 13.25 && gradeNumber("١٤") === 14 && gradeNumber("12,5") === 12.5 && gradeNumber("غائب") === null && gradeNumber("") === null && gradeNumber("Absent") === null, "gradeNumber: digits, comma, text");
+  const E = (pid, title, course, grade) => ({ pid, title, course, grade });
+  const t1 = [
+    E(1, "T", "A", "18"), E(1, "T", "B", "16"),          // 17
+    E(2, "T", "A", "14"), E(2, "T", "B", "14"),          // 14
+    E(3, "T", "A", "16"), E(3, "T", "B", "12"),          // 14 (تعادل مع 2)
+    E(4, "T", "A", "10"), E(4, "T", "B", "غائب"),        // غير مكتمل
+    E(5, "T", "A", "9")                                  // مادة ناقصة
+  ];
+  let s1 = termStats(t1, 1)[0];
+  ok(s1.average === 17 && s1.rank === 1 && s1.of === 3 && s1.complete && s1.subjects === 2, "top student: average 17, rank 1 of 3 " + JSON.stringify(s1));
+  s1 = termStats(t1, 2)[0]; const s3 = termStats(t1, 3)[0];
+  ok(s1.rank === 2 && s3.rank === 2 && s1.of === 3 && s3.average === 14, "tie shares the same rank");
+  ok(termStats(t1, 4)[0].average === null && termStats(t1, 4)[0].rank === null && termStats(t1, 4)[0].complete === false, "absent in a subject: no average, no rank");
+  ok(termStats(t1, 5)[0].average === null && termStats(t1, 5)[0].complete === false, "missing subject: no average, no rank");
+  ok(termStats(t1, 99).length === 0, "person without grades in the term gets nothing");
+  ok(termStats([E(1, "T", "A", "13.25"), E(1, "T", "B", "14")], 1)[0].average === 13.63, "average rounded to 2 decimals (13.625 → 13.63)");
+  ok(termStats([E(1, "T", "A", "10"), E(2, "T", "A", "12")], 1)[0].rank === null, "fewer than 3 ranked: average only, no rank");
+  const two = termStats([E(1, "X", "A", "10"), E(1, "Y", "A", "20"), E(2, "X", "A", "5")], 1);
+  ok(two.length === 2 && two.find((x) => x.title === "Y").average === 20, "each title is its own term");
+
+  // عبر الخادم: الطالب يرى معدله ورتبته فقط، ودفعتان بالعنوان نفسه تُجمعان في كورس واحد
+  const { call, login } = setup();
+  const boss = await login({ sub: "b11", email: "boss@x.com", name: "Boss" });
+  const stu = await login({ sub: "s11", email: "s11@x.com", name: "S11" });
+  const P = ["P1111111", "P2222222", "P3333333", "P4444444"];
+  const rowsA = [], rowsB = [];
+  [["Rank One", P[0], 18, 16], ["Rank Two", P[1], 14, 14], ["Rank Three", P[2], 12, 12], ["Rank Four", P[3], 10, "غائب"]].forEach(([nm, pp, a, b]) => {
+    rowsA.push({ name: nm, passport: pp, course: "Course A", grade: String(a) });
+    rowsB.push({ name: nm, passport: pp, course: "Course B", grade: String(b) });
+  });
+  ok((await call("POST", "/api/grades/admin/upload", { title: "Term X", rows: rowsA }, boss)).status === 200, "term upload part 1");
+  let r = await call("POST", "/api/grades/profile", { full_name: "Rank Two", passport: P[1] }, stu);
+  r = await call("GET", "/api/grades/me", null, stu);
+  let tm = (r.body.terms || [])[0];
+  ok(tm && tm.title === "Term X" && tm.average === 14 && tm.rank === 2 && tm.of === 4 && tm.subjects === 1, "student sees average and rank after part 1 " + JSON.stringify(r.body.terms));
+  ok((await call("POST", "/api/grades/admin/upload", { title: "Term X", rows: rowsB }, boss)).status === 200, "term upload part 2 (same title)");
+  r = await call("GET", "/api/grades/me", null, stu);
+  tm = r.body.terms[0];
+  ok(r.body.terms.length === 1 && tm.subjects === 2 && tm.average === 14 && tm.rank === 2 && tm.of === 3, "two batches with one title count as one term; absent student drops out of ranking " + JSON.stringify(r.body.terms));
+  ok(!/Rank One|Rank Three|Rank Four|P1111111|P3333333/.test(JSON.stringify(r.body)), "response exposes no other student's name or passport");
+  const bossMe = await call("GET", "/api/grades/me", null, boss);
+  ok(bossMe.status === 200 && bossMe.body.linked === false && !bossMe.body.terms, "unlinked account gets no terms");
 }
 
 console.log(fails ? `GRADES FAIL ${fails}/${n}` : `GRADES OK: ${n} checks`);

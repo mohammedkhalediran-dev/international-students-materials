@@ -60,6 +60,58 @@ async function profileOf(env, userId) {
   const r = await env.DB.prepare("SELECT full_name, updated_at FROM profiles WHERE user_id = ?").bind(userId).first();
   return r ? { fullName: r.full_name, updatedAt: r.updated_at } : null;
 }
+/* ---------- المعدل والرتبة (بقرار محمد 2026-10-20: متوسط عادي، ورتبة الطالب فقط بلا أسماء الآخرين) ----------
+   «الكورس» = كل الدفعات التي لها العنوان نفسه (مثل «نتائج الكورس الثاني» المرفوعة على مرحلتين).
+   المعدل = مجموع درجات المواد ÷ عددها، ولا يُحسب إلا لمن له درجة رقمية في كل مواد الكورس (غائب أو مادة ناقصة ← بلا معدل ولا رتبة).
+   الرتبة بين من اكتملت درجاتهم، والمتساوون في المعدل لهم الرتبة نفسها. لا تظهر الرتبة إن قلّ المرتَّبون عن MIN_RANKED.
+   لا يخرج من هنا إلا رقم الطالب نفسه (معدل ورتبة وعدد المرتَّبين)، لا أسماء ولا درجات غيره. */
+const MIN_RANKED = 3;
+export function gradeNumber(g) {
+  const s = String(g == null ? "" : g).trim()
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x6f0))
+    .replace(/[,٫]/g, ".");
+  return /^\d+(\.\d+)?$/.test(s) ? Number(s) : null;
+}
+// entries: [{ pid, title, course, grade }] لكل أشخاص الكورسات التي لـ mePid فيها درجات
+export function termStats(entries, mePid) {
+  const byTitle = new Map();
+  for (const e of entries) {
+    if (!byTitle.has(e.title)) byTitle.set(e.title, []);
+    byTitle.get(e.title).push(e);
+  }
+  const out = [];
+  for (const [title, list] of byTitle) {
+    const courses = [...new Set(list.map((e) => e.course))];
+    const people = new Map(); // pid -> Map(course -> درجة مضروبة ×100 أو null)
+    for (const e of list) {
+      if (!people.has(e.pid)) people.set(e.pid, new Map());
+      const n = gradeNumber(e.grade);
+      people.get(e.pid).set(e.course, n == null ? null : Math.round(n * 100));
+    }
+    if (!people.has(mePid)) continue;
+    const sums = new Map(); // من اكتملت درجاتهم الرقمية
+    for (const [pid, m] of people) {
+      let sum = 0, all = true;
+      for (const c of courses) { const v = m.get(c); if (v == null) { all = false; break; } sum += v; }
+      if (all) sums.set(pid, sum);
+    }
+    const st = { title, subjects: courses.length, complete: sums.has(mePid), average: null, rank: null, of: null };
+    if (st.complete) {
+      const mine = sums.get(mePid);
+      st.average = Math.round(mine / courses.length) / 100;
+      if (sums.size >= MIN_RANKED) { let better = 0; for (const v of sums.values()) if (v > mine) better++; st.rank = better + 1; st.of = sums.size; }
+    }
+    out.push(st);
+  }
+  return out;
+}
+async function myTerms(env, personId) {
+  const rows = (await env.DB.prepare(
+    "SELECT e.person_id AS pid, b.title AS title, e.course AS course, e.grade AS grade FROM grade_entries e JOIN grade_batches b ON b.id = e.batch_id " +
+    "WHERE b.title IN (SELECT b2.title FROM grade_entries e2 JOIN grade_batches b2 ON b2.id = e2.batch_id WHERE e2.person_id = ?)"
+  ).bind(personId).all()).results || [];
+  return termStats(rows, personId);
+}
 async function myGrades(env, userId) {
   const prof = await profileOf(env, userId);
   const person = await env.DB.prepare("SELECT id, name, linked_at FROM grade_people WHERE user_id = ?").bind(userId).first();
@@ -74,7 +126,7 @@ async function myGrades(env, userId) {
     if (!b || b.id !== r.batch_id) batches.push(b = { id: r.batch_id, title: r.title, at: r.created_at, rows: [] });
     b.rows.push({ course: r.course, grade: r.grade });
   }
-  return { ok: true, linked: true, name: person.name, linkedAt: person.linked_at, batches, profile };
+  return { ok: true, linked: true, name: person.name, linkedAt: person.linked_at, batches, terms: batches.length ? await myTerms(env, person.id) : [], profile };
 }
 
 /* الاسم الكامل: جزءان على الأقل، بلا أرقام */

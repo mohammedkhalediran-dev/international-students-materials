@@ -71,6 +71,7 @@ try:
         txt = ps.inner_text('#grList')
         chk('88' in txt and '74' in txt and 'Student Alpha' in txt, 'student sees own grades')
         chk('61' not in txt and '57' not in txt and 'Beta' not in txt, 'student does not see another student')
+        chk(ps.locator('.gr-stats .gr-stat').count() == 0 and 'لا يظهر معدلك' in ps.inner_text('.gr-stats'), 'student missing one of the term subjects: no average or rank, with a clear note')
         stor = ps.evaluate("JSON.stringify(localStorage) + JSON.stringify(sessionStorage) + document.body.innerHTML")
         chk('1234567' not in stor, 'passport not kept in page or browser storage')
         chk(no_hscroll(ps), 'student page: no horizontal scroll (1440 dark)')
