@@ -72,3 +72,9 @@ html.st-embed body.st-compact>header,html.st-embed body.st-compact #mx-dock{disp
 
 html body.st-compact #mx-dock:not(.st-dock-open)>#st-compact-dock-close{display:none}
 html body.st-compact #mx-dock.st-dock-open>#st-compact-dock-close{order:-1;min-width:44px;background:var(--reader-hover);color:var(--reader-text);border:0;border-radius:12px}
+
+body.st-compact #studio-toolbar .st-toolset{width:356px;border-radius:18px;box-shadow:0 12px 34px #18273a26}
+body.st-compact #studio-selbar{border-radius:20px;box-shadow:0 10px 30px #18273a24;border-color:var(--reader-line);background:var(--reader-surface);color:var(--reader-text);z-index:19}
+@media(max-width:720px){
+ body.st-compact #studio-toolbar .st-toolset{width:auto}
+}

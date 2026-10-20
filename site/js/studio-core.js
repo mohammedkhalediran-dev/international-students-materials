@@ -14,8 +14,10 @@
   const LIMITS = { strokes: 100000, points: 200000, text: 4000, shapes: 100000 };
   const TOOLS = ['pen', 'highlight', 'line', 'rectangle', 'ellipse', 'text', 'sticky', 'texthl', 'arrow', 'image'];   /* texthl = highlight anchored to PDF text (rects + quote), not freehand */
   const SHAPES = ['line', 'rectangle', 'ellipse', 'arrow'];
-  const PENS = ['ballpoint', 'fountain', 'pencil', 'technical'];
+  const PENS = ['ballpoint', 'fountain', 'brush', 'pencil', 'technical'];
   const HEADS = ['end', 'both'];
+  const DASHES = ['solid', 'dashed', 'dotted'];
+  const TIPS = ['round', 'flat'];
   const ASSET = /^img_[0-9a-f]{16,64}$/;
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
   const clamp01 = n => clamp(n, 0, 1);
@@ -55,6 +57,9 @@
     if (s.italic != null && !isBool(s.italic)) return false;
     if (s.size != null && !inR(s.size, 4, 400)) return false;
     if (s.head != null && !HEADS.includes(s.head)) return false;
+    if (s.dash != null && !DASHES.includes(s.dash)) return false;
+    if (s.tip != null && !TIPS.includes(s.tip)) return false;
+    if (s.fill != null && (typeof s.fill !== 'string' || !COLOR.test(s.fill))) return false;
     if (s.tool === 'arrow' && s.points.length < 2) return false;
     if (s.tool === 'image') {
       if (typeof s.asset !== 'string' || !ASSET.test(s.asset)) return false;
@@ -259,6 +264,7 @@
   const PEN_STYLES = {
     ballpoint: { pressure: 0.25, taper: 0.12, smooth: 0.45, alpha: 1, thin: 0, nib: 0 },
     fountain: { pressure: 1, taper: 0.55, smooth: 0.55, alpha: 1, thin: 0.35, nib: 0.35 },
+    brush: { pressure: 1.35, taper: 0.75, smooth: 0.65, alpha: 0.96, thin: 0.5, nib: 0.45 },
     pencil: { pressure: 0.6, taper: 0.3, smooth: 0.35, alpha: 0.82, thin: 0.1, nib: 0 },
     technical: { pressure: 0, taper: 0, smooth: 0.15, alpha: 1, thin: 0, nib: 0 }
   };
@@ -559,17 +565,59 @@
     }
     return inside;
   }
-  /* A stroke is lassoed when at least half of its sample points (or its box centre for text/images) are inside. */
-  function lassoHit(s, poly) {
+  function segsCross(a, b, c, d) {
+    const ccw = (p1, p2, p3) => (p3[1] - p1[1]) * (p2[0] - p1[0]) > (p2[1] - p1[1]) * (p3[0] - p1[0]);
+    return ccw(a, c, d) !== ccw(b, c, d) && ccw(a, b, c) !== ccw(a, b, d);
+  }
+  function polyCrossesSegs(poly, segs) {
+    for (let i = 0; i < poly.length; i++) {
+      const p1 = poly[i], p2 = poly[(i + 1) % poly.length];
+      for (const [a, b] of segs) if (segsCross(p1, p2, a, b)) return true;
+    }
+    return false;
+  }
+  /* A stroke is lassoed when at least half of its sample points (or its box centre for text/images) are inside,
+     or when mode === 'touch' and the lasso polygon touches/intersects any part of the stroke. */
+  function lassoHit(s, poly, mode) {
     if (poly.length < 3) return false;
-    if (s.tool === 'image') { const tl = s.points[0]; return pointInPolygon(tl[0] + (s.w || 0) / 2, tl[1] + (s.h || 0) / 2, poly); }
-    if (s.tool === 'text' || s.tool === 'sticky') { const b = bounds(s); return pointInPolygon((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, poly); }
+    const touch = mode === 'touch';
+    if (s.tool === 'image') {
+      const tl = s.points[0], cx = tl[0] + (s.w || 0) / 2, cy = tl[1] + (s.h || 0) / 2;
+      if (pointInPolygon(cx, cy, poly)) return true;
+      if (!touch) return false;
+      const c = boxCorners(s);
+      if (c.some(p => pointInPolygon(p[0], p[1], poly)) || poly.some(p => pointInPolygon(p[0], p[1], c))) return true;
+      return polyCrossesSegs(poly, [[c[0], c[1]], [c[1], c[2]], [c[2], c[3]], [c[3], c[0]]]);
+    }
+    if (s.tool === 'text' || s.tool === 'sticky') {
+      const b = bounds(s);
+      if (pointInPolygon((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, poly)) return true;
+      if (!touch) return false;
+      const c = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]];
+      return c.some(p => pointInPolygon(p[0], p[1], poly)) || poly.some(p => p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]) || polyCrossesSegs(poly, [[c[0], c[1]], [c[1], c[2]], [c[2], c[3]], [c[3], c[0]]]);
+    }
+    if (s.tool === 'texthl' && Array.isArray(s.rects)) {
+      if (touch) return s.rects.some(r => pointInPolygon((r[0] + r[2]) / 2, (r[1] + r[3]) / 2, poly) || poly.some(p => p[0] >= r[0] && p[0] <= r[2] && p[1] >= r[1] && p[1] <= r[3]));
+    }
+    const segs = shapeSegments(s);
+    if (segs && touch) {
+      for (const [a, b] of segs) if (pointInPolygon(a[0], a[1], poly) || pointInPolygon(b[0], b[1], poly) || pointInPolygon((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, poly)) return true;
+      return polyCrossesSegs(poly, segs);
+    }
     let pts = s.points;
     if (s.rot && (s.tool === 'rectangle' || s.tool === 'ellipse')) {   /* test the corners where they are drawn */
       const a = pts[0], b = pts[pts.length - 1], c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       pts = pts.map(p => rotateIso(p, c, s.rot, kOf(s.k)));
     }
-    let inn = 0; for (const p of pts) if (pointInPolygon(p[0], p[1], poly)) inn++;
+    let inn = 0;
+    for (const p of pts) {
+      if (pointInPolygon(p[0], p[1], poly)) { if (touch) return true; inn++; }
+    }
+    if (touch && pts.length > 1) {
+      const pSegs = [];
+      for (let i = 1; i < pts.length; i++) pSegs.push([pts[i - 1], pts[i]]);
+      if (polyCrossesSegs(poly, pSegs)) return true;
+    }
     return inn >= Math.ceil(pts.length / 2);
   }
 
@@ -636,6 +684,6 @@
     return order.map(([m, k]) => m.get(k));
   }
 
-  return { LIMITS, TOOLS, SHAPES, PENS, OPS, MOUSE_PRESSURE, clamp, clamp01, validStroke, validList, migrate, newId, bounds, distToStroke, segDist, shapeSegments, SpatialIndex, thin, widthAt, History, transformStroke, TEMPLATES, BLANK_ID0, templateGeometry, validBlank, displayOrder, pointInPolygon, lassoHit, viewToPdf, displaySize, mergeById,
+  return { LIMITS, TOOLS, SHAPES, PENS, DASHES, TIPS, OPS, MOUSE_PRESSURE, clamp, clamp01, validStroke, validList, migrate, newId, bounds, distToStroke, segDist, shapeSegments, SpatialIndex, thin, widthAt, History, transformStroke, TEMPLATES, BLANK_ID0, templateGeometry, validBlank, displayOrder, pointInPolygon, lassoHit, viewToPdf, displaySize, mergeById,
     toIso, fromIso, rotateIso, boxCorners, arrowHead, arrowHeadSize, penStyle, penWidths, smoothPoints, strokeOutline, InkFilter, splitStroke, straighten, recognizeShape };
 });

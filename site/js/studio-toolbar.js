@@ -40,10 +40,11 @@
   const COMPACT = document.body.classList.contains('st-compact');
   const PRIMARY = 3;                                       /* the first tools of the configured order stay on the bar */
   const COLORS = [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر']];
-  const MARKERS = [['#f2c230', 'أصفر'], ['#7bd88f', 'أخضر'], ['#6fb1ff', 'أزرق'], ['#ff8fa3', 'وردي'], ['#ffb347', 'برتقالي'], ['#c39bff', 'بنفسجي']];
-  const INKS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#168c8c', 'تركوازي']];
+  const PEN_COLORS = [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر'], ['#18334b', 'كحلي'], ['#1f9d6a', 'أخضر'], ['#7c4dff', 'بنفسجي'], ['#e67e22', 'برتقالي'], ['#5b7382', 'رمادي']];
+  const MARKERS = [['#f2c230', 'أصفر'], ['#7bd88f', 'أخضر'], ['#6fb1ff', 'أزرق'], ['#ff8fa3', 'وردي'], ['#ffb347', 'برتقالي'], ['#c39bff', 'بنفسجي'], ['#5ce1e6', 'فيروزي'], ['#d4fc79', 'ليموني']];
+  const INKS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#168c8c', 'تركوازي'], ['#1f9d6a', 'أخضر'], ['#7c4dff', 'بنفسجي']];
   const SIZES = [[2, 'خط رفيع'], [3, 'خط متوسط'], [6, 'خط عريض']];
-  const PENS = [['ballpoint', 'حبر جاف'], ['fountain', 'قلم حبر'], ['pencil', 'رصاص'], ['technical', 'تقني']];
+  const PENS = [['ballpoint', 'حبر جاف'], ['fountain', 'قلم حبر'], ['brush', 'فرشاة'], ['pencil', 'رصاص'], ['technical', 'تقني']];
   /* tools that have a settings sheet, and the engine style group behind each (shapes share one, text and sticky share one) */
   const SETG = { pen: 'pen', highlight: 'highlight', eraser: 'eraser', line: 'shape', rectangle: 'shape', ellipse: 'shape', arrow: 'shape', text: 'text', sticky: 'text' };
   const TITLES = { pen: 'إعدادات القلم', highlight: 'إعدادات التظليل', eraser: 'إعدادات الممحاة', line: 'إعدادات الخط', rectangle: 'إعدادات المستطيل', ellipse: 'إعدادات الدائرة', arrow: 'إعدادات السهم', text: 'إعدادات النص', sticky: 'إعدادات الملاحظة اللاصقة', lasso: 'إعدادات التحديد' };
@@ -191,7 +192,14 @@
   }, true);
   addEventListener('resize', () => { if (ts && !ts.hidden) place(); });
   function sync() {
-    root.querySelectorAll('[data-tool]').forEach(b => { const on = b.dataset.tool === S.tool; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+    root.querySelectorAll('[data-tool]').forEach(b => {
+      const id = b.dataset.tool, on = id === S.tool;
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
+      if (id === 'pen' || id === 'highlight') {
+        const st = M.style && M.style(id);
+        if (st && st.color) b.style.setProperty('--tool-c', st.color);
+      }
+    });
     root.querySelectorAll('.st-swatch').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color === S.color)));
     root.querySelectorAll('.st-size').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.w === S.width)));
     root.style.setProperty('--st-cur', HEX6.test(S.color) ? S.color : '#168c8c');
@@ -256,6 +264,56 @@
     upd.push(() => s.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset[attr] === String(get())))));
     return s;
   }
+  const PEN_LABELS = Object.fromEntries(PENS);
+  function quickSizes(list) {
+    const row = div('ts-qsizes'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'أحجام سريعة');
+    for (const w of list) {
+      const b = btn('ts-qsize', w + 'pt', '<span class="ts-qdot"></span><small>' + w + '</small>');
+      b.dataset.qw = w; b.style.setProperty('--qd', Math.max(4, Math.min(18, 3 + w * 1.4)) + 'px');
+      b.onclick = () => put({ width: w }); row.append(b);
+    }
+    upd.push(() => { const cur = +(sty().width || 3); row.querySelectorAll('.ts-qsize').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.qw - cur) < 0.25))); });
+    return row;
+  }
+  function favPresets(kind) {
+    const wrap = div('ts-favs'); wrap.setAttribute('role', 'group'); wrap.setAttribute('aria-label', 'الأنماط المفضلة');
+    const drawFavs = () => {
+      wrap.replaceChildren();
+      const s = sty(), list = Array.isArray(s.presets) ? s.presets : [];
+      list.forEach((p, idx) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'ts-fav';
+        const label = kind === 'pen' ? (PEN_LABELS[p.pen] || 'قلم') + ' • ' + p.width : (p.tip === 'flat' ? 'مسطح' : 'دائري') + ' • ' + p.width;
+        b.title = label + ' (انقر للتفعيل)'; b.setAttribute('aria-label', label);
+        const active = kind === 'pen'
+          ? (s.pen === p.pen && String(s.color).toLowerCase() === String(p.color).toLowerCase() && Math.abs((s.width || 3) - p.width) < 0.2 && (s.dash || 'solid') === (p.dash || 'solid'))
+          : (String(s.color).toLowerCase() === String(p.color).toLowerCase() && Math.abs((s.width || 3) - p.width) < 0.2 && (s.tip || 'round') === (p.tip || 'round'));
+        b.setAttribute('aria-pressed', String(active));
+        const dot = document.createElement('span'); dot.className = 'ts-fav-dot'; dot.style.setProperty('--fc', p.color);
+        const meta = document.createElement('span'); meta.className = 'ts-fav-meta'; meta.textContent = label;
+        b.append(dot, meta);
+        b.onclick = () => put(kind === 'pen' ? { pen: p.pen, color: p.color, width: p.width, op: p.op || 1, dash: p.dash || 'solid' } : { color: p.color, width: p.width, op: p.op || 0.3, tip: p.tip || 'round' });
+        if (list.length > 1) {
+          const rm = document.createElement('span'); rm.className = 'ts-fav-rm'; rm.textContent = '×'; rm.title = 'حذف النمط';
+          rm.onclick = e => { e.stopPropagation(); const next = list.filter((_, i) => i !== idx); put({ presets: next }); };
+          b.append(rm);
+        }
+        wrap.append(b);
+      });
+      if (list.length < 6) {
+        const add = btn('ts-fav ts-fav-add', 'حفظ النمط الحالي في المفضلة', '＋ حفظ الحالي');
+        add.onclick = () => {
+          const cur = sty(), item = kind === 'pen'
+            ? { pen: cur.pen || 'ballpoint', color: cur.color || '#e43d56', width: cur.width || 3, op: cur.op || 1, dash: cur.dash || 'solid' }
+            : { color: cur.color || '#f2c230', width: cur.width || 3, op: cur.op || 0.3, tip: cur.tip || 'round' };
+          put({ presets: list.concat([item]).slice(0, 6) });
+        };
+        wrap.append(add);
+      }
+    };
+    upd.push(drawFavs);
+    drawFavs();
+    return wrap;
+  }
   function build(g) {
     ts.replaceChildren(); upd = []; const t = byId[S.tool];
     ts.setAttribute('aria-label', TITLES[t.id]); ts.dataset.group = g;
@@ -264,36 +322,85 @@
     head.append(x); ts.append(head);
     if (g !== 'eraser' && g !== 'lasso') { const cv = document.createElement('canvas'); cv.id = 'ts-preview'; cv.className = 'ts-preview'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'معاينة'); ts.append(cv); }
     if (g === 'pen') {
+      sec('الأنماط المفضلة').append(favPresets('pen'));
       const pr = div('ts-presets'); pr.setAttribute('role', 'group'); pr.setAttribute('aria-label', 'نوع القلم');
       for (const [id, name] of PENS) { const b = btn('ts-preset', name, '<canvas class="ts-chip" aria-hidden="true"></canvas><span>' + name + '</span>'); b.dataset.pen = id; b.onclick = () => put({ pen: id }); pr.append(b); }
       upd.push(() => pr.querySelectorAll('.ts-preset').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pen === sty().pen))));
       sec('نوع القلم').append(pr);
-      sec('اللون').append(colors(COLORS));
-      sec('', 'ts-tight').append(range('ts-width', 'السُمك', 1, 20, 1, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
+      sec('نمط الخط').append(seg('نمط الخط', 'dash', [['solid', 'متصل'], ['dashed', 'متقطع'], ['dotted', 'منقط']], () => sty().dash || 'solid', v => put({ dash: v })));
+      sec('اللون').append(colors(PEN_COLORS));
+      sec('السُمك والشفافية والتنعيم', 'ts-tight').append(
+        quickSizes([1.5, 2.5, 4, 6, 10]),
+        range('ts-width', 'السُمك', 1, 20, 0.5, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
+        range('ts-op', 'الشفافية', 20, 100, 5, () => Math.round((sty().op == null ? 1 : sty().op) * 100), v => put({ op: v / 100 }), v => v + '%'),
         range('ts-smooth', 'تنعيم الخط', 0, 100, 5, () => Math.round((sty().smooth || 0) * 100), v => put({ smooth: v / 100 }), v => v + '%'));
       const wr = () => sty().wr || [0.25, 2.2];
-      sec('مدى السُمك مع الضغط', 'ts-tight').append(
+      sec('حساسية الضغط والسرعة', 'ts-tight').append(
         range('ts-wrmin', 'الأدنى', 0.1, 1, 0.05, () => wr()[0], v => put({ wr: [v, Math.max(v, wr()[1])] }), v => '×' + (+v).toFixed(2)),
         range('ts-wrmax', 'الأقصى', 1, 4, 0.1, () => wr()[1], v => put({ wr: [Math.min(v, wr()[0]), v] }), v => '×' + (+v).toFixed(1)),
-        txt('p', 'ts-hint', 'كلما اتّسع المدى تغيّر الخط أكثر مع ضغط القلم.'));
-      sec('').append(toggle('ts-shapesnap', 'تحويل الرسم إلى شكل عند التوقف', () => (M.input ? M.input() : {}).shapeSnap, v => M.setInput && M.setInput({ shapeSnap: v })));
+        txt('p', 'ts-hint', 'يتفاعل القلم مع ضغط القلم الإلكتروني أو سرعة الحركة لمحاكاة الحبر الطبيعي.'));
+      sec('').append(toggle('ts-shapesnap', 'تثبيت الشكل تلقائياً عند التوقف (Hold to Shape)', () => (M.input ? M.input() : {}).shapeSnap, v => M.setInput && M.setInput({ shapeSnap: v })));
     } else if (g === 'highlight') {
+      sec('الأنماط المفضلة').append(favPresets('highlight'));
+      sec('شكل رأس التظليل').append(seg('شكل رأس التظليل', 'tip', [['round', 'دائري ناعم', 'حواف منسابة'], ['flat', 'مسطح مائل', 'حافة تظليل حادة']], () => sty().tip || 'round', v => put({ tip: v })));
+      sec('وضع الرسم').append(seg('وضع الرسم', 'hlmode', [['free', 'تظليل حر', 'يستقيم عند التوقف'], ['line', 'مستقيم دائماً', 'تظليل سطور فوري']], () => sty().alwaysStraight ? 'line' : 'free', v => put({ alwaysStraight: v === 'line' })));
       sec('اللون').append(colors(MARKERS));
-      sec('', 'ts-tight').append(range('ts-width', 'السُمك', 1, 10, 1, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
+      sec('السُمك والشفافية', 'ts-tight').append(
+        quickSizes([2, 3.5, 5, 7, 10]),
+        range('ts-width', 'السُمك', 1, 10, 0.5, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
         range('ts-op', 'الشفافية', 10, 80, 5, () => Math.round((sty().op || 0.3) * 100), v => put({ op: v / 100 }), v => v + '%'));
-      const hs2 = toggle('ts-hsnap', 'محاذاة أفقية', () => sty().hsnap, v => put({ hsnap: v }));
-      upd.push(() => { hs2.querySelector('input').disabled = !sty().straight; hs2.classList.toggle('ts-off', !sty().straight); });
-      sec('').append(toggle('ts-straight', 'خط مستقيم عند التوقف', () => sty().straight, v => put({ straight: v })), hs2);
+      const hs2 = toggle('ts-hsnap', 'محاذاة أفقية تلقائية للسطور', () => sty().hsnap, v => put({ hsnap: v }));
+      upd.push(() => { const on = sty().straight || sty().alwaysStraight; hs2.querySelector('input').disabled = !on; hs2.classList.toggle('ts-off', !on); });
+      sec('').append(
+        toggle('ts-straight', 'خط مستقيم عند التوقف', () => sty().straight, v => put({ straight: v })),
+        hs2,
+        toggle('ts-hl-shapesnap', 'تحويل التظليل إلى مستطيل/دائرة عند التوقف', () => sty().shapeSnap !== false, v => put({ shapeSnap: v })),
+        toggle('ts-hl-blend', 'دمج طبيعي خلف النص والكتابة (Multiply)', () => sty().blend !== 'normal', v => { put({ blend: v ? 'multiply' : 'normal' }); M.redraw && M.redraw(); })
+      );
     } else if (g === 'eraser') {
-      sec('نوع الممحاة').append(seg('نوع الممحاة', 'mode', [['stroke', 'ممحاة كاملة', 'تمسح الخط كله بلمسة'], ['precise', 'ممحاة دقيقة', 'تمسح ما تمرّ عليه فقط']], () => sty().mode, v => put({ mode: v })));
+      sec('نوع الممحاة').append(seg('نوع الممحاة', 'mode', [
+        ['stroke', 'ممحاة كاملة', 'تمسح الخط بلمسة'],
+        ['precise', 'ممحاة دقيقة', 'تمسح جزءاً من الخط'],
+        ['lasso', 'ممحاة إحاطة', 'تمسح ما تحيط به']
+      ], () => sty().mode || 'stroke', v => put({ mode: v })));
+      sec('نطاق المسح').append(seg('نطاق المسح', 'target', [
+        ['all', 'الكل', 'حبر وتظليل'],
+        ['highlight', 'التظليل فقط', 'يحافظ على الكتابة'],
+        ['ink', 'الحبر فقط', 'يحافظ على التظليل']
+      ], () => sty().target || 'all', v => put({ target: v })));
       const pv = div('ts-eprev'), dot = document.createElement('span'); dot.id = 'ts-edot'; pv.setAttribute('aria-hidden', 'true'); pv.append(dot);
-      upd.push(() => { const d = Math.round((sty().size || 12) * 2); dot.style.width = dot.style.height = d + 'px'; });
-      sec('', 'ts-tight').append(range('ts-esize', 'الحجم', 4, 60, 1, () => sty().size || 12, v => put({ size: v }), v => String(Math.round(v))), pv);
+      const qRow = div('ts-qsizes'); qRow.setAttribute('role', 'group'); qRow.setAttribute('aria-label', 'أحجام الممحاة');
+      for (const [sz, lb] of [[8, 'صغير'], [16, 'متوسط'], [28, 'كبير'], [44, 'عريض']]) {
+        const b = btn('ts-qsize', lb, '<small>' + lb + '</small>'); b.dataset.esz = sz;
+        b.onclick = () => put({ size: sz }); qRow.append(b);
+      }
+      const sizeSec = sec('حجم الممحاة', 'ts-tight');
+      sizeSec.append(qRow, range('ts-esize', 'الحجم', 4, 60, 1, () => sty().size || 12, v => put({ size: v }), v => String(Math.round(v))), pv);
+      upd.push(() => {
+        const d = Math.round((sty().size || 12) * 2), isLasso = sty().mode === 'lasso';
+        dot.style.width = dot.style.height = d + 'px';
+        sizeSec.hidden = isLasso;
+        qRow.querySelectorAll('.ts-qsize').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.esz - (sty().size || 12)) <= 2)));
+      });
+      sec('خيارات متقدمة').append(
+        toggle('ts-e-keepshapes', 'حماية الأشكال والصور والنصوص من المسح', () => !!sty().keepShapes, v => put({ keepShapes: v })),
+        toggle('ts-e-autosize', 'تكبير تلقائي مع سرعة حركة اليد', () => sty().autoSize !== false, v => put({ autoSize: v })),
+        toggle('ts-e-autoback', 'العودة التلقائية للقلم بعد المسح', () => !!sty().autoBack, v => put({ autoBack: v }))
+      );
+      const clrSec = sec('');
+      const clrBtn = btn('st-row-btn ts-danger-btn', 'مسح تعليقات هذه الصفحة', 'مسح تعليقات هذه الصفحة', 'ts-clear-page');
+      clrBtn.onclick = () => {
+        const n = M.clearPage ? M.clearPage(null, false) : 0;
+        closePops();
+        if (n && M.banner) M.banner('مُسحت تعليقات هذه الصفحة (' + n + '). يمكنك التراجع بلمسة واحدة.', [['تراجع', () => M.undo()], ['حسناً', () => {}]]);
+      };
+      clrSec.append(clrBtn);
     } else if (g === 'shape') {
       ts.append(txt('p', 'ts-hint ts-shared', 'تنطبق على الخط والمستطيل والدائرة والسهم.'));
-      sec('اللون').append(colors(COLORS));
+      sec('اللون').append(colors(PEN_COLORS));
+      sec('نمط الخط').append(seg('نمط الخط', 'dash', [['solid', 'متصل'], ['dashed', 'متقطع'], ['dotted', 'منقط']], () => sty().dash || 'solid', v => put({ dash: v })));
       sec('', 'ts-tight').append(range('ts-width', 'السُمك', 1, 20, 1, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
-        toggle('ts-snap', 'محاذاة الزاوية', () => S.snap, v => { M.setSnap(v); const s2 = $('studio-snap'); if (s2) s2.checked = !!v; refreshSet(); }));
+        toggle('ts-snap', 'محاذاة الزاوية (15°)', () => S.snap, v => { M.setSnap(v); const s2 = $('studio-snap'); if (s2) s2.checked = !!v; refreshSet(); }));
       if (S.tool === 'arrow') sec('رأس السهم').append(seg('رأس السهم', 'head', [['end', 'طرف واحد'], ['both', 'طرفان']], () => sty().head || 'end', v => put({ head: v })));
     } else if (g === 'text') {
       ts.append(txt('p', 'ts-hint ts-shared', 'تنطبق على النص والملاحظة اللاصقة.'));
@@ -308,6 +415,31 @@
       sec('اللون').append(colors(INKS));
     } else if (g === 'lasso') {
       sec('طريقة التحديد').append(seg('طريقة التحديد', 'smode', [['free', 'تحديد حر', 'ارسم حول ما تريد'], ['rect', 'تحديد مستطيل', 'اسحب مستطيلاً حوله']], selMode, setSelMode));
+      if (M.selection && typeof M.selection.hitMode === 'function') {
+        sec('حساسية التحديد').append(seg('حساسية التحديد', 'hitmode', [
+          ['inside', 'احتواء العنصر', 'نصف العنصر داخل التحديد'],
+          ['touch', 'بمجرد اللمس', 'أي تقاطع مع خط التحديد']
+        ], () => M.selection.hitMode(), v => { M.selection.setHitMode(v); refreshSet(); }));
+      }
+      if (M.selection && M.selection.types) {
+        const tSec = sec('العناصر القابلة للتحديد');
+        for (const [k, label] of [['ink', 'الكتابة الحرة (القلم)'], ['hl', 'التظليل (الحر والنصي)'], ['shape', 'الأشكال والخطوط'], ['text', 'النصوص والملاحظات'], ['img', 'الصور المضافة']]) {
+          tSec.append(toggle('ts-lasso-type-' + k, label, () => !!M.selection.types[k], v => {
+            if (M.selection.setType) M.selection.setType(k, v);
+            else M.selection.types[k] = v;
+            refreshSet();
+          }));
+        }
+      }
+      const actSec = sec('إجراءات سريعة');
+      const selAllBtn = btn('st-row-btn', 'تحديد كل عناصر هذه الصفحة', 'تحديد كل عناصر هذه الصفحة', 'ts-lasso-all');
+      selAllBtn.onclick = () => { closePops(); if (M.selection && M.selection.selectAll) M.selection.selectAll(); };
+      actSec.append(selAllBtn);
+      if (M.selection && M.selection.hasClip && M.selection.hasClip()) {
+        const pstBtn = btn('st-row-btn', 'لصق العناصر المنسوخة هنا', 'لصق العناصر المنسوخة هنا', 'ts-lasso-paste');
+        pstBtn.onclick = () => { closePops(); M.selection.paste(); };
+        actSec.append(pstBtn);
+      }
     }
   }
   /* the selection module's own names may differ ('free' / 'lasso', 'rect' / 'rectangle'): read loosely, try each */
@@ -333,7 +465,9 @@
     }
     const f = s.smooth > 0 && C.InkFilter ? new C.InkFilter(s.smooth, ch / 800) : null;   /* the same input filter the engine uses */
     const points = raw.map((p, i) => { const q = uv(p[0], p[1], ch); return f ? f.push(q, i * 8) : q; });
-    return { id: 'ts-sample', page: 1, tool: 'pen', color: s.color || '#e43d56', width: s.width || 3, pen: s.pen || 'ballpoint', wr: (s.wr || [0.25, 2.2]).slice(), pr, points };
+    const out = { id: 'ts-sample', page: 1, tool: 'pen', color: s.color || '#e43d56', width: s.width || 3, pen: s.pen || 'ballpoint', wr: (s.wr || [0.25, 2.2]).slice(), op: s.op || 1, pr, points };
+    if (s.dash && s.dash !== 'solid') out.dash = s.dash;
+    return out;
   }
   function paintPreview() {
     if (!ts || ts.hidden || !M.drawStroke) return;
@@ -343,18 +477,20 @@
         const { ctx, cw, ch, d, PW, H } = surface(cv, 260, 70); let item = null;
         if (g === 'pen') item = penItem(cw, ch, s, 2.4);
         else if (g === 'highlight') {
-          ctx.fillStyle = '#d3dee4';                                   /* two lines of "text" under the marker */
+          ctx.fillStyle = '#334e62';                                   /* two lines of "text" under the marker to show multiply blending */
           for (const [y, w] of [[0.36, 0.86], [0.7, 0.58]]) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(14 * d, (ch * y - 3) * d, (cw - 28) * w * d, 6 * d, 3 * d) : ctx.rect(14 * d, (ch * y - 3) * d, (cw - 28) * w * d, 6 * d); ctx.fill(); }
-          const y = ch * 0.36, pts = s.straight ? [[16, y], [cw - 16, y]] : Array.from({ length: 24 }, (_, i) => [16 + (cw - 32) * i / 23, y + Math.sin(i / 3) * 2.2]);
-          item = { id: 'ts-sample', page: 1, tool: 'highlight', color: s.color, width: s.width, op: s.op, points: pts.map(p => uv(p[0], p[1], ch)) };
+          const y = ch * 0.36, isLine = s.straight || s.alwaysStraight;
+          const pts = isLine ? [[18, y], [cw - 18, y]] : Array.from({ length: 24 }, (_, i) => [18 + (cw - 36) * i / 23, y + Math.sin(i / 3) * 2.2]);
+          item = { id: 'ts-sample', page: 1, tool: 'highlight', color: s.color, width: s.width, op: s.op, tip: s.tip || 'round', points: pts.map(p => uv(p[0], p[1], ch)) };
         } else if (g === 'shape') {
           const T = S.tool, a = T === 'line' || T === 'arrow' ? [cw * 0.22, ch * 0.74] : [cw * 0.3, ch * 0.2], b = T === 'line' || T === 'arrow' ? [cw * 0.78, ch * 0.26] : [cw * 0.7, ch * 0.8];
           item = { id: 'ts-sample', page: 1, tool: T, color: s.color, width: s.width, points: [uv(a[0], a[1], ch), uv(b[0], b[1], ch)], k: ch / 800 };
+          if (s.dash && s.dash !== 'solid') item.dash = s.dash;
           if (T === 'arrow' && s.head === 'both') item.head = 'both';
         } else if (g === 'text') item = { id: 'ts-sample', page: 1, tool: S.tool, text: 'ملاحظتي Aa', color: s.color, size: s.size, bold: s.bold, italic: s.italic, points: [uv(10, 6, ch)], w: (cw - 20) / 800, h: (ch - 12) / ch };
         if (item) M.drawStroke(ctx, item, PW, H);
       }
-      if (g === 'pen') ts.querySelectorAll('.ts-preset').forEach(b => { const c = b.querySelector('canvas'), o = surface(c, 56, 24); M.drawStroke(o.ctx, penItem(o.cw, o.ch, Object.assign({}, s, { pen: b.dataset.pen, width: Math.min(s.width || 3, 4), smooth: 0.5 }), 0), o.PW, o.H); });
+      if (g === 'pen') ts.querySelectorAll('.ts-preset').forEach(b => { const c = b.querySelector('canvas'), o = surface(c, 52, 24); M.drawStroke(o.ctx, penItem(o.cw, o.ch, Object.assign({}, s, { pen: b.dataset.pen, width: Math.min(s.width || 3, 4), smooth: 0.5, dash: 'solid', op: 1 }), 0), o.PW, o.H); });
     } catch (e) { console.warn(e); }
   }
   M.toolbar = { render, cfg: () => cfg, TOOLS, openSettings: () => openSet(), closeSettings: closePops };
