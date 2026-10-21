@@ -2,21 +2,25 @@
    Buttons keep data-tool / #undo / #redo / #color / #width so older tests and modules still find them.
    Tool settings: tapping the ACTIVE tool again (or holding any tool) opens #st-toolset with that tool's own style
    (pen type, smoothing, pressure range, marker opacity, eraser mode, arrow heads, text size …). Every control writes
-   straight through M.setStyle / M.setInput / M.setSnap, so the engine sanitizes and persists it; nothing is kept here. */
+   straight through M.setStyle / M.setInput / M.setSnap, so the engine sanitizes and persists it; nothing is kept here.
+   Tablets (body.st-compact, wider than a phone): the Notewise bar (طلب محمد 4، 2026-10-21) — undo · redo · finger |
+   pen · brush · highlighter · eraser · lasso · select · image · text · note · (laser) · settings | ⌄. The brush is not an
+   engine tool: it is the pen with pen:'brush' (activate()); each keeps its own colour / width (medixa.studio.vpen.v1). */
 (function () {
   'use strict';
   const M = window.MedixaStudio; if (!M) return;
   const S = M.S, C = M.C || window.MedixaStudioCore || {}, $ = id => document.getElementById(id);
   const svg = (d, n) => '<svg viewBox="0 0 24 24" width="' + (n || 22) + '" height="' + (n || 22) + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   const TOOLS = [
-    { id: 'pen', name: 'قلم', icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>' },
+    { id: 'pen', name: 'قلم', icon: '<path d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5z"/><path d="m15 5 4 4"/>' },
+    { id: 'brush', name: 'فرشاة', virtual: true, icon: '<path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>' },
     { id: 'highlight', name: 'تظليل', icon: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>' },
-    { id: 'eraser', name: 'ممحاة', icon: '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>' },
-    { id: 'lasso', name: 'تحديد حر', icon: '<path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="16" r="2"/>' },
+    { id: 'eraser', name: 'ممحاة', icon: '<path d="M7 21 2.7 16.7a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21z"/><path d="m5.5 10.5 8 8"/>' },
+    { id: 'lasso', name: 'تحديد حر', icon: '<circle cx="13.5" cy="9.5" r="6.5" stroke-dasharray="3 2.6"/><path d="M8.6 13.8c-2.3-.2-4.3.9-4.1 2.5.2 1.4 2.3 1.7 3.1.5.6-.9 0-2-1.1-2.3"/><path d="M5.8 17.6c.2 1.5-.5 2.7-1.8 3.4"/>' },
     { id: 'select', name: 'تحديد نص', icon: '<path d="M17 22h-1a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4h1"/><path d="M7 22h1a4 4 0 0 0 4-4v-1"/><path d="M7 2h1a4 4 0 0 1 4 4v1"/>' },
     { id: 'region', name: 'منطقة من الصفحة', icon: '<path d="M5 3a2 2 0 0 0-2 2"/><path d="M19 3a2 2 0 0 1 2 2"/><path d="M21 19a2 2 0 0 1-2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 3h1M9 21h1M14 3h1M14 21h1M3 9v1M21 9v1M3 14v1M21 14v1"/>' },
-    { id: 'text', name: 'نص', icon: '<path d="M4 7V4h16v3M9 20h6M12 4v16"/>' },
-    { id: 'sticky', name: 'ملاحظة لاصقة', icon: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/>' },
+    { id: 'text', name: 'نص', icon: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 8h8M12 8v8.5M10.3 16.5h3.4"/>' },
+    { id: 'sticky', name: 'ملاحظة لاصقة', icon: '<path d="M5 3.5h14a1.5 1.5 0 0 1 1.5 1.5v9.5l-6 6H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5z"/><path d="M20.5 14.5H16a1.5 1.5 0 0 0-1.5 1.5v4.5"/>' },
     { id: 'line', name: 'خط', icon: '<path d="M5 19 19 5"/>' },
     { id: 'rectangle', name: 'مستطيل', icon: '<rect x="4" y="6" width="16" height="12" rx="1"/>' },
     { id: 'ellipse', name: 'دائرة', icon: '<ellipse cx="12" cy="12" rx="9" ry="6"/>' },
@@ -24,6 +28,32 @@
     { id: 'zoom', name: 'كتابة مكبرة', icon: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6M11 8v6"/>' },
     { id: 'hand', name: 'تحريك الصفحة', icon: '<path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.3l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15"/>' }
   ];
+  /* other icons of the bar and of the settings sheets */
+  const I = {
+    undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+    redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+    /* a vertical double arrow beside a pointing hand (Notewise's touch toggle) */
+    finger: '<path d="M4 4v15M2 6l2-2 2 2M2 17l2 2 2-2"/><g transform="translate(6.5 3.5) scale(.72)" stroke-width="2.2"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></g>',
+    image: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="m20.5 15-4.2-4.2a1.5 1.5 0 0 0-2.1 0L5 20"/>',
+    gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    curve: '<path d="M5 19c6 0 8-14 14-14"/>',
+    dplus: '<circle cx="12" cy="12" r="9" stroke-dasharray="3.2 2.6"/><path d="M12 8v8M8 12h8"/>',
+    sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    minus: '<path d="M5 12h14"/>',
+    list: '<path d="M5 7h14M5 11h14M5 15h14M5 19h14"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6h.01"/>',
+    solid: '<path d="M3 12h18"/>',
+    dashed: '<path d="M3 12h4M10 12h4M17 12h4"/>',
+    dotted: '<path d="M4 12h.01M9 12h.01M14 12h.01M19 12h.01" stroke-width="3"/>',
+    tipFlat: '<path d="M18 6H6v12h12"/>',
+    tipRound: '<path d="M18 6h-6a6 6 0 0 0 0 12h6"/>',
+    hold: '<path d="M4 20 13 11"/><circle cx="16" cy="8" r="3" fill="currentColor"/>',
+    line: '<path d="M5 19 19 5"/>',
+    free: '<path d="M5 19c6 0 8-14 14-14"/>'
+  };
   const KEY = 'medixa.studio.toolbar.v1', DEFAULT = { order: TOOLS.map(t => t.id), hidden: [], side: 'start', quick: true };
   const byId = Object.fromEntries(TOOLS.map(t => [t.id, t]));
   function load() {
@@ -38,17 +68,24 @@
   const mqStyle = window.matchMedia ? matchMedia('(max-width: 899px)') : { matches: false, addEventListener() {} };
   const mqPhone = window.matchMedia ? matchMedia('(max-width: 720px)') : { matches: false };
   const COMPACT = document.body.classList.contains('st-compact');
-  const PRIMARY = 3;                                       /* the first tools of the configured order stay on the bar */
+  const tablet = () => COMPACT && !mqPhone.matches;
+  const PRIMARY = 3;                                       /* phones / old layout: the first tools of the configured order stay on the bar */
+  /* tablets: Notewise's slot order; '@image' is the insert-picture button, 'laser' shows once a module adds it to TOOLS */
+  const NW = ['pen', 'brush', 'highlight', 'eraser', 'lasso', 'select', '@image', 'text', 'sticky', 'laser'];
   const COLORS = [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر']];
-  const PEN_COLORS = [['#168c8c', 'تركوازي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#f2c230', 'أصفر'], ['#18334b', 'كحلي'], ['#1f9d6a', 'أخضر'], ['#7c4dff', 'بنفسجي'], ['#e67e22', 'برتقالي'], ['#5b7382', 'رمادي']];
+  const PEN_COLORS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#168c8c', 'تركوازي'], ['#1f9d6a', 'أخضر'], ['#f2c230', 'أصفر'], ['#e67e22', 'برتقالي'], ['#7c4dff', 'بنفسجي'], ['#5b7382', 'رمادي']];
   const MARKERS = [['#f2c230', 'أصفر'], ['#7bd88f', 'أخضر'], ['#6fb1ff', 'أزرق'], ['#ff8fa3', 'وردي'], ['#ffb347', 'برتقالي'], ['#c39bff', 'بنفسجي'], ['#5ce1e6', 'فيروزي'], ['#d4fc79', 'ليموني']];
   const INKS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#168c8c', 'تركوازي'], ['#1f9d6a', 'أخضر'], ['#7c4dff', 'بنفسجي']];
   const SIZES = [[2, 'خط رفيع'], [3, 'خط متوسط'], [6, 'خط عريض']];
   const QUICK_COLORS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#e67e22', 'برتقالي'], ['#7c4dff', 'بنفسجي']];
   const PENS = [['ballpoint', 'حبر جاف'], ['fountain', 'قلم حبر'], ['brush', 'فرشاة'], ['pencil', 'رصاص'], ['technical', 'تقني']];
+  /* «حساسية الضغط» 0–5: the pen's width range under pressure / speed (engine field wr); 4 is the engine default */
+  const WR_LEVELS = [[1, 1], [0.8, 1.25], [0.6, 1.5], [0.4, 1.85], [0.25, 2.2], [0.1, 3]];
+  const wrLevel = wr => { let best = 4, bd = Infinity; if (!Array.isArray(wr)) return best; WR_LEVELS.forEach((L, i) => { const d = Math.abs(wr[0] - L[0]) + Math.abs(wr[1] - L[1]) / 2; if (d < bd) { bd = d; best = i; } }); return best; };
   /* tools that have a settings sheet, and the engine style group behind each (shapes share one, text and sticky share one) */
-  const SETG = { pen: 'pen', highlight: 'highlight', eraser: 'eraser', line: 'shape', rectangle: 'shape', ellipse: 'shape', arrow: 'shape', text: 'text', sticky: 'text' };
-  const TITLES = { pen: 'إعدادات القلم', highlight: 'إعدادات التظليل', eraser: 'إعدادات الممحاة', line: 'إعدادات الخط', rectangle: 'إعدادات المستطيل', ellipse: 'إعدادات الدائرة', arrow: 'إعدادات السهم', text: 'إعدادات النص', sticky: 'إعدادات الملاحظة اللاصقة', lasso: 'إعدادات التحديد' };
+  const SETG = { pen: 'pen', brush: 'pen', highlight: 'highlight', eraser: 'eraser', line: 'shape', rectangle: 'shape', ellipse: 'shape', arrow: 'shape', text: 'text', sticky: 'text' };
+  const TITLES = { pen: 'إعدادات القلم', brush: 'إعدادات الفرشاة', highlight: 'إعدادات التظليل', eraser: 'إعدادات الممحاة', line: 'إعدادات الخط', rectangle: 'إعدادات المستطيل', ellipse: 'إعدادات الدائرة', arrow: 'إعدادات السهم', text: 'إعدادات النص', sticky: 'إعدادات الملاحظة اللاصقة', lasso: 'إعدادات التحديد' };
+  const SHORT = { pen: 'القلم', brush: 'الفرشاة', highlight: 'التظليل' };   /* the sheet's visible title (Notewise: «Pen») */
   const HOLD = 500, HEX6 = /^#[0-9a-f]{6}$/i;
   /* lp: a long press that just opened a tool. Its trailing click is dropped once, wherever it lands (the bar re-renders and,
      on phones, the sheet can open under the finger); the short window starts when the finger lifts, however long the hold */
@@ -60,16 +97,38 @@
   const hasSet = id => id === 'lasso' ? selModes() : !!SETG[id];
   const groupFor = id => id === 'lasso' ? 'lasso' : SETG[id];
 
+  /* ---- the brush: the pen tool with the 'brush' pen type. Pen and brush each remember their own colour / width / opacity /
+     line style on this device, so switching between the two buttons feels like two tools (no engine change). ---- */
+  const VKEY = 'medixa.studio.vpen.v1';
+  const vRead = () => { try { const v = JSON.parse(localStorage.getItem(VKEY) || 'null'); return v && typeof v === 'object' ? v : {}; } catch { return {}; } };
+  const vWrite = v => { try { localStorage.setItem(VKEY, JSON.stringify(v)); } catch {} };
+  const vSnap = s => { const o = {}; for (const k of ['color', 'width', 'op', 'dash']) if (s[k] != null) o[k] = s[k]; return o; };
+  const isBrush = () => S.tool === 'pen' && ((M.style && M.style('pen')) || {}).pen === 'brush';
+  const isOn = id => id === 'brush' ? isBrush() : id === 'pen' ? S.tool === 'pen' && !isBrush() : S.tool === id;
+  const curId = () => isBrush() ? 'brush' : S.tool;
+  function activate(id) {
+    if (id !== 'pen' && id !== 'brush') return M.setTool(id);
+    const s = (M.style && M.style('pen')) || {}, was = s.pen === 'brush';
+    if (M.setStyle && id === 'brush' && !was) {
+      const v = vRead(); v.pen = vSnap(s); v.lastPen = s.pen || 'ballpoint'; vWrite(v);
+      M.setStyle('pen', Object.assign({ width: 4.5 }, v.brush || {}, { pen: 'brush' }));
+    } else if (M.setStyle && id === 'pen' && was) {
+      const v = vRead(); v.brush = vSnap(s); vWrite(v);
+      M.setStyle('pen', Object.assign({}, v.pen || {}, { pen: v.lastPen && v.lastPen !== 'brush' ? v.lastPen : 'ballpoint' }));
+    }
+    M.setTool('pen');
+  }
+
   const root = $('studio-toolbar'); if (!root) return;
   const btn = (cls, label, inner, id) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.setAttribute('aria-label', label); b.title = label; b.innerHTML = inner; if (id) b.id = id; return b; };
   const div = (cls) => { const d = document.createElement('div'); d.className = cls; return d; };
   const txt = (tag, cls, t) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = t; return e; };
   function toolButton(t) {
-    const on = S.tool === t.id, b = btn('st-btn', t.name, svg(t.icon) + '<span class="st-lab">' + t.name + '</span>'); b.dataset.tool = t.id; b.setAttribute('aria-pressed', String(on)); if (on) b.classList.add('active');
+    const on = isOn(t.id), b = btn('st-btn', t.name, svg(t.icon) + '<span class="st-lab">' + t.name + '</span>'); b.dataset.tool = t.id; b.setAttribute('aria-pressed', String(on)); if (on) b.classList.add('active');
     if (hasSet(t.id)) { b.classList.add('st-has-set'); if (on) { b.title = t.name + ' — اضغط مرة أخرى للإعدادات'; b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); } }
     b.onclick = e => {
-      if (S.tool === t.id && hasSet(t.id)) return toggleSet(e && e.detail === 0);   /* second tap on the active tool = its settings */
-      closePops(); M.setTool(t.id);
+      if (isOn(t.id) && hasSet(t.id)) return toggleSet(e && e.detail === 0);   /* second tap on the active tool = its settings */
+      closePops(); activate(t.id);
     };
     holdable(b, t.id); return b;
   }
@@ -78,7 +137,7 @@
     let tm = 0, x0 = 0, y0 = 0; const stop = () => { clearTimeout(tm); tm = 0; };
     b.addEventListener('pointerdown', e => {
       if (e.button > 0) return; x0 = e.clientX; y0 = e.clientY; stop();
-      tm = setTimeout(() => { tm = 0; lp = { id, at: 0, pid: e.pointerId, x: 0, y: 0 }; try { navigator.vibrate && navigator.vibrate(8); } catch {} if (S.tool !== id) { closePops(); M.setTool(id); } if (hasSet(id)) openSet(); }, HOLD);
+      tm = setTimeout(() => { tm = 0; lp = { id, at: 0, pid: e.pointerId, x: 0, y: 0 }; try { navigator.vibrate && navigator.vibrate(8); } catch {} if (!isOn(id)) { closePops(); activate(id); } if (hasSet(id)) openSet(); }, HOLD);
     });
     b.addEventListener('pointermove', e => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
@@ -97,18 +156,23 @@
   function selStyle(props) { if (!selOn()) return false; M.selection.applyStyle(props); return true; }
   const check = (id, label, on, fn) => { const l = document.createElement('label'); l.className = 'st-check'; const i = document.createElement('input'); i.type = 'checkbox'; i.id = id; i.checked = !!on; i.onchange = () => fn(i.checked); l.append(i, ' ' + label); return l; };
   /* the quick bar (sizes · colours · custom · settings) is for tools that draw with a colour, on screens wider than a phone */
-  const quickFor = () => COMPACT && !mqPhone.matches && !!SETG[S.tool] && SETG[S.tool] !== 'eraser';
+  const quickFor = () => tablet() && !!SETG[S.tool] && SETG[S.tool] !== 'eraser';
   const quickOn = () => quickFor() && cfg.quick !== false;   /* the chevron at the end of the bar hides / shows it (Notewise) */
+  /* the quick bar's first button shows what is drawing: the line for the pen, the brush, or the tool itself */
+  const kindKey = () => S.tool === 'pen' ? (isBrush() ? 'brush' : 'pen') : S.tool;
+  const kindSvg = k => k === 'pen' ? svg(I.curve) : svg((byId[k] || byId.pen).icon);
   function render() {
     root.replaceChildren(); root.dataset.side = cfg.side; document.body.classList.remove('st-has-quick');
-    const shown = cfg.order.filter(id => !cfg.hidden.includes(id));
-    const primary = COMPACT && !mqPhone.matches
-      ? ['hand', ...shown.filter(id => ['pen', 'highlight', 'eraser', 'lasso', 'select', 'text'].includes(id))].filter(id => shown.includes(id))
-      : shown.slice(0, PRIMARY);
+    const tab = tablet(), shown = cfg.order.filter(id => !cfg.hidden.includes(id));
+    const primary = tab ? NW.filter(id => byId[id] && shown.includes(id)) : shown.filter(id => id !== 'brush').slice(0, PRIMARY);
     const rest = shown.filter(id => !primary.includes(id));
     const tools = div('st-tools'); tools.setAttribute('role', 'toolbar'); tools.setAttribute('aria-label', 'أدوات الرسم');
-    primary.forEach(id => tools.append(toolButton(byId[id])));
-    if (rest.includes(S.tool)) { const b = toolButton(byId[S.tool]); b.classList.add('st-extra'); tools.append(b); }   /* the active tool is never hidden */
+    const img = btn('st-row-btn st-row-ic', 'إدراج صورة', svg(I.image) + '<span>إدراج صورة</span>', 'studio-insert-image');
+    img.onclick = () => { closePops(); if (M.images && typeof M.images.pick === 'function') M.images.pick(); else if (M.banner) M.banner('إدراج الصور غير متاح الآن.', [['حسناً', () => {}]]); };
+    if (tab) { img.className = 'st-btn st-insert'; for (const id of NW) { if (id === '@image') tools.append(img); else if (primary.includes(id)) tools.append(toolButton(byId[id])); } }
+    else primary.forEach(id => tools.append(toolButton(byId[id])));
+    const cur = curId();
+    if (byId[cur] && !primary.includes(cur)) { const b = toolButton(byId[cur]); b.classList.add('st-extra'); tools.append(b); }   /* the active tool is never hidden */
     /* colour and thickness: the highlighter offers marker colours, everything else the ink colours */
     const colors = div('st-colors'); colors.setAttribute('role', 'group'); colors.setAttribute('aria-label', 'اللون');
     for (const [c, n] of (S.tool === 'highlight' ? MARKERS.slice(0, 4) : COLORS)) { const b = btn('st-swatch', n, ''); b.dataset.color = c; b.style.setProperty('--sw', c); b.onclick = () => { if (selStyle({ color: c })) return; S.color = c; const ci = $('color'); if (ci) ci.value = c; M.emit('style'); sync(); }; colors.append(b); }
@@ -123,15 +187,15 @@
     const style = div('st-style'), wrap = div('st-stylewrap');
     if (quickOn()) {                                                   /* tablets and computers: a thin bar under the toolbar (Notewise) */
       const q = div('st-quick'); q.id = 'st-quickbar'; q.setAttribute('role', 'toolbar'); q.setAttribute('aria-label', 'خيارات سريعة'); q.dataset.for = S.tool;
-      const kind = btn('st-qbtn st-qkind', 'نوع الأداة وإعداداتها', S.tool === 'pen' ? svg('<path d="M4 18c3-9 5-12 7-12 3 0 0 12 4 12 2 0 3-3 5-6"/>', 20) : svg(byId[S.tool].icon, 20));
+      const kind = btn('st-qbtn st-qkind', 'نوع الأداة وإعداداتها', kindSvg(kindKey())); kind.dataset.k = kindKey();
       kind.onclick = () => toggleSet(false);
       const qc = div('st-colors st-qcolors'); qc.setAttribute('role', 'group'); qc.setAttribute('aria-label', 'اللون');
       for (const [c, n] of (S.tool === 'highlight' ? MARKERS.slice(0, 5) : QUICK_COLORS)) { const b = btn('st-swatch', n, ''); b.dataset.color = c; b.style.setProperty('--sw', c); b.onclick = () => { if (selStyle({ color: c })) return; S.color = c; const ci = $('color'); if (ci) ci.value = c; M.emit('style'); sync(); }; qc.append(b); }
-      const plus = btn('st-qbtn st-qplus', 'لون وسُمك مخصصان', svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20)), pp = popFor(plus, 'st-stylepop st-qpop', 'لون وسُمك مخصصان');
+      const plus = btn('st-qbtn st-qplus', 'لون وسُمك مخصصان', svg(I.dplus)), pp = popFor(plus, 'st-stylepop st-qpop', 'لون وسُمك مخصصان');
       pp.append(custom); const pw = div('st-stylewrap'); pw.append(plus, pp);
-      const gear = btn('st-qbtn st-qset', 'كل إعدادات الأداة', svg('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>', 20));
+      const gear = btn('st-qbtn st-qset', 'كل إعدادات الأداة', svg(I.sliders));
       gear.onclick = () => toggleSet(false);
-      q.append(kind, div('st-qsep'), sizes, div('st-qsep'), qc, pw, gear);
+      q.append(kind, div('st-qsep'), sizes, div('st-qsep'), qc, pw, div('st-qsep'), gear);
       if (SETG[S.tool] === 'text') q.querySelectorAll('.st-qsep')[0].hidden = true;
       style.append(q); document.body.classList.add('st-has-quick');
     } else if (quickFor()) {
@@ -144,23 +208,21 @@
       p.append(custom); wrap.append(sb, p); style.append(colors, sizes, wrap);
     }
     const hist = div('st-hist');
-    const un = btn('st-btn', 'تراجع', svg('<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>'), 'undo'), re = btn('st-btn', 'إعادة', svg('<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/>'), 'redo');
+    const un = btn('st-btn', 'تراجع', svg(I.undo), 'undo'), re = btn('st-btn', 'إعادة', svg(I.redo), 'redo');
     un.onclick = () => M.undo(); re.onclick = () => M.redo(); hist.append(un, re);
     /* القلم والإصبع (2026-10-21، طلب محمد 11): pressed = the finger writes too; released = the pen writes and the finger
        scrolls / zooms. Automatic until the student chooses; the choice stays on this device. */
     if (M.setFingerMode) {
-      const fb = btn('st-btn st-fingerbtn', 'الكتابة بالإصبع', svg('<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10"/><path d="M12 9.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.6-2.2L4.6 15a1.5 1.5 0 0 1 2.2-2L9 15"/><path d="M4 4.5 6 6M4 9h2M8.5 2v2"/>'), 'st-finger-toggle');
+      const fb = btn('st-btn st-fingerbtn', 'الكتابة بالإصبع', svg(I.finger), 'st-finger-toggle');
       fb.onclick = () => { const draw = M.penMode(); M.setFingerMode(draw ? 'draw' : 'nav'); toast(draw ? 'الإصبع يكتب الآن مثل القلم' : 'القلم يكتب، والإصبع يحرّك الصفحة ويكبّرها'); };
       hist.append(fb);
     }
-    /* «المزيد»: the remaining tools, inserting a picture, touch & stylus input, and the reader settings */
+    /* «الإعدادات» (the gear): the remaining tools, inserting a picture (phones), touch & stylus input, the reader settings */
     const opts = div('st-settings');
-    const more = btn('st-btn st-more', 'المزيد من الأدوات والإعدادات', svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'), 'studio-settings');
-    const gp = popFor(more, 'st-morepop', 'المزيد من الأدوات والإعدادات');
+    const more = btn('st-btn st-more', 'الإعدادات', svg(I.gear), 'studio-settings');
+    const gp = popFor(more, 'st-morepop', 'الإعدادات');
     if (rest.length) { const grid = div('st-grid'); rest.forEach(id => grid.append(toolButton(byId[id]))); gp.append(txt('p', 'st-pop-h', 'أدوات أخرى'), grid); }
-    const img = btn('st-row-btn st-row-ic', 'إدراج صورة', svg('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>', 20) + '<span>إدراج صورة</span>', 'studio-insert-image');
-    img.onclick = () => { closePops(); if (M.images && typeof M.images.pick === 'function') M.images.pick(); else if (M.banner) M.banner('إدراج الصور غير متاح الآن.', [['حسناً', () => {}]]); };
-    if (COMPACT && !mqPhone.matches) { img.className = 'st-btn st-insert'; tools.append(img); } else gp.append(img);
+    if (!tab) gp.append(img);
     gp.append(inputSection());
     const sn = check('studio-snap', 'محاذاة الزاوية', S.snap, v => { M.setSnap(v); refreshSet(); });
     const cs = btn('st-row-btn', 'تخصيص الشريط', 'تخصيص الشريط', 'studio-customize'); cs.onclick = () => { closePops(); openCustomize(); };
@@ -168,15 +230,17 @@
     gp.append(txt('p', 'st-pop-h', 'الإعدادات'), sn, mg, cs); opts.append(more, gp);
     ts = div('st-pop st-toolset'); ts.id = 'st-toolset'; ts.hidden = true; ts.setAttribute('role', 'dialog');
     let col = null;
-    if (COMPACT && !mqPhone.matches) {                               /* ⌄ / ⌃ : hide or show the tool options bar */
+    if (tab) {                                                       /* ⌄ / ⌃ : hide or show the tool options bar */
       col = div('st-collapse');
-      const qt = btn('st-btn st-quick-toggle', quickOn() ? 'إخفاء خيارات الأداة' : 'إظهار خيارات الأداة', svg('<path d="m6 9 6 6 6-6"/>'), 'st-quick-toggle');
+      const qt = btn('st-btn st-quick-toggle', quickOn() ? 'إخفاء خيارات الأداة' : 'إظهار خيارات الأداة', svg(I.chevron), 'st-quick-toggle');
       qt.setAttribute('aria-controls', 'st-quickbar'); qt.setAttribute('aria-expanded', String(quickOn()));
       if (!quickFor()) qt.setAttribute('aria-disabled', 'true');
       qt.onclick = () => { if (!quickFor()) return; cfg.quick = !(cfg.quick !== false); save(); closePops(); render(); };
       col.append(qt);
     }
-    root.append(tools, style, hist, opts); if (col) root.append(col); root.append(ts); sync(); hs(); syncInput();
+    /* compact: undo · redo · finger | tools · (colour dot on phones) · settings | ⌄ — the old layout keeps its order */
+    if (COMPACT) root.append(hist, tools, style, opts); else root.append(tools, style, hist, opts);
+    if (col) root.append(col); root.append(ts); sync(); hs(); syncInput();
     root.dispatchEvent(new CustomEvent('st-rendered'));
   }
   /* «الكتابة باللمس والقلم»: what a finger does, palm rejection, two-finger navigation, stylus auto-detection */
@@ -238,20 +302,20 @@
     closePops(); e.stopPropagation(); if (a && a.isConnected && a.focus) a.focus();
   }, true);
   addEventListener('resize', () => { if (ts && !ts.hidden) place(); });
+  /* the iPad keyboard and Safari's bars change the visible height: keep the open sheet inside it */
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (ts && !ts.hidden) place(); });
+  addEventListener('orientationchange', () => setTimeout(() => { if (ts && !ts.hidden) place(); }, 250));
   function sync() {
     root.querySelectorAll('[data-tool]').forEach(b => {
-      const id = b.dataset.tool, on = id === S.tool;
+      const on = isOn(b.dataset.tool);
       b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
-      if (id === 'pen' || id === 'highlight') {
-        const st = M.style && M.style(id);
-        if (st && st.color) b.style.setProperty('--tool-c', st.color);
-      }
     });
     root.querySelectorAll('.st-swatch').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color === S.color)));
     root.querySelectorAll('.st-size').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.w === S.width)));
     root.style.setProperty('--st-cur', HEX6.test(S.color) ? S.color : '#168c8c');
     const ci = $('color'); if (ci && ci.value !== S.color && HEX6.test(S.color)) ci.value = S.color;
     const wi = $('width'); if (wi && +wi.value !== S.width) wi.value = S.width;
+    const k = root.querySelector('#st-quickbar .st-qkind'); if (k && k.dataset.k !== kindKey()) { k.dataset.k = kindKey(); k.innerHTML = kindSvg(k.dataset.k); }   /* pen ⇄ brush from the sheet */
   }
   function hs() { if (!S.hist) return; const u = $('undo'), r = $('redo'); if (u) u.disabled = !S.hist.canUndo; if (r) r.disabled = !S.hist.canRedo; }
   /* a short message at the top of the page (pen / finger switching) */
@@ -270,7 +334,7 @@
   /* =============================== tool settings sheet (#st-toolset) =============================== */
   const sty = () => (M.style && M.style(S.tool)) || {};
   const put = props => { if (M.setStyle) M.setStyle(S.tool, props); };      /* emits 'style' -> refreshSet() */
-  const anchor = () => root.querySelector('.st-tools [data-tool="' + S.tool + '"]');
+  const anchor = () => root.querySelector('.st-tools .st-btn.active[data-tool]') || root.querySelector('.st-tools [data-tool="' + S.tool + '"]');
   function toggleSet(kbd) { const open = ts && !ts.hidden; closePops(); if (!open) openSet(kbd); }
   function openSet(kbd) {
     if (!ts || !hasSet(S.tool)) return;
@@ -279,14 +343,23 @@
     place(); refreshSet();
     if (kbd) { const f = ts.querySelector('button:not(.ts-x),input,select'); if (f) f.focus(); }
   }
-  /* desktop / tablet: under the toolbar, centred on the tool and kept on screen; phones: a bottom sheet (CSS) */
+  /* desktop / tablet: under the toolbar (and its quick bar), centred on the tool and kept on screen. Its height is what is
+     really left down to the bottom of the visible screen (or to the page pill when it sits under the sheet), so the whole
+     sheet shows on an iPad. Phones: a bottom sheet (CSS). */
   function place() {
-    ts.style.left = ''; ts.style.right = '';
+    ts.style.left = ''; ts.style.right = ''; ts.style.maxHeight = '';
     if (mqPhone.matches) return;
-    const a = anchor(), r = root.getBoundingClientRect(), w = ts.offsetWidth; if (!a || !w) return;
-    const ar = a.getBoundingClientRect(); let x = ar.left + ar.width / 2 - w / 2;
-    x = Math.max(8, Math.min(innerWidth - 8 - w, x));
-    ts.style.left = Math.round(x - r.left) + 'px'; ts.style.right = 'auto';
+    const a = anchor(), r = root.getBoundingClientRect(), w = ts.offsetWidth; if (!w) return;
+    if (a) {
+      const ar = a.getBoundingClientRect(); let x = ar.left + ar.width / 2 - w / 2;
+      x = Math.max(8, Math.min(innerWidth - 8 - w, x));
+      ts.style.left = Math.round(x - r.left) + 'px'; ts.style.right = 'auto';
+    }
+    const vv = window.visualViewport, sr = ts.getBoundingClientRect();
+    let bottom = (vv ? vv.height + (vv.offsetTop || 0) : innerHeight) - 12;
+    const dock = $('mx-dock');
+    if (dock) { const d = dock.getBoundingClientRect(); if (d.width && d.height && d.left < sr.right && d.right > sr.left && d.top < bottom) bottom = d.top - 8; }
+    ts.style.maxHeight = Math.round(Math.max(240, bottom - sr.top)) + 'px';
   }
   function refreshSet() { if (!ts || ts.hidden) return; for (const f of upd) f(); paintPreview(); }
   /* ---- small builders; each control registers how to re-read its value from the engine ---- */
@@ -320,98 +393,200 @@
     return s;
   }
   const PEN_LABELS = Object.fromEntries(PENS);
-  function quickSizes(list) {
-    const row = div('ts-qsizes'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'أحجام سريعة');
-    for (const w of list) {
-      const b = btn('ts-qsize', w + 'pt', '<span class="ts-qdot"></span><small>' + w + '</small>');
-      b.dataset.qw = w; b.style.setProperty('--qd', Math.max(4, Math.min(18, 3 + w * 1.4)) + 'px');
-      b.onclick = () => put({ width: w }); row.append(b);
-    }
-    upd.push(() => { const cur = +(sty().width || 3); row.querySelectorAll('.ts-qsize').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.qw - cur) < 0.25))); });
-    return row;
+
+  /* ---- Notewise sheet rows (pen, brush, highlighter): one compact line each, label at the start, control at the end ---- */
+  const hr = () => { const d = div('ts-hr'); d.setAttribute('aria-hidden', 'true'); return d; };
+  const fmtW = v => String(+(+v).toFixed(1));
+  /* «السُمك» / «الشفافية»: label + value pill, then − slider + (Material). Safari on iPad moves a native range only when its
+     thumb is dragged, so a finger anywhere on the track sets the value (pointer capture; touch-action:none in CSS). */
+  function slider(id, label, min, max, step, get, set, fmt, o) {
+    o = o || {};
+    const box = div('ts-slider' + (o.alpha ? ' ts-sl-alpha' : ''));
+    const head = div('ts-vrow'), l = txt('label', 'ts-ct', label); l.htmlFor = id;
+    const out = document.createElement('output'); out.className = 'ts-pill'; out.htmlFor = id; head.append(l, out);
+    const row = div('ts-slrow');
+    const r = document.createElement('input'); r.type = 'range'; r.className = 'ts-range'; r.id = id; r.min = min; r.max = max; r.step = step; r.dir = 'ltr';
+    const half = o.alpha ? 14 : 12;                                    /* half of the thumb's hit box (CSS) */
+    const q = v => Math.min(max, Math.max(min, +(Math.round((v - min) / step) * step + min).toFixed(3)));
+    const show = () => {
+      const v = +get(); if (Math.abs(+r.value - v) > 1e-9) r.value = v;
+      r.style.setProperty('--f', String(Math.min(1, Math.max(0, (v - min) / (max - min))))); out.textContent = fmt(v);
+      if (o.alpha) { const c = sty().color; r.style.setProperty('--sw', HEX6.test(c || '') ? c : '#f2c230'); }
+    };
+    const apply = v => { v = q(v); if (Math.abs(v - +get()) > 1e-9) set(v); show(); };
+    r.oninput = () => apply(+r.value);
+    r.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' || e.button > 0) return;
+      e.preventDefault(); try { r.setPointerCapture(e.pointerId); } catch {}
+      const at = ev => { const b = r.getBoundingClientRect(); apply(min + Math.min(1, Math.max(0, (ev.clientX - b.left - half) / Math.max(1, b.width - 2 * half))) * (max - min)); };
+      const mv = ev => { if (ev.pointerId === e.pointerId) at(ev); };
+      const up = ev => { if (ev.pointerId !== e.pointerId) return; r.removeEventListener('pointermove', mv); r.removeEventListener('pointerup', up); r.removeEventListener('pointercancel', up); };
+      at(e); r.addEventListener('pointermove', mv); r.addEventListener('pointerup', up); r.addEventListener('pointercancel', up);
+    });
+    if (o.steppers) {
+      /* − / + : one step per tap; held, it repeats every 120 ms after 400 ms */
+      const stp = (sign, aria, icon) => {
+        const b = btn('ts-stp', aria, svg(icon, 20)); let t1 = 0, t2 = 0;
+        const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = 0; }, go = () => { if (!b.isConnected) return stop(); apply(+get() + sign * step); };
+        b.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); stop(); go(); t1 = setTimeout(() => { t2 = setInterval(go, 120); }, 400); });
+        for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
+        b.addEventListener('contextmenu', e => e.preventDefault());
+        b.onclick = e => { if (e.detail === 0) go(); };                 /* keyboard */
+        return b;
+      };
+      row.append(stp(-1, 'إنقاص ' + label, I.minus), r, stp(1, 'زيادة ' + label, I.plus));
+    } else row.append(r);
+    upd.push(show); box.append(head, row); return box;
   }
-  function favPresets(kind) {
-    const wrap = div('ts-favs'); wrap.setAttribute('role', 'group'); wrap.setAttribute('aria-label', 'الأنماط المفضلة');
-    const drawFavs = () => {
-      wrap.replaceChildren();
-      const s = sty(), list = Array.isArray(s.presets) ? s.presets : [];
-      list.forEach((p, idx) => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'ts-fav';
-        const label = kind === 'pen' ? (PEN_LABELS[p.pen] || 'قلم') + ' • ' + p.width : (p.tip === 'flat' ? 'مسطح' : 'دائري') + ' • ' + p.width;
-        b.title = label + ' (انقر للتفعيل)'; b.setAttribute('aria-label', label);
-        const active = kind === 'pen'
-          ? (s.pen === p.pen && String(s.color).toLowerCase() === String(p.color).toLowerCase() && Math.abs((s.width || 3) - p.width) < 0.2 && (s.dash || 'solid') === (p.dash || 'solid'))
-          : (String(s.color).toLowerCase() === String(p.color).toLowerCase() && Math.abs((s.width || 3) - p.width) < 0.2 && (s.tip || 'round') === (p.tip || 'round'));
-        b.setAttribute('aria-pressed', String(active));
+  /* a settings line: title (+ ⓘ that opens a one-line explanation under it) and an optional current value under the title */
+  let hintN = 0;
+  function crow(label, control, o) {
+    o = o || {};
+    const g = div('ts-cgroup'), row = div('ts-crow'), lb = div('ts-clab'), line = div('ts-cline');
+    const t = txt(o.forId ? 'label' : 'span', 'ts-ct', label); if (o.forId) t.htmlFor = o.forId; line.append(t);
+    let hint = null;
+    if (o.info) {
+      const ib = btn('ts-info', 'معلومات: ' + label, svg(I.info, 18)); hint = txt('p', 'ts-ihint', o.info); hint.hidden = true; hint.id = 'ts-hint-' + (++hintN);
+      ib.setAttribute('aria-expanded', 'false'); ib.setAttribute('aria-controls', hint.id);
+      ib.onclick = () => {
+        const open = hint.hidden;
+        ts.querySelectorAll('.ts-ihint').forEach(h => { h.hidden = true; }); ts.querySelectorAll('.ts-info').forEach(b => b.setAttribute('aria-expanded', 'false'));
+        hint.hidden = !open; ib.setAttribute('aria-expanded', String(open));
+      };
+      line.append(ib);
+    }
+    lb.append(line);
+    if (o.sub) { const s = txt('span', 'ts-cs', ''); lb.append(s); row.classList.add('ts-crow-2l'); upd.push(() => { s.textContent = o.sub(); }); }
+    row.append(lb, control); g.append(row); if (hint) g.append(hint);
+    return g;
+  }
+  function iconSeg(label, attr, list, get, set) {
+    const s = div('ts-isg'); s.setAttribute('role', 'group'); s.setAttribute('aria-label', label);
+    for (const [v, icon, name] of list) { const b = btn('ts-isb', name, svg(icon)); b.dataset[attr] = v; b.onclick = () => set(v); s.append(b); }
+    upd.push(() => s.querySelectorAll('.ts-isb').forEach(b => b.setAttribute('aria-pressed', String(b.dataset[attr] === String(get())))));
+    return s;
+  }
+  /* a value pill that opens the system list (iPad shows its own picker); why(): a reason to disable it, or '' */
+  function pillSelect(id, label, opts, get, set, why) {
+    const s = document.createElement('select'); s.id = id; s.className = 'ts-pill ts-pillsel'; s.setAttribute('aria-label', label);
+    for (const [v, t] of opts) { const o = document.createElement('option'); o.value = String(v); o.textContent = t; s.append(o); }
+    s.onchange = () => set(s.value);
+    upd.push(() => { const v = String(get()); if (s.value !== v) s.value = v; if (why) { const w = why(); s.disabled = !!w; s.title = w || ''; } });
+    return s;
+  }
+  function sw(id, label, get, set, info) {
+    const i = document.createElement('input'); i.type = 'checkbox'; i.id = id; i.className = 'ts-sw2'; i.setAttribute('role', 'switch');
+    i.onchange = () => set(i.checked);
+    upd.push(() => { const v = !!get(); if (i.checked !== v) i.checked = v; });
+    return crow(label, i, { forId: id, info });
+  }
+  /* «اللون»: one scrolling row of colours and a rainbow for any colour; ≡ swaps the row for the saved favourites, + saves
+     the current pen / marker as a favourite (the engine keeps up to 6 in the style's presets) */
+  function colorArea(list, kind) {
+    const box = div('ts-carea'), head = div('ts-chead'), lab = txt('span', 'ts-ct', 'اللون'), act = div('ts-cact');
+    const add = btn('ts-cbtn', kind === 'pen' ? 'حفظ القلم الحالي في المفضلة' : 'حفظ التظليل الحالي في المفضلة', svg(I.plus, 22));
+    const favB = btn('ts-cbtn', 'الأنماط المفضلة', svg(I.list, 22)); favB.setAttribute('aria-pressed', 'false');
+    act.append(add, favB); head.append(lab, act);
+    const row = div('ts-crow2'), sc = div('ts-cscroll'), dv = div('ts-cdiv'); sc.setAttribute('role', 'group'); dv.setAttribute('aria-hidden', 'true');
+    const cust = document.createElement('label'); cust.className = 'ts-custom'; cust.title = 'لون آخر';
+    const ci = document.createElement('input'); ci.type = 'color'; ci.id = 'ts-color'; ci.setAttribute('aria-label', 'لون آخر'); ci.oninput = () => put({ color: ci.value }); cust.append(ci);
+    row.append(sc, dv, cust); box.append(head, row);
+    let favView = false, sig = '';
+    const lc = c => String(c || '').toLowerCase();
+    const presets = () => Array.isArray(sty().presets) ? sty().presets : [];
+    const name = p => kind === 'pen' ? (PEN_LABELS[p.pen] || 'قلم') + ' · ' + p.width : (p.tip === 'flat' ? 'مسطح' : 'دائري') + ' · ' + p.width;
+    const same = (s, p) => lc(s.color) === lc(p.color) && Math.abs((s.width || 3) - p.width) < 0.2 &&
+      (kind === 'pen' ? s.pen === p.pen && (s.dash || 'solid') === (p.dash || 'solid') : (s.tip || 'round') === (p.tip || 'round'));
+    const current = () => { const c = sty(); return kind === 'pen'
+      ? { pen: c.pen || 'ballpoint', color: c.color || '#e43d56', width: c.width || 3, op: c.op || 1, dash: c.dash || 'solid' }
+      : { color: c.color || '#f2c230', width: c.width || 3, op: c.op || 0.3, tip: c.tip || 'round' }; };
+    function draw() {
+      sc.replaceChildren(); const ps = presets(); sig = JSON.stringify(ps);
+      if (!favView) {
+        sc.setAttribute('aria-label', 'اللون');
+        for (const [c, n] of list) { const b = btn('ts-sw', n, ''); b.dataset.color = c; b.style.setProperty('--sw', c); b.onclick = () => put({ color: c }); sc.append(b); }
+        return;
+      }
+      sc.setAttribute('aria-label', 'الأنماط المفضلة');
+      ps.forEach((p, idx) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'ts-fav'; b.dataset.i = String(idx);
+        const nm = name(p); b.title = nm; b.setAttribute('aria-label', 'تطبيق ' + nm);
         const dot = document.createElement('span'); dot.className = 'ts-fav-dot'; dot.style.setProperty('--fc', p.color);
-        const meta = document.createElement('span'); meta.className = 'ts-fav-meta'; meta.textContent = label;
-        b.append(dot, meta);
+        b.append(dot, txt('span', 'ts-fav-meta', nm));
         b.onclick = () => put(kind === 'pen' ? { pen: p.pen, color: p.color, width: p.width, op: p.op || 1, dash: p.dash || 'solid' } : { color: p.color, width: p.width, op: p.op || 0.3, tip: p.tip || 'round' });
-        if (list.length > 1) {
-          const rm = document.createElement('span'); rm.className = 'ts-fav-rm'; rm.textContent = '×'; rm.title = 'حذف النمط';
-          rm.onclick = e => { e.stopPropagation(); const next = list.filter((_, i) => i !== idx); put({ presets: next }); };
+        if (ps.length > 1) {
+          const rm = txt('span', 'ts-fav-rm', '×'); rm.title = 'حذف النمط'; rm.setAttribute('aria-hidden', 'true');
+          rm.onclick = e => { e.stopPropagation(); put({ presets: ps.filter((_, i) => i !== idx) }); };
           b.append(rm);
         }
-        wrap.append(b);
+        sc.append(b);
       });
-      if (list.length < 6) {
-        const add = btn('ts-fav ts-fav-add', 'حفظ النمط الحالي في المفضلة', '＋ حفظ الحالي');
-        add.onclick = () => {
-          const cur = sty(), item = kind === 'pen'
-            ? { pen: cur.pen || 'ballpoint', color: cur.color || '#e43d56', width: cur.width || 3, op: cur.op || 1, dash: cur.dash || 'solid' }
-            : { color: cur.color || '#f2c230', width: cur.width || 3, op: cur.op || 0.3, tip: cur.tip || 'round' };
-          put({ presets: list.concat([item]).slice(0, 6) });
-        };
-        wrap.append(add);
-      }
+    }
+    add.onclick = () => {
+      const ps = presets(), cur = current(), at = ps.findIndex(p => same(cur, p));
+      favView = true;
+      if (at < 0 && ps.length < 6) put({ presets: ps.concat([cur]).slice(0, 6) }); else draw();
+      refreshSet();
+      const b = sc.querySelector('.ts-fav[data-i="' + (at < 0 ? presets().length - 1 : at) + '"]'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
-    upd.push(drawFavs);
-    drawFavs();
-    return wrap;
+    favB.onclick = () => { favView = !favView; draw(); refreshSet(); };
+    upd.push(() => {
+      if (JSON.stringify(presets()) !== sig) draw();               /* only when the favourites changed: a slider drag keeps the scroll */
+      lab.textContent = favView ? 'الأنماط المفضلة' : 'اللون'; favB.setAttribute('aria-pressed', String(favView));
+      const ps = presets(), full = ps.length >= 6; add.disabled = full; add.title = full ? 'المفضلة ممتلئة — احذف نمطاً أولاً' : add.getAttribute('aria-label');
+      const s = sty(), c = lc(s.color); let known = false;
+      sc.querySelectorAll('.ts-sw').forEach(b => { const on = b.dataset.color === c; known = known || on; b.setAttribute('aria-pressed', String(on)); });
+      sc.querySelectorAll('.ts-fav').forEach(b => { const p = ps[+b.dataset.i]; b.setAttribute('aria-pressed', String(!!p && same(s, p))); });
+      cust.classList.toggle('on', !favView && !known);
+      if (HEX6.test(c) && ci.value !== c) ci.value = c;
+    });
+    draw(); return box;
   }
+  const DASH_N = { solid: 'متصل', dashed: 'متقطع', dotted: 'منقط' };
+  const hlMode = () => { const s = sty(); return s.alwaysStraight ? 'line' : s.straight !== false ? 'hold' : 'free'; };
+  const HL_N = { hold: 'ثبّت للاستقامة', line: 'مستقيم دائماً', free: 'حر' };
   function build(g) {
-    ts.replaceChildren(); upd = []; const t = byId[S.tool];
-    ts.setAttribute('aria-label', TITLES[t.id]); ts.dataset.group = g;
-    const head = div('ts-head'); head.innerHTML = svg(t.icon, 20); head.append(txt('p', 'ts-title', TITLES[t.id]));
-    const x = btn('ts-x', 'إغلاق', svg('<path d="M18 6 6 18M6 6l12 12"/>', 20), 'ts-close'); x.onclick = () => { const a = ts._anchor; closePops(); if (a && a.isConnected) a.focus(); };
+    ts.replaceChildren(); upd = []; const id = byId[curId()] ? curId() : S.tool;
+    ts.setAttribute('aria-label', TITLES[id] || TITLES[S.tool] || 'الإعدادات'); ts.dataset.group = g;
+    const head = div('ts-head'), sp = document.createElement('span'); sp.setAttribute('aria-hidden', 'true');
+    head.append(sp, txt('p', 'ts-title', SHORT[id] || TITLES[id] || TITLES[S.tool] || ''));
+    const x = btn('ts-x', 'إغلاق', svg(I.x, 16), 'ts-close'); x.onclick = () => { const a = ts._anchor; closePops(); if (a && a.isConnected) a.focus(); };
     head.append(x); ts.append(head);
     if (g !== 'eraser' && g !== 'lasso') { const cv = document.createElement('canvas'); cv.id = 'ts-preview'; cv.className = 'ts-preview'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'معاينة'); ts.append(cv); }
     if (g === 'pen') {
-      sec('الأنماط المفضلة').append(favPresets('pen'));
+      /* Notewise's «Pen» sheet with our five real pen types (each card shows how that pen writes) */
       const pr = div('ts-presets'); pr.setAttribute('role', 'group'); pr.setAttribute('aria-label', 'نوع القلم');
-      for (const [id, name] of PENS) { const b = btn('ts-preset', name, '<canvas class="ts-chip" aria-hidden="true"></canvas><span>' + name + '</span>'); b.dataset.pen = id; b.onclick = () => put({ pen: id }); pr.append(b); }
+      for (const [pid, nm] of PENS) { const b = btn('ts-preset', nm, '<canvas class="ts-chip" aria-hidden="true"></canvas><span>' + nm + '</span>'); b.dataset.pen = pid; b.onclick = () => put({ pen: pid }); pr.append(b); }
       upd.push(() => pr.querySelectorAll('.ts-preset').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pen === sty().pen))));
-      sec('نوع القلم').append(pr);
-      sec('نمط الخط').append(seg('نمط الخط', 'dash', [['solid', 'متصل'], ['dashed', 'متقطع'], ['dotted', 'منقط']], () => sty().dash || 'solid', v => put({ dash: v })));
-      sec('اللون').append(colors(PEN_COLORS));
-      sec('السُمك والشفافية والتنعيم', 'ts-tight').append(
-        quickSizes([1.5, 2.5, 4, 6, 10]),
-        range('ts-width', 'السُمك', 1, 20, 0.5, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
-        range('ts-op', 'الشفافية', 20, 100, 5, () => Math.round((sty().op == null ? 1 : sty().op) * 100), v => put({ op: v / 100 }), v => v + '%'),
-        range('ts-smooth', 'تنعيم الخط', 0, 100, 5, () => Math.round((sty().smooth || 0) * 100), v => put({ smooth: v / 100 }), v => v + '%'));
-      const wr = () => sty().wr || [0.25, 2.2];
-      sec('حساسية الضغط والسرعة', 'ts-tight').append(
-        range('ts-wrmin', 'الأدنى', 0.1, 1, 0.05, () => wr()[0], v => put({ wr: [v, Math.max(v, wr()[1])] }), v => '×' + (+v).toFixed(2)),
-        range('ts-wrmax', 'الأقصى', 1, 4, 0.1, () => wr()[1], v => put({ wr: [Math.min(v, wr()[0]), v] }), v => '×' + (+v).toFixed(1)),
-        txt('p', 'ts-hint', 'يتفاعل القلم مع ضغط القلم الإلكتروني أو سرعة الحركة لمحاكاة الحبر الطبيعي.'));
-      sec('').append(toggle('ts-shapesnap', 'تثبيت الشكل تلقائياً عند التوقف (Hold to Shape)', () => (M.input ? M.input() : {}).shapeSnap, v => M.setInput && M.setInput({ shapeSnap: v })));
+      ts.append(pr,
+        slider('ts-width', 'السُمك', 1, 20, 0.5, () => sty().width || 3, v => put({ width: v }), fmtW, { steppers: true }),
+        hr(),
+        crow('نمط الخط', iconSeg('نمط الخط', 'dash', [['solid', I.solid, 'متصل'], ['dashed', I.dashed, 'متقطع'], ['dotted', I.dotted, 'منقط']], () => sty().dash || 'solid', v => put({ dash: v })), { sub: () => DASH_N[sty().dash || 'solid'] || 'متصل' }),
+        sw('ts-shapesnap', 'ثبّت القلم لرسم شكل', () => (M.input ? M.input() : {}).shapeSnap, v => M.setInput && M.setInput({ shapeSnap: v }),
+          'ارسم ثم أبقِ القلم ثابتاً لحظة ليتحوّل الرسم إلى خط أو دائرة أو مستطيل مرتّب.'),
+        crow('حساسية الضغط', pillSelect('ts-pressure', 'حساسية الضغط', WR_LEVELS.map((_, n) => [n, String(n)]), () => wrLevel(sty().wr || [0.25, 2.2]), v => put({ wr: WR_LEVELS[+v].slice() }),
+          () => sty().pen === 'technical' ? 'القلم التقني بسُمك ثابت' : ''), { forId: 'ts-pressure' }),
+        crow('ثبات الخط', pillSelect('ts-smooth', 'ثبات الخط', Array.from({ length: 11 }, (_, n) => [n, String(n)]), () => Math.round((sty().smooth || 0) * 10), v => put({ smooth: +v / 10 })),
+          { forId: 'ts-smooth', info: 'رقم أعلى = خط أنعم وأقل اهتزازاً، مع تأخر بسيط خلف القلم.' }),
+        crow('الشفافية', pillSelect('ts-op', 'الشفافية', [100, 90, 80, 70, 60, 50, 40, 30, 20].map(n => [n, n + '%']), () => Math.min(100, Math.max(20, Math.round((sty().op == null ? 1 : sty().op) * 10) * 10)), v => put({ op: +v / 100 })), { forId: 'ts-op' }),
+        hr(),
+        colorArea(PEN_COLORS, 'pen'));
     } else if (g === 'highlight') {
-      sec('الأنماط المفضلة').append(favPresets('highlight'));
-      sec('شكل رأس التظليل').append(seg('شكل رأس التظليل', 'tip', [['round', 'دائري ناعم', 'حواف منسابة'], ['flat', 'مسطح مائل', 'حافة تظليل حادة']], () => sty().tip || 'round', v => put({ tip: v })));
-      sec('وضع الرسم').append(seg('وضع الرسم', 'hlmode', [['free', 'تظليل حر', 'يستقيم عند التوقف'], ['line', 'مستقيم دائماً', 'تظليل سطور فوري']], () => sty().alwaysStraight ? 'line' : 'free', v => put({ alwaysStraight: v === 'line' })));
-      sec('اللون').append(colors(MARKERS));
-      sec('السُمك والشفافية', 'ts-tight').append(
-        quickSizes([2, 3.5, 5, 7, 10]),
-        range('ts-width', 'السُمك', 1, 10, 0.5, () => sty().width, v => put({ width: v }), v => String(+(+v).toFixed(1))),
-        range('ts-op', 'الشفافية', 10, 80, 5, () => Math.round((sty().op || 0.3) * 100), v => put({ op: v / 100 }), v => v + '%'));
-      const hs2 = toggle('ts-hsnap', 'محاذاة أفقية تلقائية للسطور', () => sty().hsnap, v => put({ hsnap: v }));
-      upd.push(() => { const on = sty().straight || sty().alwaysStraight; hs2.querySelector('input').disabled = !on; hs2.classList.toggle('ts-off', !on); });
-      sec('').append(
-        toggle('ts-straight', 'خط مستقيم عند التوقف', () => sty().straight, v => put({ straight: v })),
-        hs2,
-        toggle('ts-hl-shapesnap', 'تحويل التظليل إلى مستطيل/دائرة عند التوقف', () => sty().shapeSnap !== false, v => put({ shapeSnap: v })),
-        toggle('ts-hl-blend', 'دمج طبيعي خلف النص والكتابة (Multiply)', () => sty().blend !== 'normal', v => { put({ blend: v ? 'multiply' : 'normal' }); M.redraw && M.redraw(); })
-      );
+      const hsRow = sw('ts-hsnap', 'محاذاة أفقية للسطور', () => sty().hsnap, v => put({ hsnap: v }));
+      upd.push(() => { hsRow.hidden = hlMode() === 'free'; });
+      ts.append(
+        slider('ts-width', 'السُمك', 1, 10, 0.5, () => sty().width || 3, v => put({ width: v }), fmtW, { steppers: true }),
+        slider('ts-op', 'الشفافية', 10, 80, 5, () => Math.round((sty().op || 0.3) * 100), v => put({ op: v / 100 }), v => v + '%', { alpha: true }),
+        hr(),
+        crow('شكل الطرف', iconSeg('شكل الطرف', 'tip', [['flat', I.tipFlat, 'مسطح'], ['round', I.tipRound, 'دائري']], () => sty().tip || 'round', v => put({ tip: v })), { sub: () => sty().tip === 'flat' ? 'مسطح' : 'دائري' }),
+        crow('رسم خط مستقيم', iconSeg('رسم خط مستقيم', 'hlmode', [['hold', I.hold, 'ثبّت للاستقامة'], ['line', I.line, 'مستقيم دائماً'], ['free', I.free, 'حر']], hlMode,
+          v => put(v === 'line' ? { alwaysStraight: true, straight: true } : v === 'hold' ? { straight: true, alwaysStraight: false } : { straight: false, alwaysStraight: false })), { sub: () => HL_N[hlMode()] }),
+        hsRow,
+        sw('ts-hl-shapesnap', 'ثبّت لرسم مستطيل أو دائرة', () => sty().shapeSnap !== false, v => put({ shapeSnap: v })),
+        sw('ts-hl-blend', 'دمج خلف النص', () => sty().blend !== 'normal', v => { put({ blend: v ? 'multiply' : 'normal' }); M.redraw && M.redraw(); },
+          'يبقى النص والكتابة تحت التظليل واضحين، كقلم التظليل على الورق.'),
+        hr(),
+        colorArea(MARKERS, 'highlight'));
     } else if (g === 'eraser') {
       sec('نوع الممحاة').append(seg('نوع الممحاة', 'mode', [
         ['stroke', 'ممحاة كاملة', 'تمسح الخط بلمسة'],
@@ -512,14 +687,25 @@
   }
   /* sample points in CSS px -> page fractions of that virtual page (u = x / 800, v = y / height) */
   const uv = (x, y, ch) => [x / 800, y / ch];
-  function penItem(cw, ch, s, jit) {
-    const n = 44, raw = [], pr = []; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5;
+  /* Notewise's sample gesture: up to a hump, a sharp drop and a small hook (fractions of its box), as a Catmull-Rom curve */
+  const GEST = [[0.30, 0.72], [0.37, 0.56], [0.44, 0.38], [0.50, 0.27], [0.535, 0.30], [0.555, 0.45], [0.57, 0.66], [0.59, 0.78], [0.625, 0.80], [0.67, 0.72], [0.70, 0.66]];
+  function gesture(n, x0, x1, y0, y1) {
+    const P = GEST.map(([x, y]) => [x0 + (x - 0.30) / 0.40 * (x1 - x0), y0 + (y - 0.27) / 0.53 * (y1 - y0)]), segs = P.length - 1, out = [];
     for (let i = 0; i < n; i++) {
-      const t = i / (n - 1), x = 12 + (cw - 24) * t, y = ch / 2 - ch * 0.27 * Math.sin(t * 2 * Math.PI);
-      raw.push([x + rnd() * jit, y + rnd() * jit]); pr.push(t < 0.55 ? 0.12 + 0.88 * t / 0.55 : 1 - 0.65 * (t - 0.55) / 0.45);   /* a pressure ramp: light, firm, lifting */
+      const t = i / (n - 1) * segs, k = Math.min(segs - 1, Math.floor(t)), u = t - k;
+      const a = P[Math.max(0, k - 1)], b = P[k], c = P[k + 1], e = P[Math.min(segs, k + 2)];
+      const f = j => 0.5 * (2 * b[j] + (c[j] - a[j]) * u + (2 * a[j] - 5 * b[j] + 4 * c[j] - e[j]) * u * u + (3 * b[j] - a[j] - 3 * c[j] + e[j]) * u * u * u);
+      out.push([f(0), f(1)]);
     }
+    return out;
+  }
+  const pressure = t => t < 0.4 ? 0.15 + 0.85 * t / 0.4 : t < 0.75 ? 1 : 1 - 0.65 * (t - 0.75) / 0.25;   /* light, firm, lifting */
+  function penItem(cw, ch, s, jit, box) {
+    const pts = box ? gesture(48, box[0], box[1], box[2], box[3]) : gesture(48, cw * 0.30, cw * 0.70, ch * 0.27, ch * 0.80);
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5;
+    const pr = pts.map((_, i) => pressure(i / (pts.length - 1)));
     const f = s.smooth > 0 && C.InkFilter ? new C.InkFilter(s.smooth, ch / 800) : null;   /* the same input filter the engine uses */
-    const points = raw.map((p, i) => { const q = uv(p[0], p[1], ch); return f ? f.push(q, i * 8) : q; });
+    const points = pts.map((p, i) => { const q = uv(p[0] + rnd() * jit, p[1] + rnd() * jit, ch); return f ? f.push(q, i * 8) : q; });
     const out = { id: 'ts-sample', page: 1, tool: 'pen', color: s.color || '#e43d56', width: s.width || 3, pen: s.pen || 'ballpoint', wr: (s.wr || [0.25, 2.2]).slice(), op: s.op || 1, pr, points };
     if (s.dash && s.dash !== 'solid') out.dash = s.dash;
     return out;
@@ -529,13 +715,10 @@
     const g = groupFor(S.tool), s = sty(), cv = $('ts-preview');
     try {
       if (cv) {
-        const { ctx, cw, ch, d, PW, H } = surface(cv, 260, 70); let item = null;
-        if (g === 'pen') item = penItem(cw, ch, s, 2.4);
+        const { ctx, cw, ch, PW, H } = surface(cv, 312, 72); let item = null;
+        if (g === 'pen') item = penItem(cw, ch, s, 1.2);
         else if (g === 'highlight') {
-          ctx.fillStyle = '#334e62';                                   /* two lines of "text" under the marker to show multiply blending */
-          for (const [y, w] of [[0.36, 0.86], [0.7, 0.58]]) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(14 * d, (ch * y - 3) * d, (cw - 28) * w * d, 6 * d, 3 * d) : ctx.rect(14 * d, (ch * y - 3) * d, (cw - 28) * w * d, 6 * d); ctx.fill(); }
-          const y = ch * 0.36, isLine = s.straight || s.alwaysStraight;
-          const pts = isLine ? [[18, y], [cw - 18, y]] : Array.from({ length: 24 }, (_, i) => [18 + (cw - 36) * i / 23, y + Math.sin(i / 3) * 2.2]);
+          const pts = s.alwaysStraight ? [[cw * 0.3, ch * 0.5], [cw * 0.7, ch * 0.5]] : gesture(32, cw * 0.30, cw * 0.70, ch * 0.27, ch * 0.80);
           item = { id: 'ts-sample', page: 1, tool: 'highlight', color: s.color, width: s.width, op: s.op, tip: s.tip || 'round', points: pts.map(p => uv(p[0], p[1], ch)) };
         } else if (g === 'shape') {
           const T = S.tool, a = T === 'line' || T === 'arrow' ? [cw * 0.22, ch * 0.74] : [cw * 0.3, ch * 0.2], b = T === 'line' || T === 'arrow' ? [cw * 0.78, ch * 0.26] : [cw * 0.7, ch * 0.8];
@@ -545,10 +728,18 @@
         } else if (g === 'text') item = { id: 'ts-sample', page: 1, tool: S.tool, text: 'ملاحظتي Aa', color: s.color, size: s.size, bold: s.bold, italic: s.italic, points: [uv(10, 6, ch)], w: (cw - 20) / 800, h: (ch - 12) / ch };
         if (item) M.drawStroke(ctx, item, PW, H);
       }
-      if (g === 'pen') ts.querySelectorAll('.ts-preset').forEach(b => { const c = b.querySelector('canvas'), o = surface(c, 52, 24); M.drawStroke(o.ctx, penItem(o.cw, o.ch, Object.assign({}, s, { pen: b.dataset.pen, width: Math.min(s.width || 3, 4), smooth: 0.5, dash: 'solid', op: 1 }), 0), o.PW, o.H); });
+      if (g === 'pen') {
+        /* type cards: the same gesture in one ink colour (blue on the chosen card), so only the pen's character differs */
+        const cs = getComputedStyle(ts), acc = cs.getPropertyValue('--ts-acc').trim(), ink = cs.getPropertyValue('--ts-ink').trim();
+        ts.querySelectorAll('.ts-preset').forEach(b => {
+          const c = b.querySelector('canvas'), o = surface(c, 34, 16), on = b.getAttribute('aria-pressed') === 'true';
+          const col = (on ? acc : ink) || (on ? '#2f6fed' : '#1f2328');
+          M.drawStroke(o.ctx, penItem(o.cw, o.ch, { pen: b.dataset.pen, color: HEX6.test(col) ? col : '#1f2328', width: Math.min(s.width || 3, 3), wr: s.wr, smooth: 0.5, op: 1 }, 0, [2, o.cw - 2, 2, o.ch - 2]), o.PW, o.H);
+        });
+      }
     } catch (e) { console.warn(e); }
   }
-  M.toolbar = { render, cfg: () => cfg, TOOLS, openSettings: () => openSet(), closeSettings: closePops };
+  M.toolbar = { render, cfg: () => cfg, TOOLS, activate, isOn, openSettings: () => openSet(), closeSettings: closePops };
 
   /* ---- customize dialog: order, visibility, handedness, reset ---- */
   function openCustomize() {

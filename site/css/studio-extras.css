@@ -140,3 +140,5 @@ body.st-viewmode #st-timer-pop,body.st-viewmode .st-laserpop{display:none}
 body.st-compact #mx-timer-float{display:none!important}
 @media(max-width:720px){#st-timer-float{right:8px}}
 @media(prefers-reduced-motion:reduce){.st-laserpop:not([hidden]),.st-timerpop:not([hidden]),#st-timer-float.tm-anim,#st-timer-float.tm-pulse{animation:none}#studio-toolbar,body.st-viewmode #studio-toolbar,#st-timer-float,#st-timer-float.tm-out{transition:none}}
+/* the laser has its own colour in its own sheet: no generic colour dot on the bar */
+html[data-studio-tool=laser] #studio-toolbar .st-style{display:none}
