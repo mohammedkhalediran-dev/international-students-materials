@@ -16,14 +16,14 @@
   const M = window.MedixaStudio;
   const svg = d => '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   const ICON = {
-    more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+    more: '<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>',   /* three solid dots (Notewise) */
     download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
     dark: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
     focus: '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
     split: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>',
     suite: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/>',
     study: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
-    pages: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    pages: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',   /* 2×2 equal squares (Notewise) */
     tools: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
     prev: '<path d="m9 18 6-6-6-6"/>', next: '<path d="m15 18-6-6 6-6"/>'
   };
@@ -72,7 +72,7 @@
     const z = document.createElement('div'); z.id = 'st-zoom'; z.setAttribute('role', 'group'); z.setAttribute('aria-label', 'التكبير');
     const mk = (id, lab, text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.setAttribute('aria-label', lab); b.title = lab; b.textContent = text; b.onclick = fn; z.append(b); return b; };
     mk('st-zoom-out', 'تصغير', '−', () => M.reader.zoomBy(1 / 1.15)); const lab = mk('st-zoom-label', 'ملاءمة العرض', '100%', () => M.reader.fit()); mk('st-zoom-in', 'تكبير', '+', () => M.reader.zoomBy(1.15));
-    ($('mx-dock') || document.body).append(z); M.reader.on('zoom', v => { lab.textContent = Math.round(v * 100) + '%'; });
+    ($('mx-dock') || document.body).append(z); M.reader.on('zoom', v => { lab.textContent = Math.round(v * 100) + '%'; }); M.reader.on('zoompreview', v => { lab.textContent = Math.round(v * 100) + '%'; });
   }
   /* focus mode: keep the save status visible (the header is hidden) */
   (function () {

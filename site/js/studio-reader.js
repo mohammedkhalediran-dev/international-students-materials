@@ -10,10 +10,16 @@
   /* iPad/iPhone: Safari has a small total canvas budget; past it pages turn blank. Cap each page canvas and keep fewer. */
   const TOUCH = (navigator.maxTouchPoints || 0) > 0 || /iP(hone|ad|od)/.test(navigator.userAgent);
   const MAX_PX = TOUCH ? 4e6 : 12e6;
-  const scaleFor = (w, h) => Math.max(0.5, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, w * h))));
+  const scaleFor = (w, h) => Math.max(0.05, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, w * h))));   /* never above the canvas budget (Safari blanks it) */
+  /* Sharp text at any zoom (2026-10-21, بطلب محمد «النص بدقة منخفضة»): when the page canvas cannot hold full screen
+     resolution, the visible part of the page is drawn again from the PDF at device resolution into one small canvas
+     on top (like the native iPad note apps). It is rebuilt after scrolling / zooming stops and dropped while zooming. */
+  const HD_PX = TOUCH ? 4.2e6 : 9e6;
   const FONTS = new URL('vendor/pdfjs/standard_fonts/', location.href).href /* self-hosted: the fallback font (LiberationSans) sometimes failed to load from cdnjs, leaving pages with blank text */, CMAPS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
   const R = { zoom: 1, pages: [], byId: new Map(), doc: null, bytes: null, raster: null, MAXKEEP: TOUCH ? 4 : 12, queue: [], running: 0, io: null, listeners: [], nSources: 0, notebook: null };
-  const clampZ = z => Math.min(4, Math.max(0.4, z));
+  R.minZoom = 0.4; R.maxZoom = 8;
+  const clampZ = z => Math.min(R.maxZoom, Math.max(R.minZoom, z));
+  const reduced = () => (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || document.documentElement.classList.contains('reduced-motion') || document.body.classList.contains('reduced-motion');
   const fitWidth = () => Math.max(240, Math.min((R.root ? R.root.clientWidth : innerWidth) - 24, 960));
   const emit = (n, d) => R.listeners.filter(l => l[0] === n).forEach(l => { try { l[1](d); } catch (e) { console.warn(e); } });
   R.on = (n, f) => R.listeners.push([n, f]);
@@ -34,7 +40,7 @@
   function release(p) {
     if (p.task) { try { p.task.cancel(); } catch {} p.task = null; }
     p.token = (p.token || 0) + 1; p.rendered = false;
-    p.pdf.width = 0; p.pdf.height = 0; M.setPageActive(p.id, false); if (p.text) p.text.replaceChildren();
+    p.pdf.width = 0; p.pdf.height = 0; M.setPageActive(p.id, false); if (p.text) p.text.replaceChildren(); dropHd(p);
   }
   /* Template marks for blank pages (same geometry the export uses). */
   function paintTemplate(ctx, W, H, rec) {
@@ -44,25 +50,71 @@
     ctx.beginPath(); for (const [x1, y1, x2, y2] of geo.lines) { ctx.moveTo(x1 * k, y1 * k); ctx.lineTo(x2 * k, y2 * k); } ctx.stroke();
     for (const [x, y] of geo.dots) { ctx.beginPath(); ctx.arc(x * k, y * k, Math.max(0.7, 0.9 * k), 0, 7); ctx.fill(); }
   }
+  /* A page that already shows a picture is re-drawn off screen and swapped in at once, so zooming never shows a white
+     or half-drawn page (pdf.js paints white first and then in slices). The first draw goes straight to the canvas. */
   async function draw(p) {
     const token = ++p.token, d = scaleFor(p.cssW, p.cssH), W = Math.max(1, Math.round(p.cssW * d)), H = Math.max(1, Math.round(p.cssH * d));
-    if (p.pdf.width !== W || p.pdf.height !== H) { p.pdf.width = W; p.pdf.height = H; }
+    const shown = p.rendered && p.pdf.width > 1, off = shown ? document.createElement('canvas') : null;
+    if (off) { off.width = W; off.height = H; } else if (p.pdf.width !== W || p.pdf.height !== H) { p.pdf.width = W; p.pdf.height = H; }
     M.setPageActive(p.id, true);
-    const ctx = p.pdf.getContext('2d'); let done = false;
-    if (p.kind === 'blank') { paintTemplate(ctx, W, H, p.rec); p.rendered = true; p.rw = W; emit('rendered', p); return; }
-    const img = R.raster && R.raster[p.n - 1];
-    if (img) { try { const im = await imageFor(p.n); if (token !== p.token) return; if (im && im.naturalWidth > 0) { ctx.clearRect(0, 0, W, H); ctx.drawImage(im, 0, 0, W, H); done = true; } } catch (e) { console.warn('MEDIXA raster unavailable, using PDF renderer', e); } }
+    const ctx = (off || p.pdf).getContext('2d'); let done = false;
+    const swap = () => { if (!off) return; if (p.pdf.width !== W || p.pdf.height !== H) { p.pdf.width = W; p.pdf.height = H; } p.pdf.getContext('2d').drawImage(off, 0, 0); off.width = off.height = 0; };
+    const drop = () => { if (off) off.width = off.height = 0; };
+    if (p.kind === 'blank') { paintTemplate(ctx, W, H, p.rec); swap(); p.rendered = true; p.rw = W; emit('rendered', p); return; }
+    const img = !p.proxy && R.raster && R.raster[p.n - 1];   /* saved page images only when pdf.js could not load: they are pictures, not text */
+    if (img) { try { const im = await imageFor(p.n); if (token !== p.token) return drop(); if (im && im.naturalWidth > 0) { ctx.clearRect(0, 0, W, H); ctx.drawImage(im, 0, 0, W, H); done = true; } } catch (e) { console.warn('MEDIXA raster unavailable, using PDF renderer', e); } }
     if (!done && p.proxy && p.proxy.render) {
       const vp = p.proxy.getViewport({ scale: W / p.w });
       if (p.task) { try { p.task.cancel(); } catch {} }
       p.task = p.proxy.render({ canvasContext: ctx, viewport: vp });
-      try { await p.task.promise; } catch (e) { if (e && e.name === 'RenderingCancelledException') return; throw e; }
+      try { await p.task.promise; } catch (e) { drop(); if (e && e.name === 'RenderingCancelledException') return; throw e; }
       p.task = null;
     }
-    if (token !== p.token) return;
+    if (token !== p.token) return drop();
+    swap();
     p.rendered = true; p.rw = W; emit('rendered', p);
-    textLayer(p, token);
+    textLayer(p, token); hdSoon();
   }
+  /* stop a pending sharp render but keep the current sharp layer on screen (it is placed in % of the page and scales) */
+  function cancelHd(p) { if (p.hdTask) { try { p.hdTask.cancel(); } catch {} p.hdTask = null; } p.hdTok = (p.hdTok || 0) + 1; }
+  function dropHd(p) {
+    if (p.hdTask) { try { p.hdTask.cancel(); } catch {} p.hdTask = null; }
+    p.hdTok = (p.hdTok || 0) + 1;
+    if (p.hd) { p.hd.width = 0; p.hd.height = 0; p.hd.remove(); p.hd = null; }
+    if (M.setInkHd) M.setInkHd(p.id, false);
+  }
+  async function hd(p) {
+    if (R.frozen) return;
+    if (p.kind !== 'src' || !p.proxy || !p.rendered || !p.near) return dropHd(p);
+    const need = DPR(), have = p.rw / Math.max(1, p.cssW);
+    if (have >= need * 0.97) return dropHd(p);                       /* the page canvas is already sharp */
+    const a = p.pdf.getBoundingClientRect();
+    const L = Math.max(a.left, 0), T = Math.max(a.top, 0), Rr = Math.min(a.right, innerWidth), B = Math.min(a.bottom, innerHeight);
+    if (Rr - L < 4 || B - T < 4) return dropHd(p);
+    const x0 = L - a.left, y0 = T - a.top, w = Rr - L, h = B - T;
+    const d = Math.min(need, Math.sqrt(HD_PX / (w * h)));
+    if (d <= have * 1.05) return dropHd(p);
+    const key = [R.zoom.toFixed(4), Math.round(x0), Math.round(y0), Math.round(w), Math.round(h)].join();
+    if (p.hd && p.hdKey === key && !p.hdTask) return;              /* the same region at the same zoom is already sharp */
+    const tok = (p.hdTok = (p.hdTok || 0) + 1);
+    if (p.hdTask) { try { p.hdTask.cancel(); } catch {} p.hdTask = null; }
+    const c = document.createElement('canvas'); c.className = 'pdf-hd'; c.setAttribute('aria-hidden', 'true');
+    c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d));
+    const vp = p.proxy.getViewport({ scale: (p.cssW / p.w) * d });
+    p.hdTask = p.proxy.render({ canvasContext: c.getContext('2d'), viewport: vp, transform: [1, 0, 0, 1, -Math.round(x0 * d), -Math.round(y0 * d)] });
+    try { await p.hdTask.promise; } catch (e) { if (tok === p.hdTok) p.hdTask = null; c.width = 0; return; }
+    if (tok !== p.hdTok) { c.width = 0; return; }
+    p.hdTask = null;
+    /* place it in % of the page section, so it scrolls with the page and keeps covering the right place while a zoom
+       re-lays the page out (until the new one replaces it) */
+    const SW = Math.max(1, p.el.clientWidth), SH = Math.max(1, p.el.clientHeight);
+    c.style.left = ((p.pdf.offsetLeft + x0) / SW * 100) + '%'; c.style.top = ((p.pdf.offsetTop + y0) / SH * 100) + '%'; c.style.width = (w / SW * 100) + '%'; c.style.height = (h / SH * 100) + '%';
+    if (p.hd) { p.hd.width = 0; p.hd.remove(); }
+    p.hd = c; p.hdKey = key; p.pdf.after(c); emit('hd', p);
+  }
+  let hdT = 0;
+  function hdSoon(ms) { clearTimeout(hdT); hdT = setTimeout(() => { if (R.frozen) return; for (const p of R.pages) { if (p.near) { hd(p).catch(() => {}); if (M.setInkHd) M.setInkHd(p.id, true); } else { if (p.hd) dropHd(p); if (M.setInkHd) M.setInkHd(p.id, false); } } }, ms == null ? 160 : ms); }
+  R.hdSoon = hdSoon;
   /* Selectable, invisible text over the page (also what screen readers read). Pointer events stay off until the
      "select text" tool is active, so drawing is never disturbed. Pages without text (scans) are flagged. */
   async function textLayer(p, token) {
@@ -93,31 +145,58 @@
     if (rendered.length > R.MAXKEEP) rendered.filter(p => !p.near).sort((a, b) => distance(b) - distance(a)).slice(0, rendered.length - R.MAXKEEP).forEach(release);
   }
 
+  /* ---------- pinch: frozen while the fingers zoom (no renders, releases or relayouts mid-gesture) ---------- */
+  R.frozen = false;
+  R.freeze = on => {
+    R.frozen = !!on;
+    if (!on) { if (R.relayoutPending) { R.relayoutPending = false; relayout(); } }
+  };
+  R.preview = z => emit('zoompreview', clampZ(z));
+  /* after a pinch the content glides the last few px to where the fingers left it, instead of jumping */
+  let settleEls = [], settleT = 0;
+  R.cancelSettle = () => { if (!settleEls.length) return; clearTimeout(settleT); for (const el of settleEls) { el.style.transition = ''; el.style.transform = ''; } settleEls = []; R.frozen = false; };
+  function settleAnim(ex, ey) {
+    const vh = innerHeight, els = R.pages.map(p => p.el).filter(el => { const r = el.getBoundingClientRect(); return r.bottom > -vh && r.top < 2 * vh; });
+    if (!els.length) return;
+    R.cancelSettle(); settleEls = els; R.frozen = true;
+    for (const el of els) { el.style.transition = 'none'; el.style.transform = 'translate(' + ex + 'px,' + ey + 'px)'; }
+    void els[0].offsetWidth;
+    requestAnimationFrame(() => { for (const el of els) { el.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; } });
+    settleT = setTimeout(() => { for (const el of els) el.style.transition = ''; settleEls = []; R.frozen = false; settle(); hdSoon(0); }, 230);
+  }
+
   /* ---------- zoom ---------- */
   function anchor() { const p = R.pages.find(x => x.el.getBoundingClientRect().bottom > 120) || R.pages[0]; if (!p) return null; const r = p.el.getBoundingClientRect(); return { p, frac: (120 - r.top) / Math.max(1, r.height) }; }
   function setZoom(z) {
     z = clampZ(z); if (Math.abs(z - R.zoom) < 0.001) return; const a = anchor(); R.zoom = z;
-    R.pages.forEach(layout);
+    R.pages.forEach(cancelHd); R.pages.forEach(layout);
     if (a) { const r = a.p.el.getBoundingClientRect(); scrollBy(0, r.top + a.frac * r.height - 120); }
-    clearTimeout(R.zt); R.zt = setTimeout(() => { R.pages.forEach(p => { if (p.near) want(p); }); pump(); settle(); }, 120);
+    clearTimeout(R.zt); R.zt = setTimeout(() => { R.pages.forEach(p => { if (p.near) want(p); }); pump(); settle(); hdSoon(0); }, 120);
     emit('zoom', R.zoom);
   }
-  /* Zoom keeping the document point under (cx, cy) — the pinch midpoint — exactly where it was on screen. */
-  function zoomAt(z, cx, cy) {
-    z = clampZ(z); if (Math.abs(z - R.zoom) < 0.001 || !R.pages.length) return;
+  /* Zoom so the document point under (cx, cy) — where the pinch started — ends under (tx, ty), where the fingers are
+     now. What scrolling cannot reach (top / end of the document, pages centred below 100%) glides there in 180 ms. */
+  function zoomAt(z, cx, cy, tx, ty) {
+    if (tx == null) tx = cx; if (ty == null) ty = cy;
+    z = clampZ(z); if (!R.pages.length) return;
     const p = R.pages.find(x => x.el.getBoundingClientRect().bottom >= cy) || R.pages[R.pages.length - 1], r = p.el.getBoundingClientRect();
     const fx = (cx - r.left) / Math.max(1, r.width), fy = (cy - r.top) / Math.max(1, r.height);
-    R.zoom = z; R.pages.forEach(layout);
-    const r2 = p.el.getBoundingClientRect(); scrollBy(0, r2.top + fy * r2.height - cy);
-    if (R.root) R.root.scrollBy(r2.left + fx * r2.width - cx, 0);
-    clearTimeout(R.zt); R.zt = setTimeout(() => { R.pages.forEach(q => { if (q.near) want(q); }); pump(); settle(); }, 120);
+    const same = Math.abs(z - R.zoom) < 0.001;
+    if (!same) { R.zoom = z; R.pages.forEach(cancelHd); R.pages.forEach(layout); }
+    const r2 = p.el.getBoundingClientRect(); scrollBy(0, r2.top + fy * r2.height - ty);
+    if (R.root) R.root.scrollBy(r2.left + fx * r2.width - tx, 0);
+    const r3 = p.el.getBoundingClientRect(), ex = tx - (r3.left + fx * r3.width), ey = ty - (r3.top + fy * r3.height);
+    if (Math.hypot(ex, ey) > 1 && !reduced()) settleAnim(ex, ey);
+    if (same) return;
+    clearTimeout(R.zt); R.zt = setTimeout(() => { R.pages.forEach(q => { if (q.near) want(q); }); pump(); settle(); hdSoon(0); }, settleEls.length ? 240 : 120);
     emit('zoom', R.zoom);
   }
   R.setZoom = setZoom; R.zoomAt = zoomAt; R.zoomBy = f => setZoom(R.zoom * f); R.fit = () => setZoom(1);
   addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) { e.preventDefault(); R.zoomBy(1.15); } else if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); R.zoomBy(1 / 1.15); } else if ((e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); R.fit(); } });
   addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); R.zoomBy(e.deltaY < 0 ? 1.08 : 1 / 1.08); } }, { passive: false });
-  let rt = 0; const relayout = () => { clearTimeout(rt); rt = setTimeout(() => { const a = anchor(); R.pages.forEach(layout); if (a) { const r = a.p.el.getBoundingClientRect(); scrollBy(0, r.top + a.frac * r.height - 120); } R.pages.forEach(p => { if (p.near) want(p); }); pump(); }, 150); };
+  let rt = 0; const relayout = () => { clearTimeout(rt); rt = setTimeout(() => { if (R.frozen) { R.relayoutPending = true; return; } const a = anchor(); R.pages.forEach(cancelHd); R.pages.forEach(layout); if (a) { const r = a.p.el.getBoundingClientRect(); scrollBy(0, r.top + a.frac * r.height - 120); } R.pages.forEach(p => { if (p.near) want(p); }); pump(); hdSoon(0); }, 150); };
   addEventListener('resize', relayout);
+  addEventListener('scroll', () => hdSoon(), { capture: true, passive: true });   /* window or the pages column */
 
   /* ---------- page list (source pages + virtual blank pages, in display order) ---------- */
   function makePage(id) {
@@ -176,7 +255,7 @@
       R.nSources = R.sizes.length; M.setSources(R.nSources);
       await M.init({ src, bytes: R.bytes });
       if (isNotebook && !M.S.layout.blanks.length) M.addBlank(0, 'lined');           /* a notebook always has a page to write on */
-      R.io = new IntersectionObserver(es => { for (const e of es) { const p = e.target.__p; if (p) p.near = e.isIntersecting; } settle(); }, { rootMargin: TOUCH ? '700px 0px' : '1600px 0px' });
+      R.io = new IntersectionObserver(es => { for (const e of es) { const p = e.target.__p; if (p) p.near = e.isIntersecting; } if (!R.frozen) settle(); }, { rootMargin: TOUCH ? '700px 0px' : '1600px 0px' });
       R.pages = M.pageOrder(R.nSources).map(makePage); root.append(...R.pages.map(p => p.el)); labels();
       if (window.ResizeObserver) { let w0 = root.clientWidth; new ResizeObserver(() => { if (Math.abs(root.clientWidth - w0) > 2) { w0 = root.clientWidth; relayout(); } }).observe(root); }
       M.ready(); emit('opened', R);

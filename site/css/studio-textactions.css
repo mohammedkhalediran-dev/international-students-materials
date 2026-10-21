@@ -1,26 +1,32 @@
-/* MEDIXA Study Studio — text actions for selected PDF text (studio-smart.js): the action row #st-seltools
-   (ترجمة | بحث | شرح | نسخ | تظليل, then بطاقة / سؤال / قناع), the translate (#st-tx) and explain (#st-explain) panels,
-   the search menu, the saved-highlight popover (#st-hlpop) and the copy toast. Loaded after studio.css.
-   Phones (<= 720px): the row scrolls sideways inside the screen; panels, menu and popover are bottom sheets above the
-   drawing bar. */
+/* MEDIXA Study Studio — text actions for selected PDF text (studio-smart.js): the dark action bar #st-seltools
+   (نسخ | تظليل | تسطير | شطب | ترجمة | بحث | مشاركة | ⋯, the ⋯ menu #st-sel-more holding شرح / بطاقة / سؤال / قناع), the
+   translate (#st-tx) and explain (#st-explain) panels, the search menu, the saved-highlight popover (#st-hlpop) and the
+   copy toast. Loaded after studio.css. Phones (<= 720px): the same 256 px bar; panels, menu and popover are bottom
+   sheets above the drawing bar. */
 
-/* ---------- action row ---------- */
-.st-seltools{gap:2px;padding:4px;border:1px solid #ffffff1f;border-radius:14px;background:#122c47;box-shadow:0 10px 30px #0b1c2e59;max-width:calc(100vw - 16px);overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;direction:rtl}
-.st-seltools::-webkit-scrollbar{display:none}
-.st-seltools .st-sel-btn{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:#e8f1f5;font:600 13px/1 system-ui,"Noto Naskh Arabic",sans-serif;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.st-seltools .st-sel-btn svg{flex:0 0 auto}
-.st-seltools .st-sel-btn:hover{background:#ffffff1a;color:#fff}
-.st-seltools .st-sel-btn:active{background:#ffffff26}
-.st-seltools .st-sel-btn:focus-visible{outline:3px solid #7ad0d0;outline-offset:-3px}
-.st-seltools .st-sel-btn[aria-expanded=true]{background:#168c8c;color:#fff}
-.st-sel-grp{flex:0 0 auto;display:inline-flex;align-items:center;margin-inline-start:2px;padding-inline-start:6px;border-inline-start:1px solid #ffffff2b}
-.st-sel-cap{padding-inline-end:2px;color:#a9c3d1;font:600 12px system-ui,"Noto Naskh Arabic",sans-serif;white-space:nowrap}
-.st-seltools .st-sel-hl{width:44px;min-width:44px;padding:0;border:0;border-radius:10px;background:transparent}
-.st-seltools .st-sel-hl::before{content:"";display:block;width:22px;height:22px;margin:auto;border-radius:50%;background:var(--c,#f2c230);box-shadow:0 0 0 2px #ffffffd9}
-.st-seltools .st-sel-hl:hover::before{box-shadow:0 0 0 2px #fff,0 0 0 4px #7ad0d0}
-.st-sel-sep{flex:0 0 1px;align-self:stretch;margin:8px 4px;background:#ffffff2b}
-.st-seltools .st-sel-x{color:#a9c3d1}
-
+/* ---------- action bar (2026-10-21، طلب محمد 2 و8، مثل Notewise تماماً): حبة داكنة بأيقونات رمادية فقط، تُقرأ من اليسار:
+   نسخ · تظليل · تسطير · شطب · ترجمة · بحث · مشاركة · المزيد (أدوات الدراسة). Same look in light and night mode.
+   Fades / scales in from its bottom-left corner (.is-in), ~100 ms; never moves while a handle is dragged. ---------- */
+.st-seltools{position:fixed;z-index:25;display:flex;align-items:center;gap:0;height:40px;box-sizing:border-box;margin:0;padding:0 3px;border:1px solid #48474a;border-radius:20px;background:#19181b;box-shadow:0 4px 14px #00000033;direction:ltr;opacity:0;transform:scale(.96);transform-origin:0 100%;transition:opacity .1s ease-out,transform .1s ease-out;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.st-seltools.is-below{transform-origin:0 0}
+.st-seltools.is-in{opacity:1;transform:none}
+.st-seltools:not(.is-in),.st-seltools.is-off{pointer-events:none}
+.st-seltools.is-off{visibility:hidden}
+.st-seltools .st-sel-btn{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:31px;min-width:31px;height:38px;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:#c5c4c8;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.st-seltools .st-sel-btn svg{flex:0 0 auto;width:20px;height:20px;stroke-width:1.7}
+.st-seltools .st-sel-btn .st-sel-lb{display:none}
+.st-seltools .st-sel-btn:hover{color:#fff}
+.st-seltools .st-sel-btn:active,.st-seltools .st-sel-btn[aria-expanded=true]{color:#fff;background:radial-gradient(circle,#ffffff1f 0 14px,transparent 14.5px)}
+.st-seltools .st-sel-btn:focus-visible{outline:2px solid #0a95ff;outline-offset:-3px;border-radius:14px}
+/* «المزيد»: the study actions in a small dark menu */
+.st-sel-menu{position:fixed;z-index:26;display:flex;flex-direction:column;gap:2px;min-width:210px;box-sizing:border-box;margin:0;padding:5px;border:1px solid #48474a;border-radius:14px;background:#19181b;box-shadow:0 8px 24px #00000047;direction:rtl;text-align:start}
+.st-sel-menu[hidden]{display:none}
+.st-sel-mi{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#ecebef;font:600 14px system-ui,"Noto Naskh Arabic",sans-serif;text-align:start;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.st-sel-mi svg{flex:0 0 auto;width:20px;height:20px;color:#c5c4c8;stroke-width:1.7}
+.st-sel-mi:hover,.st-sel-mi:focus-visible{background:#ffffff14;outline:none}
+.st-sel-mi:active{background:#ffffff1f}
+body.medixa-dark .st-seltools,body.medixa-dark .st-sel-menu{border-color:#5a595d;box-shadow:0 4px 18px #00000073}
+@media (prefers-reduced-motion:reduce){.st-seltools{transition:none;transform:none}}
 /* ---------- panels, menu, popover (white MEDIXA cards) ---------- */
 .st-ta-panel,.st-ta-menu,.st-ta-pop{position:fixed;z-index:26;box-sizing:border-box;margin:0;background:#fff;color:#18334b;border:1px solid #dbe5ea;border-radius:14px;box-shadow:0 14px 36px #12304a33,0 1px 3px #12304a14;direction:rtl;text-align:start;font:500 14px/1.5 system-ui,"Noto Naskh Arabic",sans-serif}
 .st-ta-panel[hidden],.st-ta-menu[hidden],.st-ta-pop[hidden],#st-ta-toast[hidden]{display:none}
@@ -86,7 +92,6 @@
 
 /* ---------- phones: bottom sheets between the page bar and the drawing bar ---------- */
 @media(max-width:720px){
-  .st-seltools{max-width:calc(100vw - 16px)}
   .st-ta-panel,.st-ta-menu,.st-ta-pop{left:8px;right:8px;top:auto;bottom:calc(var(--st-tb-h,64px) + 8px);width:auto;max-width:none;max-height:calc(100vh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px);max-height:calc(100dvh - var(--st-tb-h,64px) - var(--st-hdr-h,52px) - 24px);overflow:auto;overscroll-behavior:contain;border-radius:16px;box-shadow:0 -8px 30px #12304a33}
   .st-ta-out{max-height:34vh}
   .st-hp-colors{justify-content:space-between}
@@ -118,4 +123,4 @@ body.medixa-dark .st-hp-sw::before{box-shadow:0 0 0 1px #ffffff40}
 body.medixa-dark .st-hp-sw[aria-pressed=true]::before{box-shadow:0 0 0 2px #1b2630,0 0 0 4px #8fd8d8}
 
 @media(prefers-reduced-motion:reduce){.st-ta-busy::before{animation:none;border-top-color:#168c8c80}}
-@media print{.st-seltools,.st-ta-panel,.st-ta-menu,.st-ta-pop,#st-ta-toast{display:none!important}}
+@media print{.st-seltools,.st-sel-menu,.st-ta-panel,.st-ta-menu,.st-ta-pop,#st-ta-toast{display:none!important}}

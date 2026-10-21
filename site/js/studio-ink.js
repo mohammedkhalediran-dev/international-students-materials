@@ -38,7 +38,7 @@
     text: { color: '#18334b', width: 3, size: 18, bold: false, italic: false },
     eraser: { mode: 'stroke', size: 12, target: 'all', keepShapes: false, autoSize: true, autoBack: false }
   };
-  const DEF_INPUT = { fingerDraw: true, stylusOnly: false, palm: true, palmSens: 'medium', twoFinger: true, autoStylus: true, shapeSnap: true };
+  const DEF_INPUT = { fingerDraw: true, stylusOnly: false, palm: true, palmSens: 'medium', twoFinger: true, autoStylus: true, shapeSnap: true, fingerMode: 'auto' };
   const num = (v, a, b, d) => (typeof v === 'number' && Number.isFinite(v) && v >= a && v <= b ? v : d);
   function cleanStyle(g, v) {
     const d = DEF_STYLES[g], o = Object.assign({}, d);
@@ -102,6 +102,7 @@
     if (v && typeof v === 'object') { for (const k of Object.keys(DEF_INPUT)) if (typeof v[k] === typeof DEF_INPUT[k]) o[k] = v[k]; }
     else { try { o.stylusOnly = localStorage.getItem('medixa.penOnly') === 'true'; } catch {} }   /* one-time migration of the old setting */
     if (!['low', 'medium', 'high'].includes(o.palmSens)) o.palmSens = 'medium';
+    if (!['auto', 'nav', 'draw'].includes(o.fingerMode)) o.fingerMode = 'auto';
     return o;
   }
 
@@ -243,8 +244,10 @@
     ctx.strokeStyle = col; ctx.fillStyle = col;
     if (s.tool === 'text' || s.tool === 'sticky') { drawTextBox(ctx, s, w, h); ctx.restore(); return; }
     if (s.tool === 'image') { drawImageItem(ctx, s, w, h); ctx.restore(); return; }
-    if (s.tool === 'texthl') {                                   /* text-anchored highlight: one translucent fill per line rectangle */
-      ctx.globalAlpha = s.op || 0.35; ctx.beginPath(); for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill();
+    if (s.tool === 'texthl' && s.mark) { ctx.globalAlpha = s.op || 0.9; markLines(ctx, [s], w, h); ctx.restore(); return; }
+    if (s.tool === 'texthl') {                                   /* text-anchored highlight: one rounded translucent band per text line */
+      if (!document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal')) ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = s.op || 0.35; hlBands(ctx, [s], w, h);
       ctx.restore(); return;
     }
     const applyDash = d => {
@@ -301,16 +304,39 @@
     } else { ctx.globalAlpha = s.op || 1; ctx.lineWidth = base; drawPath(ctx, s.points, w, h); ctx.stroke(); }
     ctx.restore();
   }
+  /* texthl with mark 'underline' | 'strike' (2026-10-21): a line under / through each text line, instead of a fill */
+  function markLines(ctx, list, w, h) {
+    ctx.beginPath();
+    for (const s of list) for (const r of s.rects) {
+      const lh = (r[3] - r[1]) * h, y = s.mark === 'strike' ? (r[1] * h + lh * 0.55) : (r[3] * h - lh * 0.06);
+      ctx.moveTo(r[0] * w, y); ctx.lineTo(r[2] * w, y);
+    }
+    ctx.lineWidth = Math.max(1, ((list[0].rects[0][3] - list[0].rects[0][1]) * h) * 0.085); ctx.lineCap = 'round'; ctx.stroke();
+  }
+  /* texthl fill (2026-10-21, R2/R8 «مثل Notewise»): one band per line with the line's own height, a little wider than the
+     glyph run, corners rounded (0.35 x band height). All bands of a group go into ONE path filled once (nonzero, every
+     band wound the same way), so overlapping highlights never darken. Stored rects are untouched. */
+  function hlBands(ctx, list, w, h) {
+    ctx.beginPath();
+    for (const s of list) for (const r of s.rects) {
+      const lh = (r[3] - r[1]) * h; if (!(lh > 0)) continue;
+      const pad = 0.12 * lh, x = r[0] * w - pad, y = r[1] * h, bw = (r[2] - r[0]) * w + 2 * pad, rad = Math.max(0, Math.min(0.35 * lh, bw / 2, lh / 2));
+      if (ctx.roundRect) { ctx.roundRect(x, y, bw, lh, rad); continue; }
+      ctx.moveTo(x + rad, y); ctx.arcTo(x + bw, y, x + bw, y + lh, rad); ctx.arcTo(x + bw, y + lh, x, y + lh, rad); ctx.arcTo(x, y + lh, x, y, rad); ctx.arcTo(x, y, x + bw, y, rad); ctx.closePath();
+    }
+    ctx.fill('nonzero');
+  }
   /* Consecutive highlights are painted per colour/opacity/tip group with ONE fill/stroke each, so where highlights overlap
      the colour does not stack up into a darker band (a marker over a marker looks like one marker). */
   function drawHighlights(ctx, list, w, h) {
     const groups = new Map();
-    for (const s of list) { const key = s.tool + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
+    for (const s of list) { const key = s.tool + '|' + (s.mark || '') + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
     const mult = !document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal');
     for (const g of groups.values()) {
       const s0 = g[0]; ctx.save(); ctx.fillStyle = ctx.strokeStyle = s0.color || '#f2c230';
+      if (s0.tool === 'texthl' && s0.mark) { ctx.globalAlpha = s0.op || 0.9; markLines(ctx, g, w, h); ctx.restore(); continue; }
       if (mult) ctx.globalCompositeOperation = 'multiply';
-      if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; ctx.beginPath(); for (const s of g) for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill('nonzero'); }
+      if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; hlBands(ctx, g, w, h); }
       else {
         ctx.globalAlpha = s0.op || 0.3;
         ctx.lineCap = s0.tip === 'flat' ? 'butt' : 'round';
@@ -378,27 +404,66 @@
   }
   function sizePage(pg) {
     if (!pg.on) { if (pg.ink.width !== 1) { pg.ink.width = 1; pg.ink.height = 1; } if (pg.over.width !== 1) { pg.over.width = 1; pg.over.height = 1; } pg.dirty = true; return; }   /* off-screen pages hold no pixels */
-    const r = pg.ink.getBoundingClientRect(), d = Math.max(0.5, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, r.width * r.height)))), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
+    const r = pg.ink.getBoundingClientRect(), d = Math.max(0.05, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, r.width * r.height)))), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
     if (r.width < 1) return;                                       /* hidden (e.g. split pane switching): keep the current pixels */
     pg.totW = Math.max(1, r.width); pg.totH = Math.max(1, r.height);
     pg.cssW = pg.totW / kx; pg.cssH = pg.totH / ky;                /* cssW/cssH = the PAGE area, margins excluded */
     const W = Math.round(pg.totW * d), H = Math.round(pg.totH * d);
-    if (pg.ink.width !== W || pg.ink.height !== H) { pg.ink.width = W; pg.ink.height = H; pg.dirty = true; }
+    if (pg.ink.width !== W || pg.ink.height !== H) {
+      pg.ink.width = W; pg.ink.height = H; pg.dirty = true;
+      if (pg.hd) { pg.hd.canvas.width = 0; pg.hd.canvas.remove(); pg.hd = null; }   /* its CSS-px geometry is stale; the reader rebuilds it */
+    }
     if (pg.over.width !== W || pg.over.height !== H) { pg.over.width = W; pg.over.height = H; pg.needsPaint = true; }
     pg.pw = W / kx; pg.ph = H / ky;                                /* page area in canvas px */
   }
+  function drawPageItems(ctx, n, pw, ph) {
+    let batch = [];
+    const flushHl = () => { if (batch.length) drawHighlights(ctx, batch, pw, ph); batch = []; };
+    for (const s of S.items) {
+      if (!s || s.page !== n || !C.validStroke(s)) continue;
+      if (S.skip && S.skip.has(s.id)) continue;                    /* being dragged: a tool draws it on the live overlay */
+      if (isHl(s)) batch.push(s); else { flushHl(); drawStroke(ctx, s, pw, ph); }
+    }
+    flushHl();
+  }
   function renderInk(pg) {
     const ctx = pg.ink.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, pg.ink.width, pg.ink.height);
-    ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t);
-    let batch = [];
-    const flushHl = () => { if (batch.length) drawHighlights(ctx, batch, pg.pw, pg.ph); batch = []; };
-    for (const s of S.items) {
-      if (!s || s.page !== pg.n || !C.validStroke(s)) continue;
-      if (S.skip && S.skip.has(s.id)) continue;                    /* being dragged: a tool draws it on the live overlay */
-      if (isHl(s)) batch.push(s); else { flushHl(); drawStroke(ctx, s, pg.pw, pg.ph); }
+    const h = pg.hd;
+    if (h) {                                                         /* leave a hole where the sharp layer draws, so translucent ink is not doubled */
+      const k = pg.ink.width / Math.max(1, pg.totW); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, pg.ink.width, pg.ink.height); ctx.rect(h.x0 * k, h.y0 * k, h.w * k, h.h * k); ctx.clip('evenodd');
     }
-    flushHl(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t);
+    drawPageItems(ctx, pg.n, pg.pw, pg.ph);
+    if (h) ctx.restore();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (h) {                                                         /* the visible part, at device resolution */
+      const c = h.canvas, x = c.getContext('2d'), kx = 1 + pg.ext.l + pg.ext.r, ky = 1 + pg.ext.t + pg.ext.b, pw = (pg.totW / kx) * h.d, ph = (pg.totH / ky) * h.d;
+      x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+      x.translate(-h.x0 * h.d + pw * pg.ext.l, -h.y0 * h.d + ph * pg.ext.t);
+      drawPageItems(x, pg.n, pw, ph); x.setTransform(1, 0, 0, 1, 0, 0);
+    }
     pg.dirty = false;
+  }
+  /* Sharp ink at any zoom (2026-10-21): the reader asks for it when the ink canvas cannot hold screen resolution. The
+     sharp canvas covers only the visible part of the page and never takes pointer events (drawing still lands on
+     canvas.ink, so every tool keeps its coordinates). */
+  const HD_PX = TOUCH ? 4.2e6 : 9e6;
+  function setInkHd(n, on) {
+    const pg = S.pages.get(n); if (!pg) return;
+    const drop = () => { if (!pg.hd) return; pg.hd.canvas.width = 0; pg.hd.canvas.remove(); pg.hd = null; pg.dirty = true; paint(pg); };
+    if (!on || !pg.on) return drop();
+    const r = pg.ink.getBoundingClientRect(), need = DPR(), have = pg.ink.width / Math.max(1, r.width);
+    if (r.width < 2 || have >= need * 0.97) return drop();
+    const L = Math.max(r.left, 0), T = Math.max(r.top, 0), Rr = Math.min(r.right, innerWidth), B = Math.min(r.bottom, innerHeight);
+    if (Rr - L < 4 || B - T < 4) return drop();
+    const x0 = L - r.left, y0 = T - r.top, w = Rr - L, h = B - T, d = Math.min(need, Math.sqrt(HD_PX / (w * h)));
+    if (d <= have * 1.05) return drop();
+    let c = pg.hd && pg.hd.canvas;
+    if (!c) { c = document.createElement('canvas'); c.className = 'ink-hd'; c.setAttribute('aria-hidden', 'true'); }
+    c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d));
+    c.style.left = (pg.ink.offsetLeft + x0) + 'px'; c.style.top = (pg.ink.offsetTop + y0) + 'px'; c.style.width = w + 'px'; c.style.height = h + 'px';
+    if (c.previousElementSibling !== pg.ink) pg.ink.after(c);
+    pg.hd = { canvas: c, x0, y0, w, h, d }; pg.dirty = true; paint(pg);
   }
   function frame() {
     S.raf = 0;
@@ -448,7 +513,8 @@
     S.pages.set(pg.n, pg); inkPages.set(o.ink, pg);
     o.ink.style.touchAction = 'none';
     sizePage(pg); paint(pg);
-    if (window.ResizeObserver) new ResizeObserver(() => { sizePage(pg); paint(pg); }).observe(o.ink);
+    /* a resize clears the canvas: redraw in the same callback (before paint), so annotations never blink while zooming */
+    if (window.ResizeObserver) new ResizeObserver(() => { const w = pg.ink.width, h = pg.ink.height; sizePage(pg); if (pg.on && (pg.ink.width !== w || pg.ink.height !== h)) renderInk(pg); paint(pg); }).observe(o.ink);
     o.ink.addEventListener('contextmenu', e => e.preventDefault());
     return pg;
   }
@@ -463,12 +529,25 @@
        2 fingers -> pan + pinch zoom around the gesture midpoint (CSS preview, committed as a real zoom at the end).
      States: idle, drawing, highlighting, erasing, selecting, panning, pinching.
      ===================================================================================================== */
-  const PALM = { low: { window: 250, size: 46 }, medium: { window: 500, size: 36 }, high: { window: 900, size: 28 } };
+  /* size: a contact wider than this (CSS px) is a palm. iPad Safari reports a fingertip as 30-60 px wide, so the old
+     limits (28-46) took most fingers for palms and the finger could neither scroll nor zoom (2026-10-21, محمد). */
+  const PALM = { low: { window: 250, size: 130 }, medium: { window: 500, size: 100 }, high: { window: 900, size: 80 } };
   const PENDING_MS = 70, PENDING_PX = 7, HOLD_MS = 520;
   const G = { ptrs: new Map(), state: 'idle', penDown: null, lastPenUp: 0, nav: null, hover: null, lastScroll: 0, selfScroll: 0, inertia: 0 };
   let penSeenAt = +(rd(PEN_SEEN_KEY, 0)) || 0;
-  const penMode = () => S.input.stylusOnly || !S.input.fingerDraw || (S.input.autoStylus && penSeenAt > Date.now() - 14 * 864e5);
-  function markPen() { const t = Date.now(); if (t - penSeenAt > 60000) { penSeenAt = t; wr(PEN_SEEN_KEY, t); emit('input', S.input); } }
+  /* «القلم يكتب والإصبع يحرّك» (pen mode). fingerMode: 'auto' = on once an Apple Pencil was used on this device (the
+     switch is automatic); 'nav' = always on; 'draw' = off (the finger writes too). The toolbar toggle sets nav / draw. */
+  const penMode = () => {
+    const f = S.input.fingerMode;
+    if (f === 'draw') return false;
+    if (f === 'nav' || S.input.stylusOnly) return true;
+    return !S.input.fingerDraw || (S.input.autoStylus !== false && penSeenAt > Date.now() - 60 * 864e5);
+  };
+  function markPen() {
+    const t = Date.now(), first = !penSeenAt || t - penSeenAt > 60 * 864e5;
+    if (t - penSeenAt > 60000) { penSeenAt = t; wr(PEN_SEEN_KEY, t); emit('input', S.input); }
+    if (first && (S.input.fingerMode || 'auto') === 'auto') emit('pen-detected', true);   /* the toolbar tells the student once */
+  }
   const setG = st => { if (G.state !== st) { G.state = st; document.documentElement.dataset.gesture = st; emit('gesture', st); } };
   const stateFor = tool => tool === 'eraser' ? 'erasing' : tool === 'highlight' ? 'highlighting' : TOOLS[tool] && tool !== 'text' && tool !== 'sticky' ? 'selecting' : 'drawing';
   const blocked = t => !t || !t.closest || !!t.closest('textarea,input,select,button,a,label,[contenteditable],.st-editor,.study-mask,.mx-mask,.mx-occlusion-draw,dialog') || document.body.classList.contains('study-mask-mode');
@@ -481,13 +560,14 @@
   for (const ev of ['wheel', 'keydown']) addEventListener(ev, stopInertia, { passive: true, capture: true });
 
   function onDown(e) {
-    stopInertia();
+    stopInertia(); if (api.reader && api.reader.cancelSettle) api.reader.cancelSettle();
     const t = e.target, inPages = !!(t && t.closest && t.closest('#pages'));
-    if (!inPages || (blocked(t) && !t.closest('canvas.ink')) || document.body.classList.contains('st-selecting')) return;   /* text selection keeps the browser's own touch handling */
+    if (!inPages || (blocked(t) && !t.closest('canvas.ink'))) return;   /* text selection is MEDIXA's own (studio-smart.js), never a mode that blocks the pen or the finger */
     const ink = t.closest('canvas.ink'), pg = ink ? inkPages.get(ink) : null;
     if (e.pointerType === 'touch') return touchDown(e, pg);
+    if (e.pointerType === 'pen') markPen();
     if (!pg) { if (e.pointerType === 'mouse' && e.button === 1) startPan(e, null); return; }
-    if (e.pointerType === 'pen') { markPen(); G.penDown = e.pointerId; palmSweep(); }
+    if (e.pointerType === 'pen') { G.penDown = e.pointerId; palmSweep(); }
     if (e.pointerType === 'mouse' && e.button === 1) { e.preventDefault(); return startPan(e, pg); }
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
@@ -504,18 +584,20 @@
       if (r.type !== 'touch') continue;
       if (r.role === 'pending') { clearTimeout(r.timer); r.role = 'rejected'; continue; }
       if (r.role === 'draw') { const fresh = now() - r.t0 < 450 || r.len < 30; endTool(r, fresh ? 'discard' : 'commit'); r.role = 'rejected'; }
+      else if (r.role === 'pan' && now() - r.t0 < 450) { stopInertia(); r.role = 'rejected'; }   /* a palm landing just before the pen does not move the page */
     }
   }
   function touchDown(e, pg) {
     const t = now(), P = PALM[S.input.palmSens] || PALM.medium;
     const rec = { id: e.pointerId, type: 'touch', pg, role: null, t0: t, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, buf: [e], len: 0 };
     G.ptrs.set(e.pointerId, rec);
-    if (S.input.palm && (G.penDown != null || t - G.lastPenUp < P.window || Math.max(e.width || 0, e.height || 0) > P.size)) { rec.role = 'rejected'; if (pg) e.preventDefault(); return; }
+    const pm = penMode();
+    if (S.input.palm && (G.penDown != null || t - G.lastPenUp < P.window || Math.max(e.width || 0, e.height || 0) > P.size * (pm ? 1.4 : 1))) { rec.role = 'rejected'; if (pg) e.preventDefault(); return; }
     e.preventDefault();
     if (G.nav) { rec.role = 'ignored'; return; }                   /* a third finger during a pinch changes nothing */
     const live = [...G.ptrs.values()].filter(r => r.type === 'touch' && r.role !== 'rejected' && r.role !== 'ignored');
     if (live.length >= 2) { if (S.input.twoFinger) startNav(live.slice(-2)); else rec.role = 'ignored'; return; }
-    if (!pg || penMode() || S.tool === 'hand') return startPan(e, pg, rec);
+    if (!pg || pm || S.tool === 'hand') return startPan(e, pg, rec);
     try { pg.ink.setPointerCapture(e.pointerId); } catch {}
     rec.role = 'pending'; rec.timer = setTimeout(() => promote(rec), PENDING_MS);
   }
@@ -542,9 +624,9 @@
     if (rec.role === 'draw') moveTool(rec, e);
   }
   function onUp(e) {
+    if (G.penDown === e.pointerId) { G.penDown = null; G.lastPenUp = now(); }   /* even when its stroke never started: a stuck pen blocked every finger */
     const rec = G.ptrs.get(e.pointerId); if (!rec) return;
     const cancel = e.type === 'pointercancel';
-    if (rec.type === 'pen' && G.penDown === e.pointerId) { G.penDown = null; G.lastPenUp = now(); }
     if (rec.role === 'pending') { if (cancel) { clearTimeout(rec.timer); G.ptrs.delete(rec.id); return; } promote(rec); }
     G.ptrs.delete(e.pointerId);
     if (rec.role === 'draw') {
@@ -562,7 +644,7 @@
     const p = posOf(pg, e), tool = rec && rec.eraserTip ? 'eraser' : S.tool, a = { id: e.pointerId, type: e.pointerType, tool, ops: [], last: p, px: e.clientX, py: e.clientY, t0: now(), lt: now(), anchor: [e.clientX, e.clientY] };
     pg.active = a; if (rec) { rec.pg = pg; rec.len = 0; rec.lx = e.clientX; rec.ly = e.clientY; }
     setG(stateFor(tool));
-    if (TOOLS[tool]) { a.custom = TOOLS[tool]; setState('editing'); if (TOOLS[tool].down(pg, e, p) === false) { pg.active = null; if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); return false; } return true; }
+    if (TOOLS[tool]) { a.custom = TOOLS[tool]; if (!TOOLS[tool].passive) setState('editing'); if (TOOLS[tool].down(pg, e, p) === false) { pg.active = null; if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); return false; } return true; }
     if (tool === 'eraser') {
       setState('editing');
       a.dynR = eraseSize();
@@ -804,23 +886,33 @@
     const r = G.ptrs.get(e.pointerId); if (!r || !G.nav) return; r.x = e.clientX; r.y = e.clientY;
     const A = G.ptrs.get(G.nav.a), B = G.ptrs.get(G.nav.b); if (!A || !B) return;
     const n = G.nav, m = [(A.x + B.x) / 2, (A.y + B.y) / 2], d = Math.max(10, Math.hypot(A.x - B.x, A.y - B.y));
-    const R = api.reader, s = R ? C.clamp(d / n.d0, 0.4 / n.z0, 4 / n.z0) : 1;
+    const R = api.reader, zmin = (R && R.minZoom) || 0.4, zmax = (R && R.maxZoom) || 8, s = R ? C.clamp(d / n.d0, zmin / n.z0, zmax / n.z0) : 1;
     if (n.mode === 'pan' && R && Math.abs(s - 1) > 0.06) {         /* the fingers spread / pinch: switch to zoom preview */
-      n.mode = 'pinch'; n.m0 = m; n.d0 = d / s; n.rect = R.root.getBoundingClientRect(); setG('pinching');
-      R.root.style.transformOrigin = (m[0] - n.rect.left) + 'px ' + (m[1] - n.rect.top) + 'px'; R.root.style.willChange = 'transform';
+      /* Scaling main#pages itself made the whole document wider, so iPad Safari shrank the entire page (toolbars too)
+         and the pinch fought itself (2026-10-21, فيديو محمد). Each nearby section is scaled about the fingers instead:
+         they live inside the scroll column, so the document never changes size. */
+      n.mode = 'pinch'; n.m0 = m; n.d0 = d; n.s = 1; setG('pinching');
+      const vh = innerHeight;
+      n.secs = [...R.root.children].filter(el => { if (el.tagName !== 'SECTION') return false; const r = el.getBoundingClientRect(); return r.bottom > -3 * vh && r.top < 4 * vh; });
+      for (const el of n.secs) { const r = el.getBoundingClientRect(); el.style.transformOrigin = (m[0] - r.left) + 'px ' + (m[1] - r.top) + 'px'; el.style.willChange = 'transform'; }
+      if (R.freeze) R.freeze(true);
     }
     if (n.mode === 'pan') { scrollByXY(n.last[0] - m[0], n.last[1] - m[1]); n.last = m; n.samples.push([now(), m[0], m[1]]); if (n.samples.length > 8) n.samples.shift(); return; }
-    n.s = C.clamp(d / n.d0, 0.4 / n.z0, 4 / n.z0); n.last = m;
-    R.root.style.transform = 'translate(' + (m[0] - n.m0[0]) + 'px,' + (m[1] - n.m0[1]) + 'px) scale(' + n.s + ')';
+    n.s = C.clamp(d / n.d0, zmin / n.z0, zmax / n.z0); n.last = m;
+    const tf = 'translate(' + (m[0] - n.m0[0]) + 'px,' + (m[1] - n.m0[1]) + 'px) scale(' + n.s + ')';
+    for (const el of n.secs) el.style.transform = tf;
+    if (R.preview) R.preview(n.z0 * n.s);
   }
   function navUp(rec) {
     const n = G.nav; if (!n) return;
     for (const r of G.ptrs.values()) if (r.role === 'nav') r.role = 'ignored';   /* the finger left on the glass never starts ink */
     G.nav = null;
     if (n.mode === 'pinch') {
-      const R = api.reader; R.root.style.transform = ''; R.root.style.transformOrigin = ''; R.root.style.willChange = '';
-      if (R.zoomAt) R.zoomAt(n.z0 * n.s, n.m0[0], n.m0[1]); else R.setZoom(n.z0 * n.s);
-      scrollByXY(n.m0[0] - n.last[0], n.m0[1] - n.last[1]);
+      const R = api.reader;
+      for (const el of n.secs || []) { el.style.transform = ''; el.style.transformOrigin = ''; el.style.willChange = ''; }
+      if (R.freeze) R.freeze(false);
+      /* the document point that was under the fingers lands where the fingers are now (no jump) */
+      if (R.zoomAt) R.zoomAt(n.z0 * n.s, n.m0[0], n.m0[1], n.last[0], n.last[1]); else R.setZoom(n.z0 * n.s);
     } else panEnd({ samples: n.samples });
     emit('nav-end', n.mode);
   }
@@ -901,6 +993,11 @@
       const wpt = (s, pr) => C.widthAt(s.width || 3, pr, s.tool === 'highlight' ? 'highlight' : s.tool === 'pen' ? 'pen' : 'shape') / 800 * dw;
       for (const s of strokes) {
         if (s.tool === 'text' || s.tool === 'sticky' || s.tool === 'image') { rasters.push({ page, box, rot, s }); continue; }
+        if (s.tool === 'texthl' && s.mark) {
+          const [r0, g0, b0] = hex(s.color || '#e43d56');
+          for (const q of s.rects) { const lh = q[3] - q[1], y = s.mark === 'strike' ? q[1] + lh * 0.55 : q[3] - lh * 0.06; page.drawSvgPath(path([[q[0], y], [q[2], y]]), { x: 0, y: 0, borderColor: rgb(r0, g0, b0), borderWidth: Math.max(0.6, lh * dh * 0.085), borderOpacity: s.op || 0.9, borderLineCap: LineCapStyle.Round }); }
+          continue;
+        }
         if (s.tool === 'texthl') {
           const [r0, g0, b0] = hex(s.color || '#f2c230');
           for (const q of s.rects) page.drawSvgPath(path([[q[0], q[1]], [q[2], q[1]], [q[2], q[3]], [q[0], q[3]]]) + ' Z', { x: 0, y: 0, color: rgb(r0, g0, b0), opacity: s.op || 0.35, borderWidth: 0 });
@@ -1113,15 +1210,18 @@
   }
   function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   function setStyle(tool, props) { const g = GROUPS[tool] || tool; if (!S.styles[g]) return null; S.styles[g] = cleanStyle(g, Object.assign({}, S.styles[g], props)); saveStyles(); emit('style'); return S.styles[g]; }
-  function setInput(props) { Object.assign(S.input, props || {}); S.input = Object.assign({}, DEF_INPUT, S.input); wr(INPUT_KEY, S.input); try { localStorage.setItem('medixa.penOnly', String(!!S.input.stylusOnly)); } catch {} emit('input', S.input); emit('penonly', S.input.stylusOnly); }
+  function setInput(props) { Object.assign(S.input, props || {}); S.input = Object.assign({}, DEF_INPUT, S.input); if (!['auto', 'nav', 'draw'].includes(S.input.fingerMode)) S.input.fingerMode = 'auto'; wr(INPUT_KEY, S.input); try { localStorage.setItem('medixa.penOnly', String(!!S.input.stylusOnly)); } catch {} emit('input', S.input); emit('penonly', S.input.stylusOnly); }
   const api = {
     S, C, init, draftKeys, setPageActive, pageOrder, addBlank, removeBlank, moveBlank, detachPage, setSources(n) { S.nSources = n; }, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, clearPage, patchItem, reorder, commit, fitTextHeight, rebuildIndexPage, setState, banner,
     page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox, aspect, downloadJson,
     style: tool => S.styles[GROUPS[tool] || tool] || null, setStyle, input: () => S.input, setInput, penMode, markPen,
     gesture: { get state() { return G.state; }, get pointers() { return [...G.ptrs.values()].map(r => ({ id: r.id, type: r.type, role: r.role })); }, get penSeen() { return penSeenAt; }, forgetPen() { penSeenAt = 0; wr(PEN_SEEN_KEY, 0); emit('input', S.input); } },
     setPenOnly(v) { setInput({ stylusOnly: !!v }); },
+    penMode() { return penMode(); },
+    /* the toolbar toggle: 'nav' = the pen writes, the finger scrolls and zooms; 'draw' = the finger writes too; 'auto' */
+    setFingerMode(m) { if (m === 'draw') setInput({ fingerMode: 'draw', stylusOnly: false, fingerDraw: true }); else if (m === 'nav') setInput({ fingerMode: 'nav' }); else setInput({ fingerMode: 'auto', stylusOnly: false, fingerDraw: true, autoStylus: true }); },
     setSnap(v) { S.snap = !!v; },
-    getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
+    setInkHd, getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
   };
   window.MedixaStudio = api;
 })();
