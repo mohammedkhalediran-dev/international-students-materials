@@ -199,3 +199,4 @@
 
 ## وضع الدراسة: الفيتامينات الذائبة في الدهون (2026-10-21، بطلب محمد)
 - nutrition-principles المحاضرة 1 (Fat soluble vitamins): مُدخل في courses.js بـ study: true وبلا ملفات ثابتة؛ ملف PDF نفسه مرفوع من صفحة الرفع (KV) ويُدمج عبر MS.applyUploads. المحتوى في site/data/study/nutrition-principles-1.js (9 مواضيع، من ملف الدكتورة سجادي فقط)، ومحمّل في workspace.html لبنك الأسئلة وفي SHELL في sw.js. courses.js?v=step66 وV = "medixa-studio19". التغيير مثبّت في tests/baseline-intentional-changes.json.
+- (2026-10-21) وبالطريقة نفسها: biochemistry-hormones المحاضرة 1 (Hormon basic overview 1405، ملف مرفوع من صفحة الرفع): site/data/study/biochemistry-hormones-1.js (17 موضوعاً تغطي الملف كله، ومنها جداول الغدد وهرموناتها وتصنيف الهرمونات حسب الرسول الثاني). courses.js?v=step67 وV = "medixa-studio20".
