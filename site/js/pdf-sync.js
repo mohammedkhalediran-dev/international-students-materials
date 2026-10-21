@@ -44,8 +44,10 @@
     if (!badge) {
       const hdr = document.querySelector('header'); if (!hdr) return;
       badge = document.createElement('span'); badge.id = 'acct-sync'; badge.setAttribute('role', 'status'); badge.setAttribute('aria-live', 'polite');
-      badge.style.cssText = 'position:fixed;z-index:30;inset-inline-end:10px;bottom:10px;display:inline-flex;gap:6px;align-items:center;max-width:min(92vw,520px);font:600 12px system-ui;color:#163;background:#fff;border-radius:999px;padding:5px 9px;box-shadow:0 2px 10px #0002;pointer-events:auto';
-      document.body.appendChild(badge);
+      const pill = document.getElementById('studio-hdr-actions');   /* the right header pill, beside the save status */
+      badge.style.cssText = 'display:inline-flex;gap:6px;align-items:center;max-width:min(60vw,420px);font:600 12px system-ui;color:#163;background:#fff;border-radius:999px;padding:5px 9px;pointer-events:auto' +
+        (pill ? ';margin-inline:2px' : ';position:fixed;z-index:30;right:10px;bottom:10px;box-shadow:0 2px 10px #0002');
+      if (pill) pill.prepend(badge); else document.body.appendChild(badge);
     }
     badge.replaceChildren(); badge.dataset.state = cls || ''; badge.hidden = !text;
     if (!text) return;

@@ -44,6 +44,7 @@
   const MARKERS = [['#f2c230', 'أصفر'], ['#7bd88f', 'أخضر'], ['#6fb1ff', 'أزرق'], ['#ff8fa3', 'وردي'], ['#ffb347', 'برتقالي'], ['#c39bff', 'بنفسجي'], ['#5ce1e6', 'فيروزي'], ['#d4fc79', 'ليموني']];
   const INKS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#168c8c', 'تركوازي'], ['#1f9d6a', 'أخضر'], ['#7c4dff', 'بنفسجي']];
   const SIZES = [[2, 'خط رفيع'], [3, 'خط متوسط'], [6, 'خط عريض']];
+  const QUICK_COLORS = [['#18334b', 'كحلي'], ['#e43d56', 'أحمر'], ['#2f6fed', 'أزرق'], ['#e67e22', 'برتقالي'], ['#7c4dff', 'بنفسجي']];
   const PENS = [['ballpoint', 'حبر جاف'], ['fountain', 'قلم حبر'], ['brush', 'فرشاة'], ['pencil', 'رصاص'], ['technical', 'تقني']];
   /* tools that have a settings sheet, and the engine style group behind each (shapes share one, text and sticky share one) */
   const SETG = { pen: 'pen', highlight: 'highlight', eraser: 'eraser', line: 'shape', rectangle: 'shape', ellipse: 'shape', arrow: 'shape', text: 'text', sticky: 'text' };
@@ -95,8 +96,10 @@
   const selOn = () => { const sel = M.selection; return S.tool === 'lasso' && !!sel && typeof sel.count === 'function' && typeof sel.applyStyle === 'function' && sel.count() > 0; };
   function selStyle(props) { if (!selOn()) return false; M.selection.applyStyle(props); return true; }
   const check = (id, label, on, fn) => { const l = document.createElement('label'); l.className = 'st-check'; const i = document.createElement('input'); i.type = 'checkbox'; i.id = id; i.checked = !!on; i.onchange = () => fn(i.checked); l.append(i, ' ' + label); return l; };
+  /* the quick bar (sizes · colours · custom · settings) is for tools that draw with a colour, on screens wider than a phone */
+  const quickOn = () => COMPACT && !mqPhone.matches && !!SETG[S.tool] && SETG[S.tool] !== 'eraser';
   function render() {
-    root.replaceChildren(); root.dataset.side = cfg.side;
+    root.replaceChildren(); root.dataset.side = cfg.side; document.body.classList.remove('st-has-quick');
     const shown = cfg.order.filter(id => !cfg.hidden.includes(id));
     const primary = COMPACT && !mqPhone.matches
       ? ['hand', ...shown.filter(id => ['pen', 'highlight', 'eraser', 'lasso', 'select', 'text'].includes(id))].filter(id => shown.includes(id))
@@ -117,7 +120,20 @@
     const cl = document.createElement('label'); cl.className = 'st-colorlab'; cl.append(ci, 'لون آخر'); custom.append(cl, wl);
     if (SETG[S.tool] === 'text') sizes.hidden = wl.hidden = true;   /* text and notes have no stroke width (their size is in the sheet) */
     const style = div('st-style'), wrap = div('st-stylewrap');
-    if (COMPACT || mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
+    if (quickOn()) {                                                   /* tablets and computers: a thin bar under the toolbar (Notewise) */
+      const q = div('st-quick'); q.id = 'st-quickbar'; q.setAttribute('role', 'toolbar'); q.setAttribute('aria-label', 'خيارات سريعة'); q.dataset.for = S.tool;
+      const kind = btn('st-qbtn st-qkind', 'نوع الأداة وإعداداتها', S.tool === 'pen' ? svg('<path d="M4 18c3-9 5-12 7-12 3 0 0 12 4 12 2 0 3-3 5-6"/>', 20) : svg(byId[S.tool].icon, 20));
+      kind.onclick = () => toggleSet(false);
+      const qc = div('st-colors st-qcolors'); qc.setAttribute('role', 'group'); qc.setAttribute('aria-label', 'اللون');
+      for (const [c, n] of (S.tool === 'highlight' ? MARKERS.slice(0, 5) : QUICK_COLORS)) { const b = btn('st-swatch', n, ''); b.dataset.color = c; b.style.setProperty('--sw', c); b.onclick = () => { if (selStyle({ color: c })) return; S.color = c; const ci = $('color'); if (ci) ci.value = c; M.emit('style'); sync(); }; qc.append(b); }
+      const plus = btn('st-qbtn st-qplus', 'لون وسُمك مخصصان', svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20)), pp = popFor(plus, 'st-stylepop st-qpop', 'لون وسُمك مخصصان');
+      pp.append(custom); const pw = div('st-stylewrap'); pw.append(plus, pp);
+      const gear = btn('st-qbtn st-qset', 'كل إعدادات الأداة', svg('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>', 20));
+      gear.onclick = () => toggleSet(false);
+      q.append(kind, div('st-qsep'), sizes, div('st-qsep'), qc, pw, gear);
+      if (SETG[S.tool] === 'text') q.querySelectorAll('.st-qsep')[0].hidden = true;
+      style.append(q); document.body.classList.add('st-has-quick');
+    } else if (COMPACT || mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
       const sb = btn('st-btn st-stylebtn', 'اللون والسُمك', '<span class="st-dot"></span>'), p = popFor(sb, 'st-stylepop', 'اللون والسُمك');
       p.append(colors, sizes, custom); wrap.append(sb, p); style.append(wrap);
     } else {
@@ -180,7 +196,7 @@
   addEventListener('click', e => { if (lp.pid == null && lpFresh() && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) < 32) { lp = LP0; e.stopPropagation(); e.preventDefault(); } }, true);
   addEventListener('click', e => {
     const t = e.target; if (!t.closest || t.closest('.st-pop')) return;
-    if (t.closest('#studio-toolbar [data-tool]')) return;   /* tool buttons open / close their own sheet */
+    if (t.closest('#studio-toolbar [data-tool], #st-quickbar .st-qkind, #st-quickbar .st-qset')) return;   /* tool buttons (and the quick bar's settings) open / close their own sheet */
     const own = t.closest('[aria-haspopup="true"]'); if (own && own.nextElementSibling && own.nextElementSibling.classList.contains('st-pop')) return; closePops();
   });
   /* Escape closes the open popover and gives focus back to the button that opened it */

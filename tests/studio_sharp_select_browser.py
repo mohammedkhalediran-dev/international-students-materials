@@ -1,7 +1,8 @@
 # python3 -I tests/studio_sharp_select_browser.py — قارئ PDF (2026-10-21، بطلب محمد «النص بدقة منخفضة وليس نصاً أصلياً»):
 # 1) محاضرة لها صور صفحات محفوظة تُرسم من PDF نفسه حين يتوفر pdf.js (نص حقيقي)، 2) عند التكبير يُرسم الجزء الظاهر بدقة الشاشة
 # (canvas.pdf-hd) والكتابة كذلك (canvas.ink-hd) ولا تتجاوز أي لوحة ميزانية iPad، 3) شريط التحديد الأبيض بترتيب Notewise
-# وتسطير وشطب يُحفظان ويُرسمان، 4) ضغطة مطوّلة بالإصبع في أداة اليد تحدد الكلمة، 5) المشاركة تنسخ حين لا تتوفر مشاركة النظام.
+# وتسطير وشطب يُحفظان ويُرسمان، 4) ضغطة مطوّلة بالإصبع في أداة اليد تحدد الكلمة، والمشاركة تنسخ حين لا تتوفر مشاركة النظام،
+# 5) الواجهة كما في فيديو Notewise: صف واحد في الأعلى، شريط سريع للقلم والتظليل، حبة صفحة/تكبير صغيرة، أسهم جانبية، وسحابة المزامنة في الرأس.
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'helpers'))
 from studio_env import *
@@ -82,6 +83,39 @@ try:
         chk(abs(pg.evaluate("scrollY") - s0) < 2, 'the long press did not scroll the page')
         pg.evaluate("getSelection().removeAllRanges()"); pg.wait_for_timeout(300)
         chk(not pg.evaluate("document.body.classList.contains('st-selecting')"), 'clearing the selection gives the hand tool back (no stuck selection mode)')
+        # ---------- 5. الواجهة كما في الفيديو: صف واحد في الأعلى، شريط سريع تحت الأدوات، صفحة/تكبير صغيرة، أسهم جانبية ----------
+        pg.evaluate("MedixaStudio.setTool('pen')"); pg.wait_for_timeout(300)
+        box = lambda sel: pg.evaluate(f"(()=>{{const e=document.querySelector({sel!r});if(!e||!e.offsetWidth)return null;const r=e.getBoundingClientRect();return [r.left,r.top,r.right,r.bottom]}})()")
+        tb, nv, ac = box('#studio-toolbar'), box('#st-compact-nav'), box('#studio-hdr-actions')
+        chk(tb and nv and ac and abs(tb[1] - nv[1]) < 2 and tb[0] > nv[2] and tb[2] < ac[0], f'iPad landscape: one top row, toolbar between the two pills without overlap {tb} {nv} {ac}')
+        qb = box('#st-quickbar')
+        chk(qb and qb[1] > tb[3] and qb[1] - tb[3] < 16 and abs((qb[0] + qb[2]) / 2 - (tb[0] + tb[2]) / 2) < 2, f'pen: quick bar centred just under the toolbar {qb}')
+        chk(pg.evaluate("[document.querySelectorAll('#st-quickbar .st-size').length, document.querySelectorAll('#st-quickbar .st-swatch').length, !!document.querySelector('#st-quickbar .st-qplus'), !!document.querySelector('#st-quickbar .st-qset')]") == [3, 5, True, True], 'quick bar: 3 thicknesses, 5 colours, custom colour, settings')
+        pg.click('#st-quickbar .st-swatch[data-color="#7c4dff"]'); pg.click('#st-quickbar .st-size[data-w="6"]'); pg.wait_for_timeout(150)
+        chk(pg.evaluate("[MedixaStudio.S.color, MedixaStudio.S.width, document.querySelector('#st-quickbar .st-swatch[data-color=\"#7c4dff\"]').getAttribute('aria-pressed')]") == ['#7c4dff', 6, 'true'], 'quick bar colour and thickness apply to the pen')
+        pg.click('#st-quickbar .st-qset'); pg.wait_for_timeout(250)
+        ts = box('#st-toolset')
+        chk(ts and ts[1] >= qb[3], f'settings button opens the full pen settings below the quick bar {ts}')
+        pg.keyboard.press('Escape'); pg.evaluate("MedixaStudio.setTool('highlight')"); pg.wait_for_timeout(200)
+        chk(pg.evaluate("[...document.querySelectorAll('#st-quickbar .st-swatch')].map(b=>b.dataset.color)[0]") == '#f2c230', 'highlighter: the quick bar offers marker colours')
+        for t in ('eraser', 'hand'):
+            pg.evaluate(f"MedixaStudio.setTool('{t}')"); pg.wait_for_timeout(150)
+            chk(not pg.evaluate("!!document.getElementById('st-quickbar')") and not pg.evaluate("document.body.classList.contains('st-has-quick')"), f'{t}: no quick bar')
+        dk, bd = box('#mx-dock'), box('#acct-sync')
+        chk(dk and dk[2] - dk[0] < 200, f'page / zoom pill is small {dk}')
+        chk(bd and ac and bd[0] >= ac[0] - 1 and bd[3] <= ac[3] + 1, f'the sync cloud sits in the right header pill, not on the page pill {bd}')
+        pg.evaluate("MedixaStudio.reader.fit && MedixaStudio.reader.fit()"); pg.wait_for_timeout(400)
+        p0 = pg.evaluate("+document.querySelector('#mx-reader-nav [data-mx-page]').value")
+        pg.click('#st-edge-next'); pg.wait_for_timeout(900)
+        p1 = pg.evaluate("+document.querySelector('#mx-reader-nav [data-mx-page]').value")
+        chk(p1 == p0 + 1, f'edge arrow turns to the next page {p0}->{p1}')
+        pg.click('#st-edge-prev'); pg.wait_for_timeout(900)
+        chk(pg.evaluate("+document.querySelector('#mx-reader-nav [data-mx-page]').value") == p0, 'edge arrow turns back')
+        ctx.close()
+        # الهاتف: لا شريط سريع ولا أسهم جانبية (المساحة للشريط السفلي)
+        ctx = new_context(b, {}, viewport={'width': 390, 'height': 844}, device_scale_factor=2, has_touch=True); setup(ctx); pg = open_doc(ctx, errs)
+        pg.evaluate("MedixaStudio.setTool('pen')"); pg.wait_for_timeout(200)
+        chk(not pg.evaluate("!!document.getElementById('st-quickbar')") and not pg.is_visible('#st-edge-nav'), 'phone keeps its bottom bar: no quick bar, no edge arrows')
         chk(not errs, 'no page errors: ' + '; '.join(errs[:3]))
         b.close()
 finally:

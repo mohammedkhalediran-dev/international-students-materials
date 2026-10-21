@@ -33,6 +33,11 @@
       });
       dock.append(close);
     }
+    // Page up / down on the right edge (as in Notewise); they press the dock's own previous / next buttons.
+    const edge = document.createElement('div'); edge.id = 'st-edge-nav'; edge.setAttribute('role', 'group'); edge.setAttribute('aria-label', 'تقليب الصفحات');
+    const step = sel => () => document.querySelector('#mx-reader-nav ' + sel)?.click();
+    edge.append(make('st-edge-prev', 'الصفحة السابقة', '<path d="m6 15 6-6 6 6"/>', step('[data-mx-prev]')), make('st-edge-next', 'الصفحة التالية', '<path d="m6 9 6 6 6-6"/>', step('[data-mx-next]')));
+    document.body.append(edge);
     const expanded = () => files.setAttribute('aria-expanded', String(!menu.hidden));
     new MutationObserver(expanded).observe(menu, { attributes: true, attributeFilter: ['hidden'] });
     // Keep the secondary dock dismissible without closing document/ink dialogs.
