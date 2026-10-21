@@ -118,7 +118,10 @@
   /* القائمة الجانبية (إعادة التصميم 2026-10-16) */
   --nav-surface: #eaf0f0;       /* خلفية القائمة: رمادي مخضر فاتح، والخيارات بطاقات بيضاء فوقها */
   --nav-item: #ffffff;
-  --nav-chip: #e4f1f0;          /* دائرة الأيقونة */
+  --nav-chip: #e4f1f0;
+  --nav-glass: rgba(255, 255, 255, 0.62);      /* بطاقة زجاجية */
+  --nav-glass-edge: rgba(255, 255, 255, 0.85);
+  --nav-glass-tint: rgba(234, 240, 240, 0.78);  /* خلفية القائمة شبه الشفافة */          /* دائرة الأيقونة */
   --nav-bg: #f2f6f5;            /* حالة المرور وأسطح ثانوية */
   --nav-text: #10283f;
   --nav-muted: #72828b;
@@ -170,6 +173,9 @@
   --nav-surface: #0b1828;
   --nav-item: #15293f;
   --nav-chip: #1d3a52;
+  --nav-glass: rgba(30, 52, 78, 0.55);
+  --nav-glass-edge: rgba(255, 255, 255, 0.10);
+  --nav-glass-tint: rgba(11, 24, 40, 0.80);
   --nav-bg: #172c44;
   --nav-text: #e6ecf3;
   --nav-muted: #a3b2c4;
@@ -580,6 +586,27 @@ html[dir="ltr"] { --nav-slide: 3px; }
 .is-open > .nav-sub-wrap .nav-sub > li:nth-child(n+4) { transition-delay: 120ms; }
 /* الدخول: تلاشٍ مع صعود خفيف وتليين، عنصراً بعد عنصر (مثل قوائم Apple) */
 .sidebar .nav-item, .sidebar .sb-user, .sidebar .sb-push, .sidebar .nav-title { animation: nav-item-in 0.7s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 28ms + 40ms); }
+/* زجاج خفيف بأسلوب Apple: خلفية القائمة شبه شفافة مع ألوان هادئة خلفها، والبطاقات زجاج أبيض بحافة لامعة */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .sidebar {
+    background:
+      radial-gradient(120% 60% at 100% 0%, rgba(22, 140, 140, 0.16), transparent 60%),
+      radial-gradient(90% 50% at 0% 100%, rgba(23, 50, 77, 0.12), transparent 65%),
+      var(--nav-glass-tint);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    backdrop-filter: blur(24px) saturate(170%);
+  }
+  .sb-top { background: transparent; }
+  .nav .nav-list > .nav-item > .nav-link, .nav .nav-list > .nav-item > .nav-row, .sb-user, .sb-push {
+    background: var(--nav-glass);
+    border-color: var(--nav-glass-edge);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    box-shadow: inset 0 1px 0 var(--nav-glass-edge), 0 1px 2px rgba(16, 40, 63, 0.06), 0 4px 14px rgba(16, 40, 63, 0.05);
+  }
+  .nav .nav-row .nav-link { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+  .nav .nav-list > .nav-item > .nav-link[aria-current="page"] { border-color: var(--nav-accent); }
+}
 @keyframes nav-item-in { from { opacity: 0; transform: translateY(10px) scale(0.985); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes nav-bar-in { from { transform: scaleY(0.2); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
 .nav-label, .nav-badge { transition: opacity 0.15s ease; }
