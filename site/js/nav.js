@@ -17,30 +17,30 @@
     { items: [{ id: "home", label: "الرئيسية", icon: "home", href: "index.html#home", enabled: true }] },
     { title: "دراستي", items: [
       { id: "courses", label: "الكورسات والمواد", icon: "book", href: "index.html#semesters", enabled: true, children: "semesters" },
-      { id: "latest", label: "أحدث المحاضرات", icon: "play", href: "index.html#latest", enabled: true },
-      { id: "favorites", label: "المفضلة", icon: "star", href: "index.html#favorites", enabled: true },
+      { id: "latest", label: "أحدث المحاضرات", icon: "play", href: "workspace.html?view=lectures", enabled: true },
+      { id: "favorites", label: "المفضلة", icon: "star", href: "workspace.html?view=favorites", enabled: true },
       { id: "resume", label: "متابعة القراءة", icon: "file", enabled: true, dynamic: "resume" },
-      { id: "professors", label: "الأساتذة", icon: "users", href: "index.html#professors", enabled: true }
+      { id: "professors", label: "الأساتذة", icon: "users", href: "workspace.html?view=professors", enabled: true }
     ] },
     { title: "تنظيم الدراسة", items: [
       { id: "tools", label: "أدوات الطالب", icon: "tools", href: "index.html#tools", enabled: true },
-      { id: "plan", label: "مخطط الدراسة", icon: "list", soon: true },        // لا صفحة بعد
-      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", soon: true } // لا صفحة بعد
+      { id: "plan", label: "مخطط الدراسة", icon: "list", href: "workspace.html?view=planner", enabled: true },        // لا صفحة بعد
+      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", href: "workspace.html?view=planner", enabled: true } // لا صفحة بعد
     ] },
     { title: "التدريب", items: [
-      { id: "qbank", label: "بنك الأسئلة", icon: "help", soon: true },      // «قريباً»
-      { id: "results", label: "نتائج التدريب", icon: "chart", soon: true }
+      { id: "qbank", label: "بنك الأسئلة", icon: "help", href: "workspace.html?view=questions", enabled: true },      // «قريباً»
+      { id: "results", label: "نتائج التدريب", icon: "chart", href: "workspace.html?view=results", enabled: true }
     ] },
     { title: "حسابي", items: [
-      { id: "account", label: "حسابي", icon: "user", href: "account.html", enabled: true },
-      { id: "notes", label: "ملفاتي المعلّق عليها", icon: "pen", href: "account.html#files", enabled: true },
+      { id: "account", label: "حسابي", icon: "user", href: "account.html", enabled: false },
+      { id: "notes", label: "ملفاتي المعلّق عليها", icon: "pen", href: "account.html#files", enabled: false },
       { id: "grades", label: "درجاتي الجامعية", icon: "cap", soon: true },  // يحتاج تحقق هوية من الخادم قبل أي عرض
       { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
     ] }
   ];
   var FOOT = [
-    { id: "settings", label: "الإعدادات", icon: "gear", soon: true },        // اللغة والوضع الليلي في الرأس حالياً
-    { id: "help", label: "المساعدة", icon: "help", href: "index.html#help", enabled: true },
+    { id: "settings", label: "الإعدادات", icon: "gear", href: "workspace.html?view=settings", enabled: true },        // اللغة والوضع الليلي في الرأس حالياً
+    { id: "help", label: "المساعدة", icon: "help", href: "workspace.html?view=help", enabled: true },
     { id: "logout", label: "تسجيل الخروج", icon: "logout", enabled: false }     // لا تسجيل دخول في الموقع
   ];
   /* قسم الصفحة الرئيسية الظاهر ← عنصر القائمة */
@@ -211,6 +211,9 @@
   /* ---------- الحالة النشطة ---------- */
   function resolveActive() {
     var p = page();
+    if (p === "workspace.html") {
+      return {search:"courses",lectures:"latest",favorites:"favorites",professors:"professors",planner:"plan",questions:"qbank",results:"results",settings:"settings",help:"help"}[new URLSearchParams(location.search).get("view")] || "courses";
+    }
     if (p === "index.html") {
       if (location.hash === "#favorites") return "favorites";
       if (spyId && (location.hash === "" || location.hash === "#home" || SPY[location.hash.slice(1)])) return spyId;
@@ -314,7 +317,7 @@
     function measure() {
       ticking = false;
       var line = window.innerHeight * 0.35, id = null;
-      secs.forEach(function (s) { if (s.getBoundingClientRect().top <= line) id = SPY[s.id]; });
+      secs.forEach(function (s) { if (!s.hidden && s.getBoundingClientRect().height && s.getBoundingClientRect().top <= line) id = SPY[s.id]; });
       if (id && id !== spyId) { spyId = id; if (location.hash !== "#favorites") paint(); }
     }
     window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(measure); } }, { passive: true });

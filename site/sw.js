@@ -1,6 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "ms-v30";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "reader.html", "account.html", "assets/university.webp"];
+var V = "medixa-v31";
+var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "reader.html", "account.html", "assets/medical-thorax.webp", "css/style.css?v=mx-31", "css/semester.css?v=mx-31", "css/workspace.css?v=mx-31", "js/app.js?v=mx-31", "js/nav.js?v=mx-31", "js/home.js?v=mx-31", "js/workspace.js?v=mx-31", "js/planner.js?v=mx-31", "js/questions.js?v=mx-31", "js/i18n.js?v=mx-31", "data/courses.js?v=mx-31", "data/study/medical-immunology-1.js?v=mx-31"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(V).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
 });
@@ -14,6 +14,7 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  if (/\/api\//.test(url.pathname)) return;
   var isPdf = /\.pdf$/i.test(url.pathname);
   e.respondWith(
     (isPdf ? caches.match(req).then(function (hit) { return hit || fetchAndStore(req); })
