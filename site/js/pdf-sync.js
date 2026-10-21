@@ -37,20 +37,28 @@
 
   /* ---------- شارة الحالة في الرأس ---------- */
   let badge;
+  /* Small cloud in the header: the words go in its tooltip / label, and are shown only when the student must act
+     (a conflict, a full account). It never pushes the floating header pills around. */
+  const LOUD = { conflict: 1, warn: 1 };
   function ui(text, cls, action) {
     if (!badge) {
       const hdr = document.querySelector('header'); if (!hdr) return;
       badge = document.createElement('span'); badge.id = 'acct-sync'; badge.setAttribute('role', 'status'); badge.setAttribute('aria-live', 'polite');
-      badge.style.cssText = 'font-size:12px;opacity:.9;display:inline-flex;gap:6px;align-items:center;margin-inline-start:auto';
-      hdr.appendChild(badge);
+      badge.style.cssText = 'position:fixed;z-index:30;inset-inline-end:10px;bottom:10px;display:inline-flex;gap:6px;align-items:center;max-width:min(92vw,520px);font:600 12px system-ui;color:#163;background:#fff;border-radius:999px;padding:5px 9px;box-shadow:0 2px 10px #0002;pointer-events:auto';
+      document.body.appendChild(badge);
     }
-    badge.replaceChildren(); badge.dataset.state = cls || '';
+    badge.replaceChildren(); badge.dataset.state = cls || ''; badge.hidden = !text;
     if (!text) return;
-    const t = document.createElement('span'); t.textContent = text; badge.appendChild(t);
+    badge.title = text; badge.setAttribute('aria-label', text);
+    const icon = document.createElement('span'); icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = cls === 'conflict' || cls === 'warn' ? '⚠' : cls === 'offline' ? '☁︎' : cls === 'guest' ? '☁︎' : cls === 'saving' ? '☁︎…' : '☁︎✓';
+    icon.style.color = cls === 'conflict' || cls === 'warn' ? '#b45309' : cls === 'saved' ? '#0f766e' : '#64748b';
+    badge.appendChild(icon);
+    if (LOUD[cls]) { const t = document.createElement('span'); t.textContent = text.replace(/^[⚠☁]\S*\s*/, ''); badge.appendChild(t); }
     if (action) {
       const b = document.createElement(action.href ? 'a' : 'button'); b.textContent = action.label;
       if (action.href) b.href = action.href; else { b.type = 'button'; b.onclick = action.run; }
-      b.style.cssText = 'color:#122c47;background:#fff;border:0;border-radius:6px;padding:3px 8px;font:inherit;font-weight:700;text-decoration:none;cursor:pointer';
+      b.style.cssText = 'color:#fff;background:#122c47;border:0;border-radius:999px;padding:4px 10px;font:inherit;text-decoration:none;cursor:pointer';
       badge.appendChild(b);
     }
   }
