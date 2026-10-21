@@ -630,7 +630,7 @@
     const p = posOf(pg, e), tool = rec && rec.eraserTip ? 'eraser' : S.tool, a = { id: e.pointerId, type: e.pointerType, tool, ops: [], last: p, px: e.clientX, py: e.clientY, t0: now(), lt: now(), anchor: [e.clientX, e.clientY] };
     pg.active = a; if (rec) { rec.pg = pg; rec.len = 0; rec.lx = e.clientX; rec.ly = e.clientY; }
     setG(stateFor(tool));
-    if (TOOLS[tool]) { a.custom = TOOLS[tool]; setState('editing'); if (TOOLS[tool].down(pg, e, p) === false) { pg.active = null; if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); return false; } return true; }
+    if (TOOLS[tool]) { a.custom = TOOLS[tool]; if (!TOOLS[tool].passive) setState('editing'); if (TOOLS[tool].down(pg, e, p) === false) { pg.active = null; if (S.state === 'editing') setState(S.dirty ? 'pending' : 'saved'); return false; } return true; }
     if (tool === 'eraser') {
       setState('editing');
       a.dynR = eraseSize();
