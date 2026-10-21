@@ -132,6 +132,7 @@ main#pages{max-width:none;overflow-x:auto;padding-inline:10px}
 .page canvas.pdf{position:absolute;left:0;top:0;width:100%;height:100%;max-width:none}
 .page.st-has-margin{background:repeating-linear-gradient(0deg,#f7fafb,#f7fafb 27px,#e3edf1 28px)}
 .page.st-has-margin canvas.pdf{background:#fff;box-shadow:0 0 0 1px #9db6bf}
+.page canvas.pdf-hd,.page canvas.ink-hd,.st-blank canvas.ink-hd{position:absolute;pointer-events:none;max-width:none}
 .page canvas.ink{position:absolute;inset:0;width:100%;height:100%}
 /* live layer (stroke in progress, lasso, eraser cursor) above the committed ink; never takes input */
 .page canvas.over,.st-blank canvas.over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -275,7 +276,7 @@ body.medixa-focus #studio-toolbar{top:max(8px,env(safe-area-inset-top))}
    scatters the letters. Proven by rendering the same page with the same pdf.js into an rtl and an ltr canvas. */
 .page canvas,.st-blank canvas,.st-th-c,#zw-canvas{direction:ltr}
 .st-text span,.st-text br{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
-.st-text ::selection{background:rgba(22,140,140,.38)}
+.st-text ::selection{background:rgba(0,122,255,.26)}
 body.st-selecting .st-text{pointer-events:auto;user-select:text;-webkit-user-select:text}
 body.st-selecting canvas.ink{pointer-events:none}
 body.st-selecting .st-blank canvas.ink{pointer-events:auto}

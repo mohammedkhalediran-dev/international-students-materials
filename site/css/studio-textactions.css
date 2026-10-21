@@ -1,26 +1,25 @@
 /* MEDIXA Study Studio — text actions for selected PDF text (studio-smart.js): the action row #st-seltools
-   (ترجمة | بحث | شرح | نسخ | تظليل, then بطاقة / سؤال / قناع), the translate (#st-tx) and explain (#st-explain) panels,
+   (نسخ | تظليل | تسطير | شطب | ترجمة | بحث | مشاركة, then شرح / بطاقة / سؤال / قناع), the translate (#st-tx) and explain (#st-explain) panels,
    the search menu, the saved-highlight popover (#st-hlpop) and the copy toast. Loaded after studio.css.
    Phones (<= 720px): the row scrolls sideways inside the screen; panels, menu and popover are bottom sheets above the
    drawing bar. */
 
-/* ---------- action row ---------- */
-.st-seltools{gap:2px;padding:4px;border:1px solid #ffffff1f;border-radius:14px;background:#122c47;box-shadow:0 10px 30px #0b1c2e59;max-width:calc(100vw - 16px);overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;direction:rtl}
+/* ---------- action row (2026-10-21، مثل Notewise): شريط أبيض بأيقونات فقط، يُقرأ من اليسار:
+   نسخ · تظليل · تسطير · شطب · ترجمة · بحث · مشاركة | شرح · بطاقة · سؤال · قناع · إلغاء ---------- */
+.st-seltools{gap:0;padding:3px 6px;border:1px solid #e3e8ec;border-radius:16px;background:#fff;box-shadow:0 6px 22px #0f243a2b,0 1px 2px #0f243a1a;max-width:calc(100vw - 16px);overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;direction:ltr;animation:st-sel-in .16s ease-out}
+@keyframes st-sel-in{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.st-seltools{animation:none}}
 .st-seltools::-webkit-scrollbar{display:none}
-.st-seltools .st-sel-btn{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 10px;border:0;border-radius:10px;background:transparent;color:#e8f1f5;font:600 13px/1 system-ui,"Noto Naskh Arabic",sans-serif;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.st-seltools .st-sel-btn svg{flex:0 0 auto}
-.st-seltools .st-sel-btn:hover{background:#ffffff1a;color:#fff}
-.st-seltools .st-sel-btn:active{background:#ffffff26}
-.st-seltools .st-sel-btn:focus-visible{outline:3px solid #7ad0d0;outline-offset:-3px}
-.st-seltools .st-sel-btn[aria-expanded=true]{background:#168c8c;color:#fff}
-.st-sel-grp{flex:0 0 auto;display:inline-flex;align-items:center;margin-inline-start:2px;padding-inline-start:6px;border-inline-start:1px solid #ffffff2b}
-.st-sel-cap{padding-inline-end:2px;color:#a9c3d1;font:600 12px system-ui,"Noto Naskh Arabic",sans-serif;white-space:nowrap}
-.st-seltools .st-sel-hl{width:44px;min-width:44px;padding:0;border:0;border-radius:10px;background:transparent}
-.st-seltools .st-sel-hl::before{content:"";display:block;width:22px;height:22px;margin:auto;border-radius:50%;background:var(--c,#f2c230);box-shadow:0 0 0 2px #ffffffd9}
-.st-seltools .st-sel-hl:hover::before{box-shadow:0 0 0 2px #fff,0 0 0 4px #7ad0d0}
-.st-sel-sep{flex:0 0 1px;align-self:stretch;margin:8px 4px;background:#ffffff2b}
-.st-seltools .st-sel-x{color:#a9c3d1}
-
+.st-seltools .st-sel-btn{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;min-width:40px;height:40px;min-height:40px;padding:0;border:0;border-radius:10px;background:transparent;color:#3a4652;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.st-seltools .st-sel-btn svg{flex:0 0 auto;width:20px;height:20px}
+.st-seltools .st-sel-btn .st-sel-lb{display:none}
+.st-seltools .st-sel-btn:hover{background:#eef3f6;color:#122c47}
+.st-seltools .st-sel-btn:active{background:#e1e9ee}
+.st-seltools .st-sel-btn:focus-visible{outline:3px solid #168c8c;outline-offset:-3px}
+.st-seltools .st-sel-btn[aria-expanded=true]{background:#d9eef0;color:#0f5f5f}
+.st-seltools .st-sel-hl svg{color:var(--c,#f2c230);filter:drop-shadow(0 0 .5px #0006)}
+.st-sel-sep{flex:0 0 1px;align-self:stretch;margin:9px 4px;background:#e3e8ec}
+.st-seltools .st-sel-x{color:#8a96a1}
 /* ---------- panels, menu, popover (white MEDIXA cards) ---------- */
 .st-ta-panel,.st-ta-menu,.st-ta-pop{position:fixed;z-index:26;box-sizing:border-box;margin:0;background:#fff;color:#18334b;border:1px solid #dbe5ea;border-radius:14px;box-shadow:0 14px 36px #12304a33,0 1px 3px #12304a14;direction:rtl;text-align:start;font:500 14px/1.5 system-ui,"Noto Naskh Arabic",sans-serif}
 .st-ta-panel[hidden],.st-ta-menu[hidden],.st-ta-pop[hidden],#st-ta-toast[hidden]{display:none}

@@ -32,7 +32,11 @@
     del: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
     web: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9s1.3-6.4 3.8-9z"/>',
     doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="11.5" cy="14" r="2.5"/><path d="m13.4 15.9 1.8 1.8"/>',
-    x: '<path d="M6 6l12 12M18 6 6 18"/>'
+    x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    hl: '<path d="m15 4 5 5-9 9H6v-5z"/><path d="M4 21h8"/>',
+    ul: '<path d="M7 4v7a5 5 0 0 0 10 0V4"/><path d="M5 20h14"/>',
+    st: '<path d="M16 6.5C15.2 5 13.8 4 12 4c-2.5 0-4.2 1.4-4.2 3.3 0 1.4.9 2.3 2.4 2.9"/><path d="M4 12h16"/><path d="M8 17.5C8.8 19 10.2 20 12 20c2.6 0 4.3-1.4 4.3-3.4 0-.8-.3-1.5-.8-2"/>',
+    share: '<path d="M12 3v12"/><path d="m7.5 7.5 4.5-4.5 4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'
   };
   const svg = d => '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
 
@@ -94,7 +98,7 @@
 
   /* ---------- floating action bar: ترجمة | بحث | شرح | نسخ | تظليل, then the study actions ---------- */
   let bar = null, cur = null;
-  function ensureBar() { if (bar) return bar; bar = el('div', 'st-seltools'); bar.id = 'st-seltools'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'إجراءات النص المحدد'); bar.dir = 'rtl'; bar.hidden = true; bar.addEventListener('keydown', barKeys); document.body.append(bar); return bar; }
+  function ensureBar() { if (bar) return bar; bar = el('div', 'st-seltools'); bar.id = 'st-seltools'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'إجراءات النص المحدد'); bar.dir = 'ltr'; bar.hidden = true; bar.addEventListener('keydown', barKeys); document.body.append(bar); return bar; }
   /* buttons keep the text selection (no focus steal on mouse down); fn gets the button, for focus return */
   function actBtn(host, cls, label, text, fn, icon) {
     const x = el('button', 'st-sel-btn ' + cls); x.type = 'button'; x.setAttribute('aria-label', label); x.title = label;
@@ -104,21 +108,25 @@
   function show(a) {
     cur = a; menuClose(true); const b = ensureBar(); b.replaceChildren();
     const mk = (cls, label, text, fn, icon) => actBtn(b, cls, label, text, fn, icon);
-    if (a.kind === 'text' && a.quote) {
-      mk('st-sel-tr', 'ترجمة النص المحدد', 'ترجمة', x => openTranslate(a, x), 'tr');
-      const f = mk('st-sel-find', 'بحث عن النص المحدد', 'بحث', x => menuToggle(a, x), 'find'); f.setAttribute('aria-haspopup', 'menu'); f.setAttribute('aria-expanded', 'false');
-      if (explainShown()) mk('st-sel-ex', 'شرح النص المحدد', 'شرح', x => openExplain(a, x), 'ex');
-      mk('st-sel-copy', 'نسخ النص المحدد', 'نسخ', () => { copyText(textOf(a)); hide(); }, 'copy');
-    }
+    /* 2026-10-21 (بطلب محمد، مثل تطبيق Notewise): شريط أيقونات أبيض: نسخ · تظليل · تسطير · شطب · ترجمة · بحث · مشاركة، ثم أدوات الدراسة */
+    if (a.kind === 'text' && a.quote) mk('st-sel-copy', 'نسخ النص المحدد', '', () => { copyText(textOf(a)); hide(); }, 'copy');
     if (a.kind === 'text') {
-      const g = el('span', 'st-sel-grp'); g.setAttribute('role', 'group'); g.setAttribute('aria-label', 'تظليل النص المحدد');
-      const cap = el('span', 'st-sel-cap', 'تظليل'); cap.setAttribute('aria-hidden', 'true'); g.append(cap); b.append(g);
-      for (const [c, n] of HL) { const x = actBtn(g, 'st-sel-hl', 'تظليل ' + n, '', () => highlight(a, c)); x.style.setProperty('--c', c); x.dataset.color = c; }
-      b.append(sep());
+      const hc = (M.style && M.style('highlight') && M.style('highlight').color) || HL[0][0];
+      const h = mk('st-sel-hl', 'تظليل النص المحدد', '', () => highlight(a, hc), 'hl'); h.dataset.color = hc; h.style.setProperty('--c', hc);
+      const pc = (M.style && M.style('pen') && M.style('pen').color) || '#e43d56';
+      mk('st-sel-ul', 'تسطير النص المحدد', '', () => highlight(a, pc, 'underline'), 'ul');
+      mk('st-sel-st', 'شطب النص المحدد', '', () => highlight(a, pc, 'strike'), 'st');
     }
-    mk('st-sel-card', 'بطاقة مراجعة', 'بطاقة', () => draft('card', a), 'card');
-    mk('st-sel-mcq', 'سؤال اختيار من متعدد', 'سؤال', () => draft('mcq', a), 'mcq');
-    if (a.pageId < C.BLANK_ID0) mk('st-sel-mask', 'قناع دراسة على هذا الجزء', 'قناع', () => mask(a), 'mask');
+    if (a.kind === 'text' && a.quote) {
+      mk('st-sel-tr', 'ترجمة النص المحدد', '', x => openTranslate(a, x), 'tr');
+      const f = mk('st-sel-find', 'بحث عن النص المحدد', '', x => menuToggle(a, x), 'web'); f.setAttribute('aria-haspopup', 'menu'); f.setAttribute('aria-expanded', 'false');
+      mk('st-sel-share', 'مشاركة النص المحدد', '', () => shareText(textOf(a)), 'share');
+      b.append(sep());
+      if (explainShown()) mk('st-sel-ex', 'شرح النص المحدد', '', x => openExplain(a, x), 'ex');
+    }
+    mk('st-sel-card', 'بطاقة مراجعة', '', () => draft('card', a), 'card');
+    mk('st-sel-mcq', 'سؤال اختيار من متعدد', '', () => draft('mcq', a), 'mcq');
+    if (a.pageId < C.BLANK_ID0) mk('st-sel-mask', 'قناع دراسة على هذا الجزء', '', () => mask(a), 'mask');
     mk('st-sel-x', 'إلغاء', '', () => { hide(); getSelection().removeAllRanges(); }, 'x');
     b.hidden = false; b.scrollLeft = 0;
     const r = a.kind === 'text' && a.bbox ? a.bbox : areaRect(a.pageId, a.rects);
@@ -129,12 +137,12 @@
     b.style.left = x + 'px'; b.style.top = y + 'px';
   }
   const sep = () => { const s = el('span', 'st-sel-sep'); s.setAttribute('aria-hidden', 'true'); return s; };
-  function hide() { if (bar) bar.hidden = true; cur = null; menuClose(true); }
+  function hide() { if (bar) bar.hidden = true; cur = null; menuClose(true); if (lpSel) { const g = getSelection(); if (!g || g.isCollapsed) lpDone(); } }
   /* arrow keys move along the toolbar (one Tab stop is enough for a row this long) */
   function barKeys(e) {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
     const list = [...bar.querySelectorAll('button')], i = list.indexOf(document.activeElement); if (i < 0) return;
-    const j = e.key === 'Home' ? 0 : e.key === 'End' ? list.length - 1 : (i + (e.key === 'ArrowLeft' ? 1 : -1) + list.length) % list.length;   /* RTL: left = next */
+    const j = e.key === 'Home' ? 0 : e.key === 'End' ? list.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length;   /* the row reads left to right */
     e.preventDefault(); list[j].focus();
   }
   /* screen rectangle of page-area rects (a highlight / region) */
@@ -150,8 +158,46 @@
     const hdr = document.body.classList.contains('medixa-focus') ? 0 : (v('--st-hdr-h') || 56), tb = v('--st-tb-h');
     return PHONE.matches ? { top: hdr + (v('--st-pbar') || 0) + 8, bottom: tb + 8 } : { top: hdr + tb + 8, bottom: 8 };
   }
+  /* ---------- long press on the text selects a word (hand tool, or Apple Pencil mode where a finger pans) ---------- */
+  let lp = null, lpSel = false;
+  const lpOn = () => S.tool === 'hand' || (S.tool !== 'select' && M.penMode && M.penMode());
+  function lpEnd() { if (lp) { clearTimeout(lp.t); lp = null; } }
+  function spanAt(x, y) {
+    for (const box of document.querySelectorAll('#pages .st-text')) {
+      const b = box.getBoundingClientRect(); if (x < b.left || x > b.right || y < b.top || y > b.bottom) continue;
+      for (const sp of box.querySelectorAll('span')) { const r = sp.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return sp; }
+    }
+    return null;
+  }
+  function wordRange(sp, x) {
+    const n = sp.firstChild; if (!n || n.nodeType !== 3) return null;
+    const t = n.data, r = document.createRange(); let at = 0, best = Infinity;
+    for (let k = 0; k < t.length; k++) { r.setStart(n, k); r.setEnd(n, k + 1); const q = r.getBoundingClientRect(), d = Math.abs((q.left + q.right) / 2 - x); if (d < best) { best = d; at = k; } }
+    const W = /[\p{L}\p{N}'’-]/u; let a = at, b = at + 1;
+    if (!W.test(t[at] || '')) { r.setStart(n, at); r.setEnd(n, at + 1); return r; }
+    while (a > 0 && W.test(t[a - 1])) a--; while (b < t.length && W.test(t[b])) b++;
+    r.setStart(n, a); r.setEnd(n, b); return r;
+  }
+  document.addEventListener('pointerdown', e => {
+    lpEnd(); if (e.pointerType !== 'touch' || !lpOn()) return;
+    const t = e.target; if (!t || !t.closest || !t.closest('#pages')) return;
+    const x = e.clientX, y = e.clientY, id = e.pointerId;
+    lp = { x, y, id, t: setTimeout(() => {
+      lp = null; const sp = spanAt(x, y); if (!sp) return;
+      const r = wordRange(sp, x); if (!r) return;
+      /* stop the pan that this finger started (nothing moved), then hand the text to the browser's own selection */
+      document.dispatchEvent(new PointerEvent('pointercancel', { pointerId: id, pointerType: 'touch', bubbles: true, clientX: x, clientY: y }));
+      document.body.classList.add('st-selecting'); lpSel = true;
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      if (navigator.vibrate) try { navigator.vibrate(8); } catch {}
+      const a = selectionAnchor(); if (a) show(a);
+    }, 480) };
+  }, true);
+  document.addEventListener('pointermove', e => { if (lp && e.pointerId === lp.id && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 8) lpEnd(); }, true);
+  for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, e => { if (lp && e.pointerId === lp.id) lpEnd(); }, true);
+  function lpDone() { if (!lpSel) return; lpSel = false; if (S.tool !== 'select') document.body.classList.remove('st-selecting'); }
   let st = 0;
-  document.addEventListener('selectionchange', () => { if (S.tool !== 'select') return; clearTimeout(st); st = setTimeout(() => { const a = selectionAnchor(); if (a) show(a); else if (cur && cur.kind === 'text') hide(); }, 180); });
+  document.addEventListener('selectionchange', () => { if (lpSel) { const g = getSelection(); if (!g || g.isCollapsed) { lpDone(); if (cur && cur.kind === 'text') hide(); return; } clearTimeout(st); st = setTimeout(() => { const a = selectionAnchor(); if (a) show(a); }, 180); return; } if (S.tool !== 'select') return; clearTimeout(st); st = setTimeout(() => { const a = selectionAnchor(); if (a) show(a); else if (cur && cur.kind === 'text') hide(); }, 180); });
   const OWN = '#st-seltools,.st-ta-panel,.st-ta-menu,.st-ta-pop,#st-ta-toast';
   let down = null;
   document.addEventListener('pointerdown', e => {
@@ -175,6 +221,11 @@
   });
 
   /* ---------- text actions: shared helpers ---------- */
+  function shareText(text) {
+    hide();
+    if (navigator.share) { navigator.share({ text }).catch(() => {}); return; }
+    copyText(text);
+  }
   /* external pages open in a new tab through a real link (window.open with noopener returns null, which looks like a
      blocked popup); the reader itself never navigates away */
   function openExternal(u) { const a = el('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.append(a); a.click(); a.remove(); }
@@ -489,9 +540,10 @@
   }, true);
 
   /* ---------- actions ---------- */
-  function highlight(a, color) {
+  function highlight(a, color, mark) {
     const xs = a.rects.flatMap(r => [r[0], r[2]]), ys = a.rects.flatMap(r => [r[1], r[3]]);
     const s = { id: C.newId(), v: 2, rev: 1, page: a.pageId, tool: 'texthl', color, width: 3, points: [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], rects: a.rects.map(r => r.map(n => +n.toFixed(5))), quote: a.quote };
+    if (mark === 'underline' || mark === 'strike') s.mark = mark;
     M.commit([M.addItem(s)]); getSelection().removeAllRanges(); hide();
   }
   function mask(a) {

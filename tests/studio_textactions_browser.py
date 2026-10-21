@@ -48,7 +48,8 @@ try:
         pg = load(ctx, errs); q = select_line(pg)
         chk('fixture' in q, f'selected real PDF text: {q!r}')
         order = pg.evaluate("[...document.querySelectorAll('#st-seltools button')].map(b => b.className.replace('st-sel-btn ', '').split(' ')[0])")
-        chk(order[:4] == ['st-sel-tr', 'st-sel-find', 'st-sel-ex', 'st-sel-copy'] and order[4:8] == ['st-sel-hl'] * 4 and order[8:11] == ['st-sel-card', 'st-sel-mcq', 'st-sel-mask'], f'row is ترجمة | بحث | شرح | نسخ | تظليل, then the study actions: {order}')
+        # 2026-10-21 (محمد، مثل Notewise): نسخ · تظليل · تسطير · شطب · ترجمة · بحث · مشاركة، ثم شرح وأدوات الدراسة
+        chk(order[:7] == ['st-sel-copy', 'st-sel-hl', 'st-sel-ul', 'st-sel-st', 'st-sel-tr', 'st-sel-find', 'st-sel-share'] and order[7:11] == ['st-sel-ex', 'st-sel-card', 'st-sel-mcq', 'st-sel-mask'], f'row is نسخ | تظليل | تسطير | شطب | ترجمة | بحث | مشاركة, then the study actions: {order}')
         chk(pg.evaluate("document.getElementById('st-seltools').getAttribute('role')") == 'toolbar' and all(pg.evaluate("[...document.querySelectorAll('#st-seltools button')].map(b => !!b.getAttribute('aria-label'))")), 'toolbar role and an Arabic label on every button')
         chk(inside(pg, '#st-seltools')[0], 'action row inside the viewport')
         chk(not reqs, f'no /api/ai request before any press ({reqs})')
@@ -197,7 +198,7 @@ try:
         ok, bb = inside(pg, '#st-explain', tb); chk(ok, f'phone: explain panel inside the viewport {bb}')
         pg.keyboard.press('Escape'); select_line(pg); pg.locator('#st-seltools .st-sel-find').tap(); pg.wait_for_selector('#st-ta-findmenu:not([hidden])')
         ok, bb = inside(pg, '#st-ta-findmenu', tb); chk(ok, f'phone: search menu inside the viewport {bb}')
-        pg.keyboard.press('Escape'); select_line(pg); pg.locator('#st-seltools .st-sel-hl >> nth=1').tap(); pg.wait_for_timeout(300)
+        pg.keyboard.press('Escape'); select_line(pg); pg.locator('#st-seltools .st-sel-hl').tap(); pg.wait_for_timeout(300)
         pg.evaluate("MedixaStudio.setTool('hand')"); pg.wait_for_timeout(150); x, y = pg.evaluate(HL_CENTER); pg.touchscreen.tap(x, y)
         pg.wait_for_selector('#st-hlpop:not([hidden])', timeout=3000); ok, bb = inside(pg, '#st-hlpop', tb); chk(ok, f'phone: a tap on the highlight opens its popover as a sheet {bb}')
         pg.evaluate("document.body.classList.add('medixa-dark')"); chk(pg.evaluate("getComputedStyle(document.getElementById('st-hlpop')).backgroundColor") == 'rgb(27, 38, 48)', 'dark mode styles the popover')

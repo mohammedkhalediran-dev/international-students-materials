@@ -48,8 +48,41 @@ body.st-compact.medixa-dark{--reader-surface:#202a33;--reader-text:#e7edf2;--rea
 body.st-compact.medixa-focus #studio-toolbar{top:var(--reader-tools-top)}
 body.st-compact.medixa-focus main#pages{padding-top:var(--reader-reserve)}
 body.st-compact button:focus-visible,body.st-compact a:focus-visible{outline:2px solid #168c8c;outline-offset:2px}
-@media(max-width:1199px){
+/* Notewise-style quick bar under the toolbar: tool type · 3 thicknesses · 5 colours · custom · all settings */
+body.st-compact.st-has-quick{--reader-reserve:128px}
+body.st-has-quick #studio-toolbar .st-style{display:contents}
+body.st-compact .st-quick{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:2px 6px;background:var(--reader-surface);border:1px solid var(--reader-line);border-radius:24px;box-shadow:0 2px 8px #1b243319;direction:ltr;white-space:nowrap;animation:st-q-in .18s ease-out}
+body.st-compact .st-quick .st-qbtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--reader-text)}
+body.st-compact .st-quick .st-qbtn:hover,body.st-compact .st-quick .st-size:hover,body.st-compact .st-quick .st-swatch:hover{background:var(--reader-hover)}
+body.st-compact .st-quick .st-qsep{width:1px;height:22px;margin:0 4px;background:var(--reader-line)}
+body.st-compact .st-quick .st-sizes,body.st-compact .st-quick .st-colors{display:flex;gap:0;margin:0;padding:0;border:0}
+body.st-compact .st-quick .st-size,body.st-compact .st-quick .st-swatch{position:relative;width:38px;min-width:38px;height:40px;min-height:40px;border-radius:12px}
+body.st-compact .st-quick .st-size span{width:22px;height:max(2px,calc(var(--d) / 4));border-radius:3px;background:var(--reader-text)}
+body.st-compact .st-quick .st-swatch::before,body.st-compact .st-quick .st-swatch[aria-pressed=true]::before{width:24px;height:24px;box-shadow:0 0 0 1px #0002}
+body.st-compact .st-quick [aria-pressed=true]::after{content:"";position:absolute;bottom:1px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#2f6fed}
+body.st-compact .st-quick .st-qpop{top:calc(100% + 8px);left:auto;right:0}
+body.st-has-quick #studio-toolbar>.st-toolset{top:calc(100% + 62px)}
+@keyframes st-q-in{from{opacity:0;transform:translate(-50%,-6px)}}
+@media(max-width:1279px){body.st-compact #status{width:24px;max-width:24px;padding:0;font-size:0;text-align:center}body.st-compact #status::before{width:9px;height:9px;margin:0}}
+/* page pill: «1 / 6 · 100%» — touch screens pinch to zoom and use the edge arrows to turn pages */
+html body.st-compact #mx-dock #mx-reader-nav{direction:ltr;align-items:center;gap:0}
+html body.st-compact #mx-dock #mx-reader-nav [data-mx-prev] svg,html body.st-compact #mx-dock #mx-reader-nav [data-mx-next] svg{transform:scaleX(-1)}
+html body.st-compact #mx-dock #mx-reader-nav input{width:34px;min-width:0;padding:0;text-align:end;font-weight:600;-moz-appearance:textfield}
+html body.st-compact #mx-dock #mx-reader-nav input::-webkit-inner-spin-button,html body.st-compact #mx-dock #mx-reader-nav input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+html body.st-compact #mx-dock [data-mx-total]{font-size:13px;color:#6b7280;padding-inline:2px 6px}
+html body.st-compact #mx-dock #st-zoom-label{min-width:54px;font-size:13px;font-weight:600}
+body.st-compact #st-edge-nav{position:fixed;right:max(8px,env(safe-area-inset-right));top:calc(var(--reader-tools-top) + 64px);z-index:14;display:flex;flex-direction:column;padding:2px;background:var(--reader-surface);border:1px solid var(--reader-line);border-radius:18px;box-shadow:0 2px 8px #1b243319}
+body.st-compact #st-edge-nav button{width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--reader-text);display:inline-flex;align-items:center;justify-content:center}
+body.st-compact #st-edge-nav button:hover{background:var(--reader-hover)}
+body.st-compact.st-has-quick #st-edge-nav{top:calc(var(--reader-tools-top) + 116px)}
+@media(hover:none) and (pointer:coarse) and (min-width:721px){
+ html body.st-compact #mx-dock #mx-reader-nav [data-mx-prev],html body.st-compact #mx-dock #mx-reader-nav [data-mx-next],html body.st-compact #mx-dock #st-zoom-out,html body.st-compact #mx-dock #st-zoom-in{display:none}
+}
+@media(max-width:720px){body.st-compact #st-edge-nav{display:none}}
+@media(min-width:980px) and (max-width:1199px){body.st-compact #studio-toolbar{max-width:calc(100vw - 340px)}}
+@media(max-width:979px){
  body.st-compact{--reader-tools-top:calc(var(--reader-top) + 62px);--reader-reserve:138px}
+ body.st-compact.st-has-quick{--reader-reserve:190px}
  body.st-compact #studio-toolbar{max-width:calc(100vw - 24px)}
 }
 @media(max-width:720px){
@@ -66,7 +99,7 @@ body.st-compact button:focus-visible,body.st-compact a:focus-visible{outline:2px
  body.st-compact .st-panel{top:76px;bottom:calc(var(--st-tb-h,60px) + 76px);inset-inline:8px;width:auto}
  body.st-compact.medixa-focus #pages>section{scroll-margin-top:76px}
 }
-@media(prefers-reduced-motion:reduce){body.st-compact *{scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){body.st-compact *{scroll-behavior:auto!important}body.st-compact .st-quick{animation:none}}
 /* Embedded split panes retain the original compact embed rules, without navigation islands. */
 html.st-embed body.st-compact>header,html.st-embed body.st-compact #mx-dock{display:none!important}
 

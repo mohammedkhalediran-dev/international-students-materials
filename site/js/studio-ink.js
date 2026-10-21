@@ -243,6 +243,7 @@
     ctx.strokeStyle = col; ctx.fillStyle = col;
     if (s.tool === 'text' || s.tool === 'sticky') { drawTextBox(ctx, s, w, h); ctx.restore(); return; }
     if (s.tool === 'image') { drawImageItem(ctx, s, w, h); ctx.restore(); return; }
+    if (s.tool === 'texthl' && s.mark) { ctx.globalAlpha = s.op || 0.9; markLines(ctx, [s], w, h); ctx.restore(); return; }
     if (s.tool === 'texthl') {                                   /* text-anchored highlight: one translucent fill per line rectangle */
       ctx.globalAlpha = s.op || 0.35; ctx.beginPath(); for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill();
       ctx.restore(); return;
@@ -301,14 +302,24 @@
     } else { ctx.globalAlpha = s.op || 1; ctx.lineWidth = base; drawPath(ctx, s.points, w, h); ctx.stroke(); }
     ctx.restore();
   }
+  /* texthl with mark 'underline' | 'strike' (2026-10-21): a line under / through each text line, instead of a fill */
+  function markLines(ctx, list, w, h) {
+    ctx.beginPath();
+    for (const s of list) for (const r of s.rects) {
+      const lh = (r[3] - r[1]) * h, y = s.mark === 'strike' ? (r[1] * h + lh * 0.55) : (r[3] * h - lh * 0.06);
+      ctx.moveTo(r[0] * w, y); ctx.lineTo(r[2] * w, y);
+    }
+    ctx.lineWidth = Math.max(1, ((list[0].rects[0][3] - list[0].rects[0][1]) * h) * 0.085); ctx.lineCap = 'round'; ctx.stroke();
+  }
   /* Consecutive highlights are painted per colour/opacity/tip group with ONE fill/stroke each, so where highlights overlap
      the colour does not stack up into a darker band (a marker over a marker looks like one marker). */
   function drawHighlights(ctx, list, w, h) {
     const groups = new Map();
-    for (const s of list) { const key = s.tool + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
+    for (const s of list) { const key = s.tool + '|' + (s.mark || '') + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
     const mult = !document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal');
     for (const g of groups.values()) {
       const s0 = g[0]; ctx.save(); ctx.fillStyle = ctx.strokeStyle = s0.color || '#f2c230';
+      if (s0.tool === 'texthl' && s0.mark) { ctx.globalAlpha = s0.op || 0.9; markLines(ctx, g, w, h); ctx.restore(); continue; }
       if (mult) ctx.globalCompositeOperation = 'multiply';
       if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; ctx.beginPath(); for (const s of g) for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill('nonzero'); }
       else {
@@ -378,7 +389,7 @@
   }
   function sizePage(pg) {
     if (!pg.on) { if (pg.ink.width !== 1) { pg.ink.width = 1; pg.ink.height = 1; } if (pg.over.width !== 1) { pg.over.width = 1; pg.over.height = 1; } pg.dirty = true; return; }   /* off-screen pages hold no pixels */
-    const r = pg.ink.getBoundingClientRect(), d = Math.max(0.5, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, r.width * r.height)))), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
+    const r = pg.ink.getBoundingClientRect(), d = Math.max(0.05, Math.min(DPR(), Math.sqrt(MAX_PX / Math.max(1, r.width * r.height)))), e = pg.ext, kx = 1 + e.l + e.r, ky = 1 + e.t + e.b;
     if (r.width < 1) return;                                       /* hidden (e.g. split pane switching): keep the current pixels */
     pg.totW = Math.max(1, r.width); pg.totH = Math.max(1, r.height);
     pg.cssW = pg.totW / kx; pg.cssH = pg.totH / ky;                /* cssW/cssH = the PAGE area, margins excluded */
@@ -387,18 +398,54 @@
     if (pg.over.width !== W || pg.over.height !== H) { pg.over.width = W; pg.over.height = H; pg.needsPaint = true; }
     pg.pw = W / kx; pg.ph = H / ky;                                /* page area in canvas px */
   }
+  function drawPageItems(ctx, n, pw, ph) {
+    let batch = [];
+    const flushHl = () => { if (batch.length) drawHighlights(ctx, batch, pw, ph); batch = []; };
+    for (const s of S.items) {
+      if (!s || s.page !== n || !C.validStroke(s)) continue;
+      if (S.skip && S.skip.has(s.id)) continue;                    /* being dragged: a tool draws it on the live overlay */
+      if (isHl(s)) batch.push(s); else { flushHl(); drawStroke(ctx, s, pw, ph); }
+    }
+    flushHl();
+  }
   function renderInk(pg) {
     const ctx = pg.ink.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, pg.ink.width, pg.ink.height);
-    ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t);
-    let batch = [];
-    const flushHl = () => { if (batch.length) drawHighlights(ctx, batch, pg.pw, pg.ph); batch = []; };
-    for (const s of S.items) {
-      if (!s || s.page !== pg.n || !C.validStroke(s)) continue;
-      if (S.skip && S.skip.has(s.id)) continue;                    /* being dragged: a tool draws it on the live overlay */
-      if (isHl(s)) batch.push(s); else { flushHl(); drawStroke(ctx, s, pg.pw, pg.ph); }
+    const h = pg.hd;
+    if (h) {                                                         /* leave a hole where the sharp layer draws, so translucent ink is not doubled */
+      const k = pg.ink.width / Math.max(1, pg.totW); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, pg.ink.width, pg.ink.height); ctx.rect(h.x0 * k, h.y0 * k, h.w * k, h.h * k); ctx.clip('evenodd');
     }
-    flushHl(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.translate(pg.pw * pg.ext.l, pg.ph * pg.ext.t);
+    drawPageItems(ctx, pg.n, pg.pw, pg.ph);
+    if (h) ctx.restore();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (h) {                                                         /* the visible part, at device resolution */
+      const c = h.canvas, x = c.getContext('2d'), kx = 1 + pg.ext.l + pg.ext.r, ky = 1 + pg.ext.t + pg.ext.b, pw = (pg.totW / kx) * h.d, ph = (pg.totH / ky) * h.d;
+      x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+      x.translate(-h.x0 * h.d + pw * pg.ext.l, -h.y0 * h.d + ph * pg.ext.t);
+      drawPageItems(x, pg.n, pw, ph); x.setTransform(1, 0, 0, 1, 0, 0);
+    }
     pg.dirty = false;
+  }
+  /* Sharp ink at any zoom (2026-10-21): the reader asks for it when the ink canvas cannot hold screen resolution. The
+     sharp canvas covers only the visible part of the page and never takes pointer events (drawing still lands on
+     canvas.ink, so every tool keeps its coordinates). */
+  const HD_PX = TOUCH ? 4.2e6 : 9e6;
+  function setInkHd(n, on) {
+    const pg = S.pages.get(n); if (!pg) return;
+    const drop = () => { if (!pg.hd) return; pg.hd.canvas.width = 0; pg.hd.canvas.remove(); pg.hd = null; pg.dirty = true; paint(pg); };
+    if (!on || !pg.on) return drop();
+    const r = pg.ink.getBoundingClientRect(), need = DPR(), have = pg.ink.width / Math.max(1, r.width);
+    if (r.width < 2 || have >= need * 0.97) return drop();
+    const L = Math.max(r.left, 0), T = Math.max(r.top, 0), Rr = Math.min(r.right, innerWidth), B = Math.min(r.bottom, innerHeight);
+    if (Rr - L < 4 || B - T < 4) return drop();
+    const x0 = L - r.left, y0 = T - r.top, w = Rr - L, h = B - T, d = Math.min(need, Math.sqrt(HD_PX / (w * h)));
+    if (d <= have * 1.05) return drop();
+    let c = pg.hd && pg.hd.canvas;
+    if (!c) { c = document.createElement('canvas'); c.className = 'ink-hd'; c.setAttribute('aria-hidden', 'true'); }
+    c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d));
+    c.style.left = (pg.ink.offsetLeft + x0) + 'px'; c.style.top = (pg.ink.offsetTop + y0) + 'px'; c.style.width = w + 'px'; c.style.height = h + 'px';
+    if (c.previousElementSibling !== pg.ink) pg.ink.after(c);
+    pg.hd = { canvas: c, x0, y0, w, h, d }; pg.dirty = true; paint(pg);
   }
   function frame() {
     S.raf = 0;
@@ -901,6 +948,11 @@
       const wpt = (s, pr) => C.widthAt(s.width || 3, pr, s.tool === 'highlight' ? 'highlight' : s.tool === 'pen' ? 'pen' : 'shape') / 800 * dw;
       for (const s of strokes) {
         if (s.tool === 'text' || s.tool === 'sticky' || s.tool === 'image') { rasters.push({ page, box, rot, s }); continue; }
+        if (s.tool === 'texthl' && s.mark) {
+          const [r0, g0, b0] = hex(s.color || '#e43d56');
+          for (const q of s.rects) { const lh = q[3] - q[1], y = s.mark === 'strike' ? q[1] + lh * 0.55 : q[3] - lh * 0.06; page.drawSvgPath(path([[q[0], y], [q[2], y]]), { x: 0, y: 0, borderColor: rgb(r0, g0, b0), borderWidth: Math.max(0.6, lh * dh * 0.085), borderOpacity: s.op || 0.9, borderLineCap: LineCapStyle.Round }); }
+          continue;
+        }
         if (s.tool === 'texthl') {
           const [r0, g0, b0] = hex(s.color || '#f2c230');
           for (const q of s.rects) page.drawSvgPath(path([[q[0], q[1]], [q[2], q[1]], [q[2], q[3]], [q[0], q[3]]]) + ' Z', { x: 0, y: 0, color: rgb(r0, g0, b0), opacity: s.op || 0.35, borderWidth: 0 });
@@ -1121,7 +1173,7 @@
     gesture: { get state() { return G.state; }, get pointers() { return [...G.ptrs.values()].map(r => ({ id: r.id, type: r.type, role: r.role })); }, get penSeen() { return penSeenAt; }, forgetPen() { penSeenAt = 0; wr(PEN_SEEN_KEY, 0); emit('input', S.input); } },
     setPenOnly(v) { setInput({ stylusOnly: !!v }); },
     setSnap(v) { S.snap = !!v; },
-    getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
+    setInkHd, getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
   };
   window.MedixaStudio = api;
 })();
