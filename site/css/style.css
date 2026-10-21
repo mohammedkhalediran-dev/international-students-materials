@@ -400,7 +400,10 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 }
 .sb-foot { padding: var(--space-2) var(--space-3) var(--space-3); border-top: 1px solid var(--nav-line); }
 .nav-list, .nav-sub { margin: 0; padding: 0; list-style: none; }
-.nav-list { display: flex; flex-direction: column; gap: var(--space-1); }
+.nav-list { display: flex; flex-direction: column; gap: 0; }
+.nav-list > .nav-item + .nav-item { border-top: 1px solid var(--nav-line); }   /* فاصل رفيع بين كل خيار وآخر */
+.nav-list > .nav-item { padding-block: var(--space-1); }
+.nav .nav-link { min-height: calc(var(--control-h) + var(--space-1)); }
 .nav-sec + .nav-sec { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--nav-line); }
 .nav-title {
   margin: 0 0 var(--space-2);
@@ -472,13 +475,12 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin: var(--space-3) var(--space-3) 0;
-  padding: var(--space-3);
-  border-bottom: 1px solid var(--nav-line);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   background: var(--nav-bg);
 }
-.sb-avatar { display: grid; place-items: center; flex: none; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-pill); background: var(--nav-active-bg); color: var(--nav-accent); }
+.sb-avatar { display: grid; place-items: center; flex: none; width: calc(var(--control-h) - var(--space-2)); height: calc(var(--control-h) - var(--space-2)); border-radius: var(--radius-pill); background: var(--nav-active-bg); color: var(--nav-accent); }
 .sb-avatar .ico { display: grid; }
 .sb-user-text { display: grid; min-width: 0; line-height: var(--leading-tight); }
 .sb-user-text strong { font-size: var(--nav-font); color: var(--nav-text); }
@@ -486,11 +488,13 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .sb-auth-action { justify-self: start; display: inline-flex; align-items: center; min-height: var(--control-h); padding: 0; border: 0; background: none; color: var(--nav-accent); font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .sb-auth-action:disabled { opacity: .6; cursor: wait; }
 /* Step 49: «كورسي» والإشعارات في القائمة الجانبية */
-.sb-push { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0 var(--space-2); margin: 0 var(--space-4) var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-md); color: var(--nav-accent); }
+.sb-push { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0 var(--space-2); margin: 0 0 var(--space-2); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--nav-line); color: var(--nav-accent); transition: background var(--ease), transform 0.12s ease; }
+.sb-push:hover { background: var(--nav-bg); }
+.sb-push:active { transform: scale(0.98); }
 .sb-push[hidden] { display: none; }
 .push-btn { min-height: var(--control-h); padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: var(--text-sm); font-weight: 600; text-align: start; cursor: pointer; }
 .push-btn:disabled { color: var(--nav-muted); cursor: default; }
-.push-note { grid-column: 1 / -1; margin: 0 0 var(--space-1); color: var(--nav-muted); font-size: var(--text-xs); line-height: 1.6; }
+.push-note { grid-column: 1 / -1; margin: 0 0 var(--space-2); color: var(--nav-muted); font-size: var(--text-xs); line-height: 1.6; }
 .push-note[hidden] { display: none; }
 html.nav-min .sb-push { display: none; }
 .mc-dialog { width: min(420px, calc(100vw - var(--space-6))); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-md); }
@@ -523,6 +527,19 @@ html.nav-min .sb-push { display: none; }
 .nav-link:not(.is-soon):active, .nav-sublink:active, .nav-toggle:active, .sb-btn:active { transform: scale(0.97); }
 .nav-link, .nav-sublink, .nav-toggle, .sb-btn { transition: background var(--ease), color var(--ease), transform 0.12s ease; }
 .nav-link[aria-current="page"]::before, .nav-sublink[aria-current="page"]::before { animation: nav-bar-in 0.25s ease both; transform-origin: center; }
+/* الخلفية المنزلقة للصفحة النشطة، وانزلاق النص عند المرور، ودخول العناصر تباعاً */
+.nav { position: relative; }
+.nav-pill { position: absolute; inset-inline: 0; top: 0; height: var(--h, 0); transform: translateY(var(--y, 0)); border-radius: var(--radius-md); background: var(--nav-active-bg); opacity: 0; pointer-events: none; transition: transform 0.28s cubic-bezier(.2, .8, .2, 1), height 0.28s cubic-bezier(.2, .8, .2, 1), opacity 0.2s ease; }
+.nav-pill.on { opacity: 1; }
+.nav.has-pill .nav-link[aria-current="page"], .nav.has-pill .nav-sublink[aria-current="page"] { background: transparent; }
+.nav-link, .nav-sublink { position: relative; z-index: 1; }
+.nav-link:not(.is-soon):hover .nav-label, .nav-sublink:hover .nav-label { transform: translateX(calc(var(--nav-slide, -4px))); }
+html[dir="ltr"] { --nav-slide: 4px; }
+.nav-label { transition: opacity 0.15s ease, transform 0.18s ease; }
+.nav-toggle:hover .ico { transform: translateY(2px); }
+.is-open > .nav-row .nav-toggle:hover .ico { transform: rotate(180deg) translateY(2px); }
+.sidebar .nav-item, .sidebar .sb-user, .sidebar .sb-push { animation: nav-item-in 0.38s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i, 0) * 35ms); }
+@keyframes nav-item-in { from { opacity: 0; transform: translateX(var(--nav-from, 14px)); } }
 @keyframes nav-bar-in { from { transform: scaleY(0.2); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
 .nav-label, .nav-badge { transition: opacity 0.15s ease; }
 .nav-tip { animation: nav-tip-in 0.12s ease both; }

@@ -62,7 +62,7 @@
   }
 
   /* ---------- الرسم ---------- */
-  var side, scroll, tip, links = {}, toggles = [], activeId = null, spyId = null;
+  var side, scroll, tip, pill, links = {}, toggles = [], activeId = null, spyId = null;
 
   function linkNode(it, href) {
     var a = el("a", "nav-link");
@@ -169,9 +169,10 @@
     var sem = mySem(), semObj = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.id === sem; })[0];
     ut.appendChild(el("small", "", semObj ? semName(semObj) : "تقدّمك محفوظ على هذا الجهاز"));
     user.appendChild(ut);
-    side.appendChild(user);
 
+    /* بطاقة الحساب والإشعارات داخل منطقة التمرير (لا تبقى ثابتة وتأخذ نصف القائمة) */
     scroll = el("div", "sb-scroll");
+    scroll.appendChild(user);
     var nav = el("nav", "nav"); nav.id = "nav"; nav.setAttribute("aria-label", T("التنقل الرئيسي"));
     NAV.forEach(function (sec, i) {
       var ul = listNode(sec.items);
@@ -182,6 +183,10 @@
       nav.appendChild(s);
     });
     scroll.appendChild(nav);
+    /* خلفية منزلقة تتبع العنصر النشط */
+    pill = el("span", "nav-pill"); pill.setAttribute("aria-hidden", "true");
+    nav.insertBefore(pill, nav.firstChild);
+    var k = 0; [].forEach.call(nav.querySelectorAll(".nav-item"), function (n) { n.style.setProperty("--i", k++); });
     side.appendChild(scroll);
 
     var fl = listNode(FOOT);
@@ -218,6 +223,7 @@
       if (k === id) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
     activeId = id;
+    movePill();
     var sem = pageSemester();
     toggles.forEach(function (t) {
       var inside = !!sem || id === t.id;
@@ -226,7 +232,19 @@
     });
   }
 
+  /* الخلفية المنزلقة: تنتقل إلى الرابط النشط، وتُحسب مجدداً بعد فتح مجموعة أو تغيير الحجم */
+  function movePill() {
+    if (!pill) return;
+    var a = activeId && links[activeId], nav = pill.parentNode;
+    if (!a || !a.offsetParent || a.getBoundingClientRect().height < 4) { pill.classList.remove("on"); nav.classList.remove("has-pill"); return; }
+    var r = a.getBoundingClientRect(), n = nav.getBoundingClientRect();
+    pill.style.setProperty("--y", (r.top - n.top) + "px"); pill.style.setProperty("--h", r.height + "px");
+    nav.classList.add("has-pill"); pill.classList.add("on");
+  }
+  window.addEventListener("resize", movePill);
+
   function setOpen(t, open) {
+    setTimeout(movePill, 260);
     t.li.classList.toggle("is-open", open);
     t.btn.setAttribute("aria-expanded", String(open));
     t.btn.setAttribute("aria-label", T(open ? "طي الكورسات" : "توسيع الكورسات"));
