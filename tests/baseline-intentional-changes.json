@@ -8,5 +8,10 @@
     "step": 57,
     "sha256": "08d2ba68e46bc50cb645db62c1bcaff035a2d3feedde50177c43093ea62e1600",
     "reason": "Login integration (Step 39), Web Push (Step 49), and Step 52: after a successful upload the notice goes through lectureNotice (no duplicate for a second file of the same lecture, lectures of one subject within 30 minutes grouped into one notice, quizzes/past questions notify too) before notify(); still waitUntil, does not delay the response. Step 55: the official timetable routes (/api/timetable*) are handled by handleTimetable right after auth; access is checked on the server (course 03 or admin). Step 57: university grades routes (/api/grades*) are handled by handleGrades right after the timetable; each student reads only their own grades, upload/unlink is admin-only, passport numbers are never stored (keyed HMAC fingerprint). Study Studio (2026-10-19): /api/ai/* (translate/explain of text the student selected and pressed, Workers AI binding AI, signed-in + same-origin + rate limit) is handled by handleAi right after the grades routes."
+  },
+  "site/data/courses.js": {
+    "step": 66,
+    "sha256": "109535d946f561f4f266fa01770136968e5a97ae2ae8c2523000cd082079d9af",
+    "reason": "Study mode for General Principles of nutrition lecture 1 (Fat soluble vitamins): adds the lecture entry with study: true and no static files; the PDF itself stays the one uploaded from upload.html (KV) and is merged by MS.applyUploads. Content in site/data/study/nutrition-principles-1.js (2026-10-21, at Mohammed's request)."
   }
 }
