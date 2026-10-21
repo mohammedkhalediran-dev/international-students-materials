@@ -304,7 +304,17 @@ const COURSES = [
     code: "11111125",
     credits: { theory: 2, practical: 0, total: 2 },
     professors: [{ name: "Dr. Sajadi" }, { name: "Dr. Ghadimi" }],
-    lectures: []
+    lectures: [
+      {
+        // الملف نفسه مرفوع من صفحة الرفع (Nutrition (Dr. Sajadi)، 2026-10-20) ويُدمج هنا عبر MS.applyUploads.
+        number: 1,
+        title: "Fat soluble vitamins",
+        titleAr: "الفيتامينات الذائبة في الدهون",
+        pron: "فات سول-يوبل فاي-تامينز",
+        study: true,
+        files: []
+      }
+    ]
   },
   {
     id: "skeletal-muscular-anatomy",
