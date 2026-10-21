@@ -116,7 +116,9 @@
   --ease: 0.15s ease;
 
   /* القائمة الجانبية (إعادة التصميم 2026-10-16) */
-  --nav-surface: #ffffff;       /* كحلي الهوية: القائمة هي العنصر الداكن الوحيد في الصفحة */
+  --nav-surface: #eaf0f0;       /* خلفية القائمة: رمادي مخضر فاتح، والخيارات بطاقات بيضاء فوقها */
+  --nav-item: #ffffff;
+  --nav-chip: #e4f1f0;          /* دائرة الأيقونة */
   --nav-bg: #f2f6f5;            /* حالة المرور وأسطح ثانوية */
   --nav-text: #10283f;
   --nav-muted: #72828b;
@@ -165,7 +167,9 @@
   --color-petrol-strong: #279499;
   --banner-bg: linear-gradient(100deg, #0b343b 0%, #0f434a 60%, #13525a 100%);
   --logo-bg: #f6f8fb;
-  --nav-surface: #0f2033;
+  --nav-surface: #0b1828;
+  --nav-item: #15293f;
+  --nav-chip: #1d3a52;
   --nav-bg: #172c44;
   --nav-text: #e6ecf3;
   --nav-muted: #a3b2c4;
@@ -399,11 +403,24 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
   padding: var(--space-3) var(--space-3) var(--space-4);
 }
 .sb-foot { padding: var(--space-2) var(--space-3) var(--space-3); border-top: 1px solid var(--nav-line); }
+.sb-top { background: var(--nav-item); }
 .nav-list, .nav-sub { margin: 0; padding: 0; list-style: none; }
-.nav-list { display: flex; flex-direction: column; gap: 0; }
-.nav-list > .nav-item + .nav-item { border-top: 1px solid var(--nav-line); }   /* فاصل رفيع بين كل خيار وآخر */
-.nav-list > .nav-item { padding-block: var(--space-1); }
-.nav .nav-link { min-height: calc(var(--control-h) + var(--space-1)); }
+.nav-list { display: flex; flex-direction: column; gap: var(--space-2); }
+/* كل خيار بطاقة بيضاء مستقلة فوق خلفية القائمة الرمادية */
+.nav .nav-list > .nav-item > .nav-link, .nav .nav-list > .nav-item > .nav-row {
+  background: var(--nav-item);
+  border: 1px solid var(--nav-line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 2px rgba(16, 40, 63, 0.07);
+}
+.nav .nav-list > .nav-item > .nav-link { min-height: calc(var(--control-h) + var(--space-2)); }
+.nav .nav-row .nav-link { background: transparent; border: 0; box-shadow: none; min-height: calc(var(--control-h) + var(--space-2)); }
+.nav .nav-list > .nav-item > .nav-link:hover, .nav .nav-list > .nav-item > .nav-row:hover { border-color: var(--nav-accent); }
+.nav .nav-link > .ico { width: 34px; height: 34px; place-items: center; border-radius: var(--radius-md); background: var(--nav-chip); color: var(--nav-accent); }
+.nav .nav-link[aria-current="page"] > .ico { background: var(--nav-accent); color: var(--nav-item); }
+.nav .nav-list > .nav-item > .nav-link[aria-current="page"] { border-color: var(--nav-accent); }
+.nav .nav-link.is-soon > .ico { background: var(--nav-bg); color: var(--nav-muted); }
+.nav-title { font-weight: 700; }
 .nav-sec + .nav-sec { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--nav-line); }
 .nav-title {
   margin: 0 0 var(--space-2);
@@ -478,7 +495,9 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
   margin: 0 0 var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--nav-bg);
+  border: 1px solid var(--nav-line);
+  background: var(--nav-item);
+  box-shadow: 0 1px 2px rgba(16, 40, 63, 0.07);
 }
 .sb-avatar { display: grid; place-items: center; flex: none; width: calc(var(--control-h) - var(--space-2)); height: calc(var(--control-h) - var(--space-2)); border-radius: var(--radius-pill); background: var(--nav-active-bg); color: var(--nav-accent); }
 .sb-avatar .ico { display: grid; }
@@ -488,7 +507,7 @@ html[dir="rtl"].nav-min .sb-collapse .ico { transform: none; }
 .sb-auth-action { justify-self: start; display: inline-flex; align-items: center; min-height: var(--control-h); padding: 0; border: 0; background: none; color: var(--nav-accent); font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .sb-auth-action:disabled { opacity: .6; cursor: wait; }
 /* Step 49: «كورسي» والإشعارات في القائمة الجانبية */
-.sb-push { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0 var(--space-2); margin: 0 0 var(--space-2); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--nav-line); color: var(--nav-accent); transition: background var(--ease), transform 0.12s ease; }
+.sb-push { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0 var(--space-2); margin: 0 0 var(--space-2); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--nav-line); background: var(--nav-item); color: var(--nav-accent); transition: background var(--ease), transform 0.12s ease; }
 .sb-push:hover { background: var(--nav-bg); }
 .sb-push:active { transform: scale(0.98); }
 .sb-push[hidden] { display: none; }
