@@ -17,7 +17,7 @@ def new_context(browser, fixtures, **kw):
     ctx.route('https://fonts.googleapis.com/**', lambda r: r.abort())
     def cdn(r):
         u = r.request.url.split('?')[0]; n = u.split('/')[-1]
-        m = re.search(r'/pdf\.js/3\.11\.174/(standard_fonts|cmaps)/([^/]+)$', u)  # خطوط وخرائط pdf.js (يطلبها القارئ منذ studio5)
+        m = re.search(r'/pdf\.js/3\.11\.174/(cmaps)/([^/]+)$', u)  # خطوط وخرائط pdf.js (يطلبها القارئ منذ studio5)
         if m: r.fulfill(path=os.path.join(CDN, 'pdfjs-dist-3.11.174/package', m.group(1), m.group(2)), content_type='application/octet-stream')
         elif n in FILES: r.fulfill(path=os.path.join(CDN, FILES[n]), content_type='application/javascript')
         else: r.abort()

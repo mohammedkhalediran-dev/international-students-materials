@@ -7,7 +7,8 @@
   var PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
   var WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   // خطوط PDF القياسية وخرائط الأحرف: بدونها تظهر حروف بعض الملفات متداخلة أو بمسافات خاطئة
-  var FONTS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/";
+  // مستضافة من الموقع نفسه (رابط مطلق لأن عامل pdf.js يُحمَّل من cdnjs): الخط الاحتياطي لا يصل أحياناً من cdnjs فتظهر صفحات بلا نص
+  var FONTS = new URL("vendor/pdfjs/standard_fonts/", location.href).href;
   var CMAPS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/";
   var MANIFEST = "js/pdf-raster-manifest.js";
   var MAX_PIXELS = 4000000; // أكبر مساحة للوحة الرسم الواحدة (حماية ذاكرة iOS)

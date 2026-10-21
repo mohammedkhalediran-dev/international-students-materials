@@ -15,7 +15,7 @@
      resolution, the visible part of the page is drawn again from the PDF at device resolution into one small canvas
      on top (like the native iPad note apps). It is rebuilt after scrolling / zooming stops and dropped while zooming. */
   const HD_PX = TOUCH ? 4.2e6 : 9e6;
-  const FONTS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/', CMAPS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
+  const FONTS = new URL('vendor/pdfjs/standard_fonts/', location.href).href /* self-hosted: the fallback font (LiberationSans) sometimes failed to load from cdnjs, leaving pages with blank text */, CMAPS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
   const R = { zoom: 1, pages: [], byId: new Map(), doc: null, bytes: null, raster: null, MAXKEEP: TOUCH ? 4 : 12, queue: [], running: 0, io: null, listeners: [], nSources: 0, notebook: null };
   R.minZoom = 0.4; R.maxZoom = 8;
   const clampZ = z => Math.min(R.maxZoom, Math.max(R.minZoom, z));
