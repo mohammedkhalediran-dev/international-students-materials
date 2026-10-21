@@ -102,7 +102,18 @@
     clearTimeout(R.zt); R.zt = setTimeout(() => { R.pages.forEach(p => { if (p.near) want(p); }); pump(); settle(); }, 120);
     emit('zoom', R.zoom);
   }
-  R.setZoom = setZoom; R.zoomBy = f => setZoom(R.zoom * f); R.fit = () => setZoom(1);
+  /* Zoom keeping the document point under (cx, cy) — the pinch midpoint — exactly where it was on screen. */
+  function zoomAt(z, cx, cy) {
+    z = clampZ(z); if (Math.abs(z - R.zoom) < 0.001 || !R.pages.length) return;
+    const p = R.pages.find(x => x.el.getBoundingClientRect().bottom >= cy) || R.pages[R.pages.length - 1], r = p.el.getBoundingClientRect();
+    const fx = (cx - r.left) / Math.max(1, r.width), fy = (cy - r.top) / Math.max(1, r.height);
+    R.zoom = z; R.pages.forEach(layout);
+    const r2 = p.el.getBoundingClientRect(); scrollBy(0, r2.top + fy * r2.height - cy);
+    if (R.root) R.root.scrollBy(r2.left + fx * r2.width - cx, 0);
+    clearTimeout(R.zt); R.zt = setTimeout(() => { R.pages.forEach(q => { if (q.near) want(q); }); pump(); settle(); }, 120);
+    emit('zoom', R.zoom);
+  }
+  R.setZoom = setZoom; R.zoomAt = zoomAt; R.zoomBy = f => setZoom(R.zoom * f); R.fit = () => setZoom(1);
   addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) { e.preventDefault(); R.zoomBy(1.15); } else if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); R.zoomBy(1 / 1.15); } else if ((e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); R.fit(); } });
   addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); R.zoomBy(e.deltaY < 0 ? 1.08 : 1 / 1.08); } }, { passive: false });
   let rt = 0; const relayout = () => { clearTimeout(rt); rt = setTimeout(() => { const a = anchor(); R.pages.forEach(layout); if (a) { const r = a.p.el.getBoundingClientRect(); scrollBy(0, r.top + a.frac * r.height - 120); } R.pages.forEach(p => { if (p.near) want(p); }); pump(); }, 150); };

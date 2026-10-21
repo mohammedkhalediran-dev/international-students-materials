@@ -28,23 +28,64 @@
     $("grProfileBox").hidden = true; $("grList").hidden = true;
   }
 
+  // معدل الطالب في الكورس (يظهر أسفل الجدول؛ أُلغي عرض الرتبة بطلب محمد 2026-10-20)
+  function statsBlock(st) {
+    var wrap = el("div", "gr-stats");
+    if (!st.complete) { wrap.appendChild(el("p", "gr-stats-note", t("لا يظهر معدلك ولا ترتيبك لأن إحدى موادك بلا درجة أو «غائب»."))); return wrap; }
+    var box = el("div", "gr-stat"); box.appendChild(el("span", "gr-stat-label", t("معدلك في الكورس")));
+    var v = el("strong", "gr-stat-value"); v.appendChild(el("bdi", "", String(st.average))); box.appendChild(v); wrap.appendChild(box);
+    wrap.appendChild(el("p", "gr-stats-note", t("المعدل متوسط درجات المواد التي رُفعت درجاتها حتى الآن، وقد يتغير عند رفع مواد جديدة.")));
+    return wrap;
+  }
+  // أفضل 10 طلاب في الكورس (الرتبة والاسم والمعدل فقط، من الخادم)
+  function topBlock(list) {
+    // مطوية: تفتح عند الضغط على عنوانها
+    var wrap = el("details", "gr-top"), sum = el("summary"); sum.appendChild(el("span", "", t("أفضل 10 طلاب في الكورس"))); wrap.appendChild(sum);
+    var ol = el("ol", "gr-top-list");
+    list.forEach(function (x) {
+      var li = el("li", x.me ? "is-me" : ""), rk = el("span", "gr-top-rank"), nm = el("span", "gr-top-name"), av = el("span", "gr-top-avg");
+      rk.appendChild(el("bdi", "", String(x.rank))); nm.appendChild(el("bdi", "", x.name || "—")); av.appendChild(el("bdi", "", String(x.average)));
+      li.appendChild(rk); li.appendChild(nm); li.appendChild(av); ol.appendChild(li);
+    });
+    wrap.appendChild(ol); return wrap;
+  }
+
   function showGrades(d) {
     status(""); $("grGate").hidden = true; $("grProfileBox").hidden = true;
     var box = $("grList"); box.replaceChildren(); box.hidden = false;
-    if (d.name) { var who = el("p", "gr-who"); who.appendChild(document.createTextNode(t("الدرجات المسجلة باسم") + ": ")); var b = el("b", "", d.name); b.dir = "auto"; who.appendChild(b); box.appendChild(who); }
-    var edit = el("a", "gr-edit", t("تعديل الملف الشخصي")); edit.href = "profile.html"; box.appendChild(edit);
+    var meta = el("div", "gr-meta");
+    if (d.name) { var who = el("p", "gr-who"); who.appendChild(document.createTextNode(t("الدرجات المسجلة باسم") + ": ")); var b = el("b", "", d.name); b.dir = "auto"; who.appendChild(b); meta.appendChild(who); }
+    var edit = el("a", "gr-edit", t("تعديل الملف الشخصي")); edit.href = "profile.html"; meta.appendChild(edit); box.appendChild(meta);
     if (!d.batches || !d.batches.length) { box.appendChild(el("div", "tt-empty", t("ملفك مكتمل. ستظهر درجاتك هنا تلقائياً عند رفعها."))); if (window.I18N) I18N.apply(); return; }
+    // الدفعات التي لها العنوان نفسه هي كورس واحد (مثل «نتائج الكورس الثاني» المرفوعة على مرحلتين): بطاقة واحدة، ومعدل ورتبة للكورس كله
+    var groups = [], byTitle = {};
     d.batches.forEach(function (bt) {
-      var card = el("article", "gr-batch"), head = el("div", "gr-batch-head"), h = el("h3", "", bt.title);
-      h.dir = "auto"; head.appendChild(h); head.appendChild(el("small", "", fmtDate(bt.at))); card.appendChild(head);
+      var g = byTitle[bt.title];
+      if (!g) { g = byTitle[bt.title] = { title: bt.title, at: bt.at, first: bt.at, parts: [] }; groups.push(g); }
+      g.parts.push(bt); if (bt.at < g.first) g.first = bt.at;
+    });
+    // الكورس الأقدم أولاً (الكورس الأول قبل الثاني) بطلب محمد 2026-10-20
+    groups.sort(function (a, b) { return a.first - b.first; });
+    var stats = {};
+    (d.terms || []).forEach(function (s) { stats[s.title] = s; });
+    groups.forEach(function (g) {
+      var card = el("article", "gr-batch"), head = el("div", "gr-batch-head"), h = el("h3", "", g.title);
+      h.dir = "auto"; head.appendChild(h); head.appendChild(el("small", "", fmtDate(g.at))); card.appendChild(head);
+      var st = stats[g.title];
       var table = el("table", "gr-table"), thead = el("thead"), hr = el("tr");
       hr.appendChild(el("th", "", t("المادة"))); hr.appendChild(el("th", "", t("الدرجة"))); thead.appendChild(hr); table.appendChild(thead);
       var tb = el("tbody");
-      bt.rows.forEach(function (r) {
-        var tr = el("tr"), c = el("td", "", r.course), g = el("td", "gr-grade", r.grade);
-        c.dir = "auto"; g.dir = "auto"; tr.appendChild(c); tr.appendChild(g); tb.appendChild(tr);
+      g.parts.slice().reverse().forEach(function (bt) { // الأقدم أولاً داخل الكورس
+        bt.rows.forEach(function (r) {
+          // الخلية ترث اتجاه الصفحة (فتتحاذى مع عنوان العمود)، والنص نفسه معزول بـ<bdi> فيُقرأ بلغته دون أن يقلب المحاذاة
+          var tr = el("tr"), c = el("td", "gr-course"), gd = el("td", "gr-grade"), cb = el("bdi", "", r.course), gb = el("bdi", "", r.grade);
+          if (!/^[0-9٠-٩۰-۹.,٫]+$/.test(String(r.grade).trim())) gd.className = "gr-grade is-text"; // غير رقمي (مثل «غائب»)
+          c.appendChild(cb); gd.appendChild(gb); tr.appendChild(c); tr.appendChild(gd); tb.appendChild(tr);
+        });
       });
-      table.appendChild(tb); card.appendChild(table); box.appendChild(card);
+      table.appendChild(tb); card.appendChild(table);
+      if (st) { card.appendChild(statsBlock(st)); if (st.top && st.top.length) card.appendChild(topBlock(st.top)); }
+      box.appendChild(card);
     });
     if (window.I18N) I18N.apply();
   }

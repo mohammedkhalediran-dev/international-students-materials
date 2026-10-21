@@ -16,7 +16,12 @@
   const notebooks = () => (Array.isArray(rd(NBKEY, [])) ? rd(NBKEY, []) : []).filter(n => n && typeof n.id === 'string' && /^[a-z0-9]{3,20}$/.test(n.id));
   function titleFor(s) {
     if (/^notebook:/.test(s)) { const n = notebooks().find(x => 'notebook:' + x.id === s); return n ? n.title : 'دفتر'; }
-    try { const f = decodeURIComponent(new URL(s, location.href).pathname.split('/').pop() || '').replace(/\.pdf$/i, ''); return f.replace(/^المحاضرة-\d+-/, '').replace(/[-_]+/g, ' ') || 'ملف'; } catch { return 'ملف'; }
+    try {
+      const path = decodeURIComponent(new URL(s, location.href).pathname.replace(/^\/+/, ''));
+      if (typeof COURSES !== 'undefined') for (const c of COURSES) for (const l of (c.lectures || [])) for (const f of (l.files || [])) if (f.path && path.endsWith(f.path)) return String(l.titleAr || l.title || 'ملف');   /* the real lecture title beats a file name */
+      const f = path.split('/').pop().replace(/\.pdf$/i, '').replace(/^المحاضرة-\d+-/, '').replace(/[-_]+/g, ' ');
+      return /^[0-9a-f]{6,}( [0-9a-f]{3,})*$/i.test(f) ? 'ملف' : (f || 'ملف');   /* uploaded files are named by an id: not a title */
+    } catch { return 'ملف'; }
   }
   const href = s => 'pdf-notes.html?file=' + encodeURIComponent(s);
   let T = load();
@@ -48,8 +53,8 @@
     const list = el('div', 'st-tablist'); list.setAttribute('role', 'tablist');
     for (const t of T.open) {
       const cur = t.src === src, row = el('div', 'st-tab' + (cur ? ' current' : '')); row.dataset.src = t.src;
-      const b = el('button', 'st-tab-b'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(cur)); b.title = t.title;
-      b.append(el('span', 'st-tab-t', (t.title || '').slice(0, 24)));
+      const b = el('button', 'st-tab-b'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(cur)); const nm = /^[0-9a-f]{6,}( [0-9a-f]{3,})*$/i.test(t.title || '') ? titleFor(t.src) : t.title; b.title = nm;
+      b.append(el('span', 'st-tab-t', (nm || '').slice(0, 24)));
       const key = 'medixa.pdf.annotations.v1:' + new URL(t.src, location.href).href;
       const bad = cur ? ['pending', 'editing', 'failed', 'conflict'].includes(M.S.state) : drafts.has(key);
       if (bad) { const d = el('span', 'st-dirty', '●'); d.setAttribute('role', 'img'); d.setAttribute('aria-label', 'تغييرات غير محفوظة'); b.append(d); }

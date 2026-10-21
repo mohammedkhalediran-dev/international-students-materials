@@ -32,8 +32,8 @@
 
     var name = el("input"); name.id = "grFullName"; name.name = "full_name"; name.type = "text"; name.maxLength = 100;
     name.autocomplete = "name"; name.dir = "auto"; name.required = true; name.value = profile.fullName || "";
-    name.setAttribute("autocapitalize", "words"); name.placeholder = "Ahmad Ali Hassan";
-    form.appendChild(field("الاسم الكامل كما في الجامعة (بالإنجليزية)", name));
+    name.setAttribute("autocapitalize", "words"); name.placeholder = "أحمد علي حسن";
+    form.appendChild(field("الاسم الكامل كما في الجامعة", name));
 
     var pass = null;
     if (!profile.passportLinked) {
