@@ -245,8 +245,9 @@
     if (s.tool === 'text' || s.tool === 'sticky') { drawTextBox(ctx, s, w, h); ctx.restore(); return; }
     if (s.tool === 'image') { drawImageItem(ctx, s, w, h); ctx.restore(); return; }
     if (s.tool === 'texthl' && s.mark) { ctx.globalAlpha = s.op || 0.9; markLines(ctx, [s], w, h); ctx.restore(); return; }
-    if (s.tool === 'texthl') {                                   /* text-anchored highlight: one translucent fill per line rectangle */
-      ctx.globalAlpha = s.op || 0.35; ctx.beginPath(); for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill();
+    if (s.tool === 'texthl') {                                   /* text-anchored highlight: one rounded translucent band per text line */
+      if (!document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal')) ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = s.op || 0.35; hlBands(ctx, [s], w, h);
       ctx.restore(); return;
     }
     const applyDash = d => {
@@ -312,6 +313,19 @@
     }
     ctx.lineWidth = Math.max(1, ((list[0].rects[0][3] - list[0].rects[0][1]) * h) * 0.085); ctx.lineCap = 'round'; ctx.stroke();
   }
+  /* texthl fill (2026-10-21, R2/R8 «مثل Notewise»): one band per line with the line's own height, a little wider than the
+     glyph run, corners rounded (0.35 x band height). All bands of a group go into ONE path filled once (nonzero, every
+     band wound the same way), so overlapping highlights never darken. Stored rects are untouched. */
+  function hlBands(ctx, list, w, h) {
+    ctx.beginPath();
+    for (const s of list) for (const r of s.rects) {
+      const lh = (r[3] - r[1]) * h; if (!(lh > 0)) continue;
+      const pad = 0.12 * lh, x = r[0] * w - pad, y = r[1] * h, bw = (r[2] - r[0]) * w + 2 * pad, rad = Math.max(0, Math.min(0.35 * lh, bw / 2, lh / 2));
+      if (ctx.roundRect) { ctx.roundRect(x, y, bw, lh, rad); continue; }
+      ctx.moveTo(x + rad, y); ctx.arcTo(x + bw, y, x + bw, y + lh, rad); ctx.arcTo(x + bw, y + lh, x, y + lh, rad); ctx.arcTo(x, y + lh, x, y, rad); ctx.arcTo(x, y, x + bw, y, rad); ctx.closePath();
+    }
+    ctx.fill('nonzero');
+  }
   /* Consecutive highlights are painted per colour/opacity/tip group with ONE fill/stroke each, so where highlights overlap
      the colour does not stack up into a darker band (a marker over a marker looks like one marker). */
   function drawHighlights(ctx, list, w, h) {
@@ -322,7 +336,7 @@
       const s0 = g[0]; ctx.save(); ctx.fillStyle = ctx.strokeStyle = s0.color || '#f2c230';
       if (s0.tool === 'texthl' && s0.mark) { ctx.globalAlpha = s0.op || 0.9; markLines(ctx, g, w, h); ctx.restore(); continue; }
       if (mult) ctx.globalCompositeOperation = 'multiply';
-      if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; ctx.beginPath(); for (const s of g) for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill('nonzero'); }
+      if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; hlBands(ctx, g, w, h); }
       else {
         ctx.globalAlpha = s0.op || 0.3;
         ctx.lineCap = s0.tip === 'flat' ? 'butt' : 'round';
@@ -548,7 +562,7 @@
   function onDown(e) {
     stopInertia(); if (api.reader && api.reader.cancelSettle) api.reader.cancelSettle();
     const t = e.target, inPages = !!(t && t.closest && t.closest('#pages'));
-    if (!inPages || (blocked(t) && !t.closest('canvas.ink')) || document.body.classList.contains('st-selecting')) return;   /* text selection keeps the browser's own touch handling */
+    if (!inPages || (blocked(t) && !t.closest('canvas.ink'))) return;   /* text selection is MEDIXA's own (studio-smart.js), never a mode that blocks the pen or the finger */
     const ink = t.closest('canvas.ink'), pg = ink ? inkPages.get(ink) : null;
     if (e.pointerType === 'touch') return touchDown(e, pg);
     if (e.pointerType === 'pen') markPen();
