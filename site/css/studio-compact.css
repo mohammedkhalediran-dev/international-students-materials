@@ -49,8 +49,18 @@ body.st-compact.medixa-focus #studio-toolbar{top:var(--reader-tools-top)}
 body.st-compact.medixa-focus main#pages{padding-top:var(--reader-reserve)}
 body.st-compact button:focus-visible,body.st-compact a:focus-visible{outline:2px solid #168c8c;outline-offset:2px}
 /* Notewise-style quick bar under the toolbar: tool type · 3 thicknesses · 5 colours · custom · all settings */
-body.st-compact.st-has-quick{--reader-reserve:128px}
 body.st-has-quick #studio-toolbar .st-style{display:contents}
+/* ⌄ / ⌃ hides or shows the tool options bar (request 9: «القائمة لا تختفي»); hiding it never moves the page */
+body.st-compact #studio-toolbar .st-collapse{display:flex;align-items:center;margin-inline-start:2px;padding-inline-start:4px;border-inline-start:1px solid var(--reader-line)}
+body.st-compact #st-quick-toggle svg{transition:transform .2s ease}
+body.st-compact #st-quick-toggle[aria-expanded=true] svg{transform:rotate(180deg)}
+body.st-compact #st-quick-toggle[aria-disabled=true]{opacity:.35}
+/* short notices (pen / finger switching) */
+#st-toast{position:fixed;left:50%;top:calc(var(--reader-tools-top,12px) + 118px);z-index:60;max-width:min(92vw,460px);padding:10px 16px;border-radius:999px;background:#1f2933eb;color:#fff;font:600 13px/1.4 system-ui;text-align:center;direction:rtl;pointer-events:none;opacity:0;transform:translate(-50%,-6px);transition:opacity .2s ease,transform .2s ease}
+#st-toast.on{opacity:1;transform:translate(-50%,0)}
+.st-fingermode{--ts-line:#dfe6ea;--ts-soft:#f3f6f8;--ts-bg:#fff;--ts-ink:#24313b;--ts-teal:#168c8c;--ts-teal-2:#0f6f6f;--ts-muted:#6b7a85;margin:6px 0 2px}
+.st-fingermode button{font-size:12px}
+body.st-compact.medixa-dark .st-fingermode{--ts-line:#3b4853;--ts-soft:#26323c;--ts-bg:#202a33;--ts-ink:#e7edf2;--ts-teal-2:#7ad0d0}
 body.st-compact .st-quick{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:0;padding:2px 6px;background:var(--reader-surface);border:1px solid var(--reader-line);border-radius:24px;box-shadow:0 2px 8px #1b243319;direction:ltr;white-space:nowrap;animation:st-q-in .18s ease-out}
 body.st-compact .st-quick .st-qbtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-width:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--reader-text)}
 body.st-compact .st-quick .st-qbtn:hover,body.st-compact .st-quick .st-size:hover,body.st-compact .st-quick .st-swatch:hover{background:var(--reader-hover)}
@@ -78,11 +88,10 @@ body.st-compact.st-has-quick #st-edge-nav{top:calc(var(--reader-tools-top) + 116
 @media(hover:none) and (pointer:coarse) and (min-width:721px){
  html body.st-compact #mx-dock #mx-reader-nav [data-mx-prev],html body.st-compact #mx-dock #mx-reader-nav [data-mx-next],html body.st-compact #mx-dock #st-zoom-out,html body.st-compact #mx-dock #st-zoom-in{display:none}
 }
-@media(max-width:720px){body.st-compact #st-edge-nav{display:none}}
+@media(max-width:720px){body.st-compact #st-edge-nav,body.st-compact .st-fingerbtn{display:none}}
 @media(min-width:980px) and (max-width:1199px){body.st-compact #studio-toolbar{max-width:calc(100vw - 340px)}}
 @media(max-width:979px){
  body.st-compact{--reader-tools-top:calc(var(--reader-top) + 62px);--reader-reserve:138px}
- body.st-compact.st-has-quick{--reader-reserve:190px}
  body.st-compact #studio-toolbar{max-width:calc(100vw - 24px)}
 }
 @media(max-width:720px){
@@ -99,7 +108,7 @@ body.st-compact.st-has-quick #st-edge-nav{top:calc(var(--reader-tools-top) + 116
  body.st-compact .st-panel{top:76px;bottom:calc(var(--st-tb-h,60px) + 76px);inset-inline:8px;width:auto}
  body.st-compact.medixa-focus #pages>section{scroll-margin-top:76px}
 }
-@media(prefers-reduced-motion:reduce){body.st-compact *{scroll-behavior:auto!important}body.st-compact .st-quick{animation:none}}
+@media(prefers-reduced-motion:reduce){body.st-compact *{scroll-behavior:auto!important}body.st-compact .st-quick{animation:none}#st-toast{transition:none}}
 /* Embedded split panes retain the original compact embed rules, without navigation islands. */
 html.st-embed body.st-compact>header,html.st-embed body.st-compact #mx-dock{display:none!important}
 

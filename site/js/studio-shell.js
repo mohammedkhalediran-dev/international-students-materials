@@ -72,7 +72,7 @@
     const z = document.createElement('div'); z.id = 'st-zoom'; z.setAttribute('role', 'group'); z.setAttribute('aria-label', 'التكبير');
     const mk = (id, lab, text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.setAttribute('aria-label', lab); b.title = lab; b.textContent = text; b.onclick = fn; z.append(b); return b; };
     mk('st-zoom-out', 'تصغير', '−', () => M.reader.zoomBy(1 / 1.15)); const lab = mk('st-zoom-label', 'ملاءمة العرض', '100%', () => M.reader.fit()); mk('st-zoom-in', 'تكبير', '+', () => M.reader.zoomBy(1.15));
-    ($('mx-dock') || document.body).append(z); M.reader.on('zoom', v => { lab.textContent = Math.round(v * 100) + '%'; });
+    ($('mx-dock') || document.body).append(z); M.reader.on('zoom', v => { lab.textContent = Math.round(v * 100) + '%'; }); M.reader.on('zoompreview', v => { lab.textContent = Math.round(v * 100) + '%'; });
   }
   /* focus mode: keep the save status visible (the header is hidden) */
   (function () {

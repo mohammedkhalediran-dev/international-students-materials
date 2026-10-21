@@ -24,13 +24,13 @@
     { id: 'zoom', name: 'كتابة مكبرة', icon: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6M11 8v6"/>' },
     { id: 'hand', name: 'تحريك الصفحة', icon: '<path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.3l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15"/>' }
   ];
-  const KEY = 'medixa.studio.toolbar.v1', DEFAULT = { order: TOOLS.map(t => t.id), hidden: [], side: 'start' };
+  const KEY = 'medixa.studio.toolbar.v1', DEFAULT = { order: TOOLS.map(t => t.id), hidden: [], side: 'start', quick: true };
   const byId = Object.fromEntries(TOOLS.map(t => [t.id, t]));
   function load() {
     try {
       const v = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!v || typeof v !== 'object') return structuredClone(DEFAULT);
       const order = Array.isArray(v.order) ? v.order.filter(id => byId[id]) : []; for (const t of TOOLS) if (!order.includes(t.id)) order.push(t.id);
-      return { order, hidden: Array.isArray(v.hidden) ? v.hidden.filter(id => byId[id]) : [], side: v.side === 'end' ? 'end' : 'start' };
+      return { order, hidden: Array.isArray(v.hidden) ? v.hidden.filter(id => byId[id]) : [], side: v.side === 'end' ? 'end' : 'start', quick: v.quick !== false };
     } catch { return structuredClone(DEFAULT); }
   }
   let cfg = load();
@@ -97,7 +97,8 @@
   function selStyle(props) { if (!selOn()) return false; M.selection.applyStyle(props); return true; }
   const check = (id, label, on, fn) => { const l = document.createElement('label'); l.className = 'st-check'; const i = document.createElement('input'); i.type = 'checkbox'; i.id = id; i.checked = !!on; i.onchange = () => fn(i.checked); l.append(i, ' ' + label); return l; };
   /* the quick bar (sizes · colours · custom · settings) is for tools that draw with a colour, on screens wider than a phone */
-  const quickOn = () => COMPACT && !mqPhone.matches && !!SETG[S.tool] && SETG[S.tool] !== 'eraser';
+  const quickFor = () => COMPACT && !mqPhone.matches && !!SETG[S.tool] && SETG[S.tool] !== 'eraser';
+  const quickOn = () => quickFor() && cfg.quick !== false;   /* the chevron at the end of the bar hides / shows it (Notewise) */
   function render() {
     root.replaceChildren(); root.dataset.side = cfg.side; document.body.classList.remove('st-has-quick');
     const shown = cfg.order.filter(id => !cfg.hidden.includes(id));
@@ -133,6 +134,8 @@
       q.append(kind, div('st-qsep'), sizes, div('st-qsep'), qc, pw, gear);
       if (SETG[S.tool] === 'text') q.querySelectorAll('.st-qsep')[0].hidden = true;
       style.append(q); document.body.classList.add('st-has-quick');
+    } else if (quickFor()) {
+      /* quick bar hidden with the chevron: colour and size from a second tap / long press on the tool (its settings) */
     } else if (COMPACT || mqStyle.matches) {                                  /* tablets in portrait and phones: one colour dot opens everything */
       const sb = btn('st-btn st-stylebtn', 'اللون والسُمك', '<span class="st-dot"></span>'), p = popFor(sb, 'st-stylepop', 'اللون والسُمك');
       p.append(colors, sizes, custom); wrap.append(sb, p); style.append(wrap);
@@ -143,6 +146,13 @@
     const hist = div('st-hist');
     const un = btn('st-btn', 'تراجع', svg('<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>'), 'undo'), re = btn('st-btn', 'إعادة', svg('<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/>'), 'redo');
     un.onclick = () => M.undo(); re.onclick = () => M.redo(); hist.append(un, re);
+    /* القلم والإصبع (2026-10-21، طلب محمد 11): pressed = the finger writes too; released = the pen writes and the finger
+       scrolls / zooms. Automatic until the student chooses; the choice stays on this device. */
+    if (M.setFingerMode) {
+      const fb = btn('st-btn st-fingerbtn', 'الكتابة بالإصبع', svg('<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10"/><path d="M12 9.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.6-2.2L4.6 15a1.5 1.5 0 0 1 2.2-2L9 15"/><path d="M4 4.5 6 6M4 9h2M8.5 2v2"/>'), 'st-finger-toggle');
+      fb.onclick = () => { const draw = M.penMode(); M.setFingerMode(draw ? 'draw' : 'nav'); toast(draw ? 'الإصبع يكتب الآن مثل القلم' : 'القلم يكتب، والإصبع يحرّك الصفحة ويكبّرها'); };
+      hist.append(fb);
+    }
     /* «المزيد»: the remaining tools, inserting a picture, touch & stylus input, and the reader settings */
     const opts = div('st-settings');
     const more = btn('st-btn st-more', 'المزيد من الأدوات والإعدادات', svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'), 'studio-settings');
@@ -157,15 +167,33 @@
     const mg = btn('st-row-btn', 'هوامش الكتابة', 'هوامش الكتابة', 'studio-margins-btn'); mg.onclick = () => { closePops(); openMargins(); };
     gp.append(txt('p', 'st-pop-h', 'الإعدادات'), sn, mg, cs); opts.append(more, gp);
     ts = div('st-pop st-toolset'); ts.id = 'st-toolset'; ts.hidden = true; ts.setAttribute('role', 'dialog');
-    root.append(tools, style, hist, opts, ts); sync(); hs(); syncInput();
+    let col = null;
+    if (COMPACT && !mqPhone.matches) {                               /* ⌄ / ⌃ : hide or show the tool options bar */
+      col = div('st-collapse');
+      const qt = btn('st-btn st-quick-toggle', quickOn() ? 'إخفاء خيارات الأداة' : 'إظهار خيارات الأداة', svg('<path d="m6 9 6 6 6-6"/>'), 'st-quick-toggle');
+      qt.setAttribute('aria-controls', 'st-quickbar'); qt.setAttribute('aria-expanded', String(quickOn()));
+      if (!quickFor()) qt.setAttribute('aria-disabled', 'true');
+      qt.onclick = () => { if (!quickFor()) return; cfg.quick = !(cfg.quick !== false); save(); closePops(); render(); };
+      col.append(qt);
+    }
+    root.append(tools, style, hist, opts); if (col) root.append(col); root.append(ts); sync(); hs(); syncInput();
     root.dispatchEvent(new CustomEvent('st-rendered'));
   }
   /* «الكتابة باللمس والقلم»: what a finger does, palm rejection, two-finger navigation, stylus auto-detection */
   function inputSection() {
     const sec = div('st-inputset'), I = M.input ? M.input() : {}, set = p => M.setInput ? M.setInput(p) : (p.stylusOnly != null && M.setPenOnly(p.stylusOnly));
     sec.append(txt('p', 'st-pop-h', 'الكتابة باللمس والقلم'));
-    sec.append(check('studio-finger', 'الكتابة بالإصبع', I.fingerDraw, v => set({ fingerDraw: v })));
-    sec.append(check('medixa-pen-only', 'القلم الإلكتروني فقط', S.penOnly, v => set({ stylusOnly: v })));
+    if (M.setFingerMode) {
+      const fm = div('ts-seg st-fingermode'); fm.id = 'studio-fingermode'; fm.setAttribute('role', 'group'); fm.setAttribute('aria-label', 'القلم والإصبع');
+      for (const [v, t] of [['auto', 'تلقائي'], ['nav', 'القلم يكتب والإصبع يحرّك'], ['draw', 'الإصبع يكتب أيضاً']]) {
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.fm = v; b.textContent = t;
+        b.setAttribute('aria-pressed', String((I.fingerMode || 'auto') === v)); b.onclick = () => M.setFingerMode(v); fm.append(b);
+      }
+      sec.append(fm, txt('p', 'st-note-line', 'تلقائي: بعد أول استعمال لقلم Apple يكتب القلم فقط، والإصبع يحرّك الصفحة ويكبّرها بإصبعين.'));
+    } else {
+      sec.append(check('studio-finger', 'الكتابة بالإصبع', I.fingerDraw, v => set({ fingerDraw: v })));
+      sec.append(check('medixa-pen-only', 'القلم الإلكتروني فقط', S.penOnly, v => set({ stylusOnly: v })));
+    }
     sec.append(check('studio-palm', 'تجاهل راحة اليد', I.palm, v => set({ palm: v })));
     const palm = div('st-subrow'), pl = txt('label', '', 'حساسية الرصد'), ps = document.createElement('select'); ps.id = 'studio-palm-sens'; pl.htmlFor = ps.id; ps.setAttribute('aria-label', 'حساسية تجاهل راحة اليد');
     for (const [v, n] of [['low', 'منخفضة'], ['medium', 'متوسطة'], ['high', 'عالية']]) { const o = document.createElement('option'); o.value = v; o.textContent = n; ps.append(o); }
@@ -179,6 +207,9 @@
     return sec;
   }
   function syncInput() {
+    const fb = $('st-finger-toggle');
+    if (fb && M.penMode) { const draw = !M.penMode(); fb.setAttribute('aria-pressed', String(draw)); fb.classList.toggle('active', draw); fb.title = draw ? 'الإصبع يكتب — اضغط ليحرّك الإصبع الصفحة' : 'الإصبع يحرّك الصفحة — اضغط ليكتب الإصبع'; }
+    document.querySelectorAll('#studio-fingermode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fm === ((M.input && M.input().fingerMode) || 'auto'))));
     const I = M.input ? M.input() : {}, put = (id, v) => { const e = $(id); if (e && e.checked !== !!v) e.checked = !!v; };
     put('studio-finger', I.fingerDraw); put('medixa-pen-only', I.stylusOnly); put('studio-palm', I.palm); put('studio-twofinger', I.twoFinger); put('studio-autostylus', I.autoStylus); put('studio-snap', S.snap);
     const f = $('studio-finger'); if (f) f.disabled = !!I.stylusOnly;                 /* «القلم فقط» already decides what a finger does */
@@ -223,6 +254,14 @@
     const wi = $('width'); if (wi && +wi.value !== S.width) wi.value = S.width;
   }
   function hs() { if (!S.hist) return; const u = $('undo'), r = $('redo'); if (u) u.disabled = !S.hist.canUndo; if (r) r.disabled = !S.hist.canRedo; }
+  /* a short message at the top of the page (pen / finger switching) */
+  let toastEl = null, toastT = 0;
+  function toast(text) {
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.id = 'st-toast'; toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite'); document.body.append(toastEl); }
+    toastEl.textContent = text; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2600);
+  }
+  M.toast = M.toast || toast;
+  M.on('pen-detected', () => { syncInput(); toast('اكتُشف القلم: القلم يكتب، والإصبع يحرّك الصفحة ويكبّرها'); });
   M.on('tool', render); M.on('history', hs); M.on('style', () => { sync(); refreshSet(); }); M.on('input', () => { syncInput(); refreshSet(); });
   mqStyle.addEventListener && mqStyle.addEventListener('change', render);
   if (COMPACT && mqPhone.addEventListener) mqPhone.addEventListener('change', render);

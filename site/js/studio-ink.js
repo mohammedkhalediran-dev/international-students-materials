@@ -38,7 +38,7 @@
     text: { color: '#18334b', width: 3, size: 18, bold: false, italic: false },
     eraser: { mode: 'stroke', size: 12, target: 'all', keepShapes: false, autoSize: true, autoBack: false }
   };
-  const DEF_INPUT = { fingerDraw: true, stylusOnly: false, palm: true, palmSens: 'medium', twoFinger: true, autoStylus: true, shapeSnap: true };
+  const DEF_INPUT = { fingerDraw: true, stylusOnly: false, palm: true, palmSens: 'medium', twoFinger: true, autoStylus: true, shapeSnap: true, fingerMode: 'auto' };
   const num = (v, a, b, d) => (typeof v === 'number' && Number.isFinite(v) && v >= a && v <= b ? v : d);
   function cleanStyle(g, v) {
     const d = DEF_STYLES[g], o = Object.assign({}, d);
@@ -102,6 +102,7 @@
     if (v && typeof v === 'object') { for (const k of Object.keys(DEF_INPUT)) if (typeof v[k] === typeof DEF_INPUT[k]) o[k] = v[k]; }
     else { try { o.stylusOnly = localStorage.getItem('medixa.penOnly') === 'true'; } catch {} }   /* one-time migration of the old setting */
     if (!['low', 'medium', 'high'].includes(o.palmSens)) o.palmSens = 'medium';
+    if (!['auto', 'nav', 'draw'].includes(o.fingerMode)) o.fingerMode = 'auto';
     return o;
   }
 
@@ -394,7 +395,10 @@
     pg.totW = Math.max(1, r.width); pg.totH = Math.max(1, r.height);
     pg.cssW = pg.totW / kx; pg.cssH = pg.totH / ky;                /* cssW/cssH = the PAGE area, margins excluded */
     const W = Math.round(pg.totW * d), H = Math.round(pg.totH * d);
-    if (pg.ink.width !== W || pg.ink.height !== H) { pg.ink.width = W; pg.ink.height = H; pg.dirty = true; }
+    if (pg.ink.width !== W || pg.ink.height !== H) {
+      pg.ink.width = W; pg.ink.height = H; pg.dirty = true;
+      if (pg.hd) { pg.hd.canvas.width = 0; pg.hd.canvas.remove(); pg.hd = null; }   /* its CSS-px geometry is stale; the reader rebuilds it */
+    }
     if (pg.over.width !== W || pg.over.height !== H) { pg.over.width = W; pg.over.height = H; pg.needsPaint = true; }
     pg.pw = W / kx; pg.ph = H / ky;                                /* page area in canvas px */
   }
@@ -495,7 +499,8 @@
     S.pages.set(pg.n, pg); inkPages.set(o.ink, pg);
     o.ink.style.touchAction = 'none';
     sizePage(pg); paint(pg);
-    if (window.ResizeObserver) new ResizeObserver(() => { sizePage(pg); paint(pg); }).observe(o.ink);
+    /* a resize clears the canvas: redraw in the same callback (before paint), so annotations never blink while zooming */
+    if (window.ResizeObserver) new ResizeObserver(() => { const w = pg.ink.width, h = pg.ink.height; sizePage(pg); if (pg.on && (pg.ink.width !== w || pg.ink.height !== h)) renderInk(pg); paint(pg); }).observe(o.ink);
     o.ink.addEventListener('contextmenu', e => e.preventDefault());
     return pg;
   }
@@ -510,12 +515,25 @@
        2 fingers -> pan + pinch zoom around the gesture midpoint (CSS preview, committed as a real zoom at the end).
      States: idle, drawing, highlighting, erasing, selecting, panning, pinching.
      ===================================================================================================== */
-  const PALM = { low: { window: 250, size: 46 }, medium: { window: 500, size: 36 }, high: { window: 900, size: 28 } };
+  /* size: a contact wider than this (CSS px) is a palm. iPad Safari reports a fingertip as 30-60 px wide, so the old
+     limits (28-46) took most fingers for palms and the finger could neither scroll nor zoom (2026-10-21, محمد). */
+  const PALM = { low: { window: 250, size: 130 }, medium: { window: 500, size: 100 }, high: { window: 900, size: 80 } };
   const PENDING_MS = 70, PENDING_PX = 7, HOLD_MS = 520;
   const G = { ptrs: new Map(), state: 'idle', penDown: null, lastPenUp: 0, nav: null, hover: null, lastScroll: 0, selfScroll: 0, inertia: 0 };
   let penSeenAt = +(rd(PEN_SEEN_KEY, 0)) || 0;
-  const penMode = () => S.input.stylusOnly || !S.input.fingerDraw || (S.input.autoStylus && penSeenAt > Date.now() - 14 * 864e5);
-  function markPen() { const t = Date.now(); if (t - penSeenAt > 60000) { penSeenAt = t; wr(PEN_SEEN_KEY, t); emit('input', S.input); } }
+  /* «القلم يكتب والإصبع يحرّك» (pen mode). fingerMode: 'auto' = on once an Apple Pencil was used on this device (the
+     switch is automatic); 'nav' = always on; 'draw' = off (the finger writes too). The toolbar toggle sets nav / draw. */
+  const penMode = () => {
+    const f = S.input.fingerMode;
+    if (f === 'draw') return false;
+    if (f === 'nav' || S.input.stylusOnly) return true;
+    return !S.input.fingerDraw || (S.input.autoStylus !== false && penSeenAt > Date.now() - 60 * 864e5);
+  };
+  function markPen() {
+    const t = Date.now(), first = !penSeenAt || t - penSeenAt > 60 * 864e5;
+    if (t - penSeenAt > 60000) { penSeenAt = t; wr(PEN_SEEN_KEY, t); emit('input', S.input); }
+    if (first && (S.input.fingerMode || 'auto') === 'auto') emit('pen-detected', true);   /* the toolbar tells the student once */
+  }
   const setG = st => { if (G.state !== st) { G.state = st; document.documentElement.dataset.gesture = st; emit('gesture', st); } };
   const stateFor = tool => tool === 'eraser' ? 'erasing' : tool === 'highlight' ? 'highlighting' : TOOLS[tool] && tool !== 'text' && tool !== 'sticky' ? 'selecting' : 'drawing';
   const blocked = t => !t || !t.closest || !!t.closest('textarea,input,select,button,a,label,[contenteditable],.st-editor,.study-mask,.mx-mask,.mx-occlusion-draw,dialog') || document.body.classList.contains('study-mask-mode');
@@ -528,13 +546,14 @@
   for (const ev of ['wheel', 'keydown']) addEventListener(ev, stopInertia, { passive: true, capture: true });
 
   function onDown(e) {
-    stopInertia();
+    stopInertia(); if (api.reader && api.reader.cancelSettle) api.reader.cancelSettle();
     const t = e.target, inPages = !!(t && t.closest && t.closest('#pages'));
     if (!inPages || (blocked(t) && !t.closest('canvas.ink')) || document.body.classList.contains('st-selecting')) return;   /* text selection keeps the browser's own touch handling */
     const ink = t.closest('canvas.ink'), pg = ink ? inkPages.get(ink) : null;
     if (e.pointerType === 'touch') return touchDown(e, pg);
+    if (e.pointerType === 'pen') markPen();
     if (!pg) { if (e.pointerType === 'mouse' && e.button === 1) startPan(e, null); return; }
-    if (e.pointerType === 'pen') { markPen(); G.penDown = e.pointerId; palmSweep(); }
+    if (e.pointerType === 'pen') { G.penDown = e.pointerId; palmSweep(); }
     if (e.pointerType === 'mouse' && e.button === 1) { e.preventDefault(); return startPan(e, pg); }
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
@@ -551,18 +570,20 @@
       if (r.type !== 'touch') continue;
       if (r.role === 'pending') { clearTimeout(r.timer); r.role = 'rejected'; continue; }
       if (r.role === 'draw') { const fresh = now() - r.t0 < 450 || r.len < 30; endTool(r, fresh ? 'discard' : 'commit'); r.role = 'rejected'; }
+      else if (r.role === 'pan' && now() - r.t0 < 450) { stopInertia(); r.role = 'rejected'; }   /* a palm landing just before the pen does not move the page */
     }
   }
   function touchDown(e, pg) {
     const t = now(), P = PALM[S.input.palmSens] || PALM.medium;
     const rec = { id: e.pointerId, type: 'touch', pg, role: null, t0: t, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, buf: [e], len: 0 };
     G.ptrs.set(e.pointerId, rec);
-    if (S.input.palm && (G.penDown != null || t - G.lastPenUp < P.window || Math.max(e.width || 0, e.height || 0) > P.size)) { rec.role = 'rejected'; if (pg) e.preventDefault(); return; }
+    const pm = penMode();
+    if (S.input.palm && (G.penDown != null || t - G.lastPenUp < P.window || Math.max(e.width || 0, e.height || 0) > P.size * (pm ? 1.4 : 1))) { rec.role = 'rejected'; if (pg) e.preventDefault(); return; }
     e.preventDefault();
     if (G.nav) { rec.role = 'ignored'; return; }                   /* a third finger during a pinch changes nothing */
     const live = [...G.ptrs.values()].filter(r => r.type === 'touch' && r.role !== 'rejected' && r.role !== 'ignored');
     if (live.length >= 2) { if (S.input.twoFinger) startNav(live.slice(-2)); else rec.role = 'ignored'; return; }
-    if (!pg || penMode() || S.tool === 'hand') return startPan(e, pg, rec);
+    if (!pg || pm || S.tool === 'hand') return startPan(e, pg, rec);
     try { pg.ink.setPointerCapture(e.pointerId); } catch {}
     rec.role = 'pending'; rec.timer = setTimeout(() => promote(rec), PENDING_MS);
   }
@@ -589,9 +610,9 @@
     if (rec.role === 'draw') moveTool(rec, e);
   }
   function onUp(e) {
+    if (G.penDown === e.pointerId) { G.penDown = null; G.lastPenUp = now(); }   /* even when its stroke never started: a stuck pen blocked every finger */
     const rec = G.ptrs.get(e.pointerId); if (!rec) return;
     const cancel = e.type === 'pointercancel';
-    if (rec.type === 'pen' && G.penDown === e.pointerId) { G.penDown = null; G.lastPenUp = now(); }
     if (rec.role === 'pending') { if (cancel) { clearTimeout(rec.timer); G.ptrs.delete(rec.id); return; } promote(rec); }
     G.ptrs.delete(e.pointerId);
     if (rec.role === 'draw') {
@@ -851,23 +872,33 @@
     const r = G.ptrs.get(e.pointerId); if (!r || !G.nav) return; r.x = e.clientX; r.y = e.clientY;
     const A = G.ptrs.get(G.nav.a), B = G.ptrs.get(G.nav.b); if (!A || !B) return;
     const n = G.nav, m = [(A.x + B.x) / 2, (A.y + B.y) / 2], d = Math.max(10, Math.hypot(A.x - B.x, A.y - B.y));
-    const R = api.reader, s = R ? C.clamp(d / n.d0, 0.4 / n.z0, 4 / n.z0) : 1;
+    const R = api.reader, zmin = (R && R.minZoom) || 0.4, zmax = (R && R.maxZoom) || 8, s = R ? C.clamp(d / n.d0, zmin / n.z0, zmax / n.z0) : 1;
     if (n.mode === 'pan' && R && Math.abs(s - 1) > 0.06) {         /* the fingers spread / pinch: switch to zoom preview */
-      n.mode = 'pinch'; n.m0 = m; n.d0 = d / s; n.rect = R.root.getBoundingClientRect(); setG('pinching');
-      R.root.style.transformOrigin = (m[0] - n.rect.left) + 'px ' + (m[1] - n.rect.top) + 'px'; R.root.style.willChange = 'transform';
+      /* Scaling main#pages itself made the whole document wider, so iPad Safari shrank the entire page (toolbars too)
+         and the pinch fought itself (2026-10-21, فيديو محمد). Each nearby section is scaled about the fingers instead:
+         they live inside the scroll column, so the document never changes size. */
+      n.mode = 'pinch'; n.m0 = m; n.d0 = d; n.s = 1; setG('pinching');
+      const vh = innerHeight;
+      n.secs = [...R.root.children].filter(el => { if (el.tagName !== 'SECTION') return false; const r = el.getBoundingClientRect(); return r.bottom > -3 * vh && r.top < 4 * vh; });
+      for (const el of n.secs) { const r = el.getBoundingClientRect(); el.style.transformOrigin = (m[0] - r.left) + 'px ' + (m[1] - r.top) + 'px'; el.style.willChange = 'transform'; }
+      if (R.freeze) R.freeze(true);
     }
     if (n.mode === 'pan') { scrollByXY(n.last[0] - m[0], n.last[1] - m[1]); n.last = m; n.samples.push([now(), m[0], m[1]]); if (n.samples.length > 8) n.samples.shift(); return; }
-    n.s = C.clamp(d / n.d0, 0.4 / n.z0, 4 / n.z0); n.last = m;
-    R.root.style.transform = 'translate(' + (m[0] - n.m0[0]) + 'px,' + (m[1] - n.m0[1]) + 'px) scale(' + n.s + ')';
+    n.s = C.clamp(d / n.d0, zmin / n.z0, zmax / n.z0); n.last = m;
+    const tf = 'translate(' + (m[0] - n.m0[0]) + 'px,' + (m[1] - n.m0[1]) + 'px) scale(' + n.s + ')';
+    for (const el of n.secs) el.style.transform = tf;
+    if (R.preview) R.preview(n.z0 * n.s);
   }
   function navUp(rec) {
     const n = G.nav; if (!n) return;
     for (const r of G.ptrs.values()) if (r.role === 'nav') r.role = 'ignored';   /* the finger left on the glass never starts ink */
     G.nav = null;
     if (n.mode === 'pinch') {
-      const R = api.reader; R.root.style.transform = ''; R.root.style.transformOrigin = ''; R.root.style.willChange = '';
-      if (R.zoomAt) R.zoomAt(n.z0 * n.s, n.m0[0], n.m0[1]); else R.setZoom(n.z0 * n.s);
-      scrollByXY(n.m0[0] - n.last[0], n.m0[1] - n.last[1]);
+      const R = api.reader;
+      for (const el of n.secs || []) { el.style.transform = ''; el.style.transformOrigin = ''; el.style.willChange = ''; }
+      if (R.freeze) R.freeze(false);
+      /* the document point that was under the fingers lands where the fingers are now (no jump) */
+      if (R.zoomAt) R.zoomAt(n.z0 * n.s, n.m0[0], n.m0[1], n.last[0], n.last[1]); else R.setZoom(n.z0 * n.s);
     } else panEnd({ samples: n.samples });
     emit('nav-end', n.mode);
   }
@@ -1165,13 +1196,16 @@
   }
   function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   function setStyle(tool, props) { const g = GROUPS[tool] || tool; if (!S.styles[g]) return null; S.styles[g] = cleanStyle(g, Object.assign({}, S.styles[g], props)); saveStyles(); emit('style'); return S.styles[g]; }
-  function setInput(props) { Object.assign(S.input, props || {}); S.input = Object.assign({}, DEF_INPUT, S.input); wr(INPUT_KEY, S.input); try { localStorage.setItem('medixa.penOnly', String(!!S.input.stylusOnly)); } catch {} emit('input', S.input); emit('penonly', S.input.stylusOnly); }
+  function setInput(props) { Object.assign(S.input, props || {}); S.input = Object.assign({}, DEF_INPUT, S.input); if (!['auto', 'nav', 'draw'].includes(S.input.fingerMode)) S.input.fingerMode = 'auto'; wr(INPUT_KEY, S.input); try { localStorage.setItem('medixa.penOnly', String(!!S.input.stylusOnly)); } catch {} emit('input', S.input); emit('penonly', S.input.stylusOnly); }
   const api = {
     S, C, init, draftKeys, setPageActive, pageOrder, addBlank, removeBlank, moveBlank, detachPage, setSources(n) { S.nSources = n; }, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, clearPage, patchItem, reorder, commit, fitTextHeight, rebuildIndexPage, setState, banner,
     page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox, aspect, downloadJson,
     style: tool => S.styles[GROUPS[tool] || tool] || null, setStyle, input: () => S.input, setInput, penMode, markPen,
     gesture: { get state() { return G.state; }, get pointers() { return [...G.ptrs.values()].map(r => ({ id: r.id, type: r.type, role: r.role })); }, get penSeen() { return penSeenAt; }, forgetPen() { penSeenAt = 0; wr(PEN_SEEN_KEY, 0); emit('input', S.input); } },
     setPenOnly(v) { setInput({ stylusOnly: !!v }); },
+    penMode() { return penMode(); },
+    /* the toolbar toggle: 'nav' = the pen writes, the finger scrolls and zooms; 'draw' = the finger writes too; 'auto' */
+    setFingerMode(m) { if (m === 'draw') setInput({ fingerMode: 'draw', stylusOnly: false, fingerDraw: true }); else if (m === 'nav') setInput({ fingerMode: 'nav' }); else setInput({ fingerMode: 'auto', stylusOnly: false, fingerDraw: true, autoStylus: true }); },
     setSnap(v) { S.snap = !!v; },
     setInkHd, getItems: () => S.items, save: () => { S.dirty = true; return flush(); }, redraw: () => rebuildAll(), checkpoint: () => {}
   };
