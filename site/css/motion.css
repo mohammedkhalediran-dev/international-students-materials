@@ -87,10 +87,7 @@
 .mc-dialog[open]::backdrop, .viewer[open]::backdrop, .edit-dialog[open]::backdrop { animation: dlg-fade 240ms ease both; }
 @keyframes nav-in { from { opacity: 0; transform: translateX(var(--nav-from, 18px)); } }
 html[dir="ltr"] { --nav-from: -18px; }
-.nav-open .sidebar .nav-item { animation: nav-in 360ms var(--motion-enter) both; }
-.nav-open .sidebar .nav-item:nth-child(2) { animation-delay: 30ms; } .nav-open .sidebar .nav-item:nth-child(3) { animation-delay: 60ms; }
-.nav-open .sidebar .nav-item:nth-child(4) { animation-delay: 90ms; } .nav-open .sidebar .nav-item:nth-child(5) { animation-delay: 120ms; }
-.nav-open .sidebar .nav-item:nth-child(n+6) { animation-delay: 150ms; }
+.nav-open .sidebar .nav-item { animation: nav-item-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 28ms + 120ms); }
 
 /* ---- 11) وضع الدراسة: البطاقة تدخل، الإجابة الصحيحة تنبض والخاطئة تهتز ---- */
 @keyframes study-in { from { opacity: 0; transform: translateX(var(--study-from, -24px)); } }
