@@ -243,6 +243,7 @@
     ctx.strokeStyle = col; ctx.fillStyle = col;
     if (s.tool === 'text' || s.tool === 'sticky') { drawTextBox(ctx, s, w, h); ctx.restore(); return; }
     if (s.tool === 'image') { drawImageItem(ctx, s, w, h); ctx.restore(); return; }
+    if (s.tool === 'texthl' && s.mark) { ctx.globalAlpha = s.op || 0.9; markLines(ctx, [s], w, h); ctx.restore(); return; }
     if (s.tool === 'texthl') {                                   /* text-anchored highlight: one translucent fill per line rectangle */
       ctx.globalAlpha = s.op || 0.35; ctx.beginPath(); for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill();
       ctx.restore(); return;
@@ -301,14 +302,24 @@
     } else { ctx.globalAlpha = s.op || 1; ctx.lineWidth = base; drawPath(ctx, s.points, w, h); ctx.stroke(); }
     ctx.restore();
   }
+  /* texthl with mark 'underline' | 'strike' (2026-10-21): a line under / through each text line, instead of a fill */
+  function markLines(ctx, list, w, h) {
+    ctx.beginPath();
+    for (const s of list) for (const r of s.rects) {
+      const lh = (r[3] - r[1]) * h, y = s.mark === 'strike' ? (r[1] * h + lh * 0.55) : (r[3] * h - lh * 0.06);
+      ctx.moveTo(r[0] * w, y); ctx.lineTo(r[2] * w, y);
+    }
+    ctx.lineWidth = Math.max(1, ((list[0].rects[0][3] - list[0].rects[0][1]) * h) * 0.085); ctx.lineCap = 'round'; ctx.stroke();
+  }
   /* Consecutive highlights are painted per colour/opacity/tip group with ONE fill/stroke each, so where highlights overlap
      the colour does not stack up into a darker band (a marker over a marker looks like one marker). */
   function drawHighlights(ctx, list, w, h) {
     const groups = new Map();
-    for (const s of list) { const key = s.tool + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
+    for (const s of list) { const key = s.tool + '|' + (s.mark || '') + '|' + (s.color || '') + '|' + (s.op || '') + '|' + (s.tip || 'round') + '|' + (s.tool === 'highlight' ? s.width || 3 : ''); let g = groups.get(key); if (!g) groups.set(key, g = []); g.push(s); }
     const mult = !document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal');
     for (const g of groups.values()) {
       const s0 = g[0]; ctx.save(); ctx.fillStyle = ctx.strokeStyle = s0.color || '#f2c230';
+      if (s0.tool === 'texthl' && s0.mark) { ctx.globalAlpha = s0.op || 0.9; markLines(ctx, g, w, h); ctx.restore(); continue; }
       if (mult) ctx.globalCompositeOperation = 'multiply';
       if (s0.tool === 'texthl') { ctx.globalAlpha = s0.op || 0.35; ctx.beginPath(); for (const s of g) for (const r of s.rects) ctx.rect(r[0] * w, r[1] * h, (r[2] - r[0]) * w, (r[3] - r[1]) * h); ctx.fill('nonzero'); }
       else {
@@ -937,6 +948,11 @@
       const wpt = (s, pr) => C.widthAt(s.width || 3, pr, s.tool === 'highlight' ? 'highlight' : s.tool === 'pen' ? 'pen' : 'shape') / 800 * dw;
       for (const s of strokes) {
         if (s.tool === 'text' || s.tool === 'sticky' || s.tool === 'image') { rasters.push({ page, box, rot, s }); continue; }
+        if (s.tool === 'texthl' && s.mark) {
+          const [r0, g0, b0] = hex(s.color || '#e43d56');
+          for (const q of s.rects) { const lh = q[3] - q[1], y = s.mark === 'strike' ? q[1] + lh * 0.55 : q[3] - lh * 0.06; page.drawSvgPath(path([[q[0], y], [q[2], y]]), { x: 0, y: 0, borderColor: rgb(r0, g0, b0), borderWidth: Math.max(0.6, lh * dh * 0.085), borderOpacity: s.op || 0.9, borderLineCap: LineCapStyle.Round }); }
+          continue;
+        }
         if (s.tool === 'texthl') {
           const [r0, g0, b0] = hex(s.color || '#f2c230');
           for (const q of s.rects) page.drawSvgPath(path([[q[0], q[1]], [q[2], q[1]], [q[2], q[3]], [q[0], q[3]]]) + ' Z', { x: 0, y: 0, color: rgb(r0, g0, b0), opacity: s.op || 0.35, borderWidth: 0 });

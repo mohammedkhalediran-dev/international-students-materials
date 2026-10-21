@@ -276,7 +276,7 @@ body.medixa-focus #studio-toolbar{top:max(8px,env(safe-area-inset-top))}
    scatters the letters. Proven by rendering the same page with the same pdf.js into an rtl and an ltr canvas. */
 .page canvas,.st-blank canvas,.st-th-c,#zw-canvas{direction:ltr}
 .st-text span,.st-text br{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
-.st-text ::selection{background:rgba(22,140,140,.38)}
+.st-text ::selection{background:rgba(0,122,255,.26)}
 body.st-selecting .st-text{pointer-events:auto;user-select:text;-webkit-user-select:text}
 body.st-selecting canvas.ink{pointer-events:none}
 body.st-selecting .st-blank canvas.ink{pointer-events:auto}
