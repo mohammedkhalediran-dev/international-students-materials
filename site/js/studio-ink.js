@@ -1212,9 +1212,15 @@
   function commit(ops) { if (ops && ops.length) { S.hist.push(ops); markDirty(); } }
   function setStyle(tool, props) { const g = GROUPS[tool] || tool; if (!S.styles[g]) return null; S.styles[g] = cleanStyle(g, Object.assign({}, S.styles[g], props)); saveStyles(); emit('style'); return S.styles[g]; }
   function setInput(props) { Object.assign(S.input, props || {}); S.input = Object.assign({}, DEF_INPUT, S.input); if (!['auto', 'nav', 'draw'].includes(S.input.fingerMode)) S.input.fingerMode = 'auto'; wr(INPUT_KEY, S.input); try { localStorage.setItem('medixa.penOnly', String(!!S.input.stylusOnly)); } catch {} emit('input', S.input); emit('penonly', S.input.stylusOnly); }
+  /* the saved highlights of one page, multiplied straight onto the page pixels (ctx of the page canvas): the text stays black */
+  function bakeHighlights(n, ctx, w, h) {
+    const list = S.items.filter(s => s && s.page === n && C.validStroke(s) && isHl(s));
+    if (!list.length) return;
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; drawHighlights(ctx, list, w, h); ctx.restore();
+  }
   const api = {
     S, C, init, draftKeys, setPageActive, pageOrder, addBlank, removeBlank, moveBlank, detachPage, setSources(n) { S.nSources = n; }, marginReport, setMargins, marginsOf, needExt, saveLayout, registerTool(n, t) { TOOLS[n] = t; }, addItem, removeItems, clearPage, patchItem, reorder, commit, fitTextHeight, rebuildIndexPage, setState, banner,
-    page: n => S.pages.get(n), ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox, aspect, downloadJson,
+    page: n => S.pages.get(n), bakeHighlights, ready, attachPage, setTool, undo, redo, flush, mergeAndSave, recoverDraft, exportPdf, on, emit, markDirty, rebuildAll, invalidate, paint, idx, rebuildIndex, drawStroke, drawTextBox, aspect, downloadJson,
     style: tool => S.styles[GROUPS[tool] || tool] || null, setStyle, input: () => S.input, setInput, penMode, markPen,
     gesture: { get state() { return G.state; }, get pointers() { return [...G.ptrs.values()].map(r => ({ id: r.id, type: r.type, role: r.role })); }, get penSeen() { return penSeenAt; }, forgetPen() { penSeenAt = 0; wr(PEN_SEEN_KEY, 0); emit('input', S.input); } },
     setPenOnly(v) { setInput({ stylusOnly: !!v }); },

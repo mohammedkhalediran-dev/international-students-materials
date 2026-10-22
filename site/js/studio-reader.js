@@ -78,6 +78,7 @@
     }
     if (token !== p.token) return drop();
     swap();
+    if (M.bakeHighlights) M.bakeHighlights(p.n, p.pdf.getContext('2d'), p.pdf.width, p.pdf.height);
     p.rendered = true; p.rw = W; nudgeInk(p); emit('rendered', p);
     textLayer(p, token); hdSoon();
   }
