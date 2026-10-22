@@ -119,7 +119,6 @@
     var timer = null;
     access().then(function (a) {
       if (!a.allowed) return; // الزائر وطلاب الكورسات الأخرى: لا يظهر القسم إطلاقاً
-      box.hidden = false;
       if (a.admin) { var m = box.querySelector("#ttManage"); if (m) m.hidden = false; }
       load(true);
     });
@@ -129,6 +128,7 @@
       if (first) { cards.innerHTML = ""; for (var s = 0; s < 3; s++) cards.appendChild(el("div", "tt-skel")); }
       var now = new Date(), today = iso(now);
       range(today, add(today, 8)).then(function (d) {
+        box.hidden = false; /* يظهر القسم مرة واحدة بمحتواه، لا بهيكل فارغ يتغير */
         cards.innerHTML = "";
         if (d.__status !== 200) {
           cards.hidden = true; cards.after(el("div", "tt-empty", t(d.error === "not_migrated" ? "الجدول غير مفعّل بعد." : "تعذّر تحميل الجدول. حاول لاحقاً.")));
