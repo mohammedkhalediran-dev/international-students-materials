@@ -640,7 +640,7 @@
       const sy = window.speechSynthesis; if (!sy || !window.SpeechSynthesisUtterance) return;
       sy.cancel();
       const u = new SpeechSynthesisUtterance(t);
-      u.lang = code === 'ar' ? 'ar-SA' : 'en-US';
+      u.lang = code === 'ar' ? 'ar-SA' : 'en-US'; u.rate = 0.8;
       sy.speak(u);
     } catch {}
   }
