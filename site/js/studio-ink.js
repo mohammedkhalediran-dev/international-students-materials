@@ -429,11 +429,17 @@
     for (const s of S.items) {
       if (!s || s.page !== n || !C.validStroke(s)) continue;
       if (S.skip && S.skip.has(s.id)) continue;                    /* being dragged: a tool draws it on the live overlay */
-      if (isHl(s)) batch.push(s); else { flushHl(); drawStroke(ctx, s, pw, ph); }
+      if (isHl(s)) continue;                                           /* drawn into the page picture by studio-reader (multiply), never on the ink layer */
+      flushHl(); drawStroke(ctx, s, pw, ph);
     }
     flushHl();
   }
+  /* a fingerprint of the page's highlights: when it changes, the reader draws the page again (highlights are baked into it) */
+  function hlSig(n) { return JSON.stringify(S.items.filter(s => s && s.page === n && isHl(s)).map(s => [s.id, s.rev, s.color, s.op, s.width, s.tip, s.mark, s.points && s.points.length, s.rects && s.rects.length, s.quote && s.quote.length])); }
   function renderInk(pg) {
+    const sig = hlSig(pg.n);
+    if (pg.hlSigShown !== undefined && pg.hlSigShown !== sig) emit('hlchange', pg.n);
+    pg.hlSigShown = sig;
     const ctx = pg.ink.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, pg.ink.width, pg.ink.height);
     const h = pg.hd;
     if (h) {                                                         /* leave a hole where the sharp layer draws, so translucent ink is not doubled */

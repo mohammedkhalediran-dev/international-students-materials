@@ -66,7 +66,7 @@
     const ctx = (off || p.pdf).getContext('2d'); let done = false;
     const swap = () => { if (!off) return; if (p.pdf.width !== W || p.pdf.height !== H) { p.pdf.width = W; p.pdf.height = H; } p.pdf.getContext('2d').drawImage(off, 0, 0); off.width = off.height = 0; };
     const drop = () => { if (off) off.width = off.height = 0; };
-    if (p.kind === 'blank') { paintTemplate(ctx, W, H, p.rec); swap(); p.rendered = true; p.rw = W; nudgeInk(p); emit('rendered', p); return; }
+    if (p.kind === 'blank') { paintTemplate(ctx, W, H, p.rec); swap(); if (M.bakeHighlights) M.bakeHighlights(p.n, p.pdf.getContext('2d'), p.pdf.width, p.pdf.height); p.rendered = true; p.rw = W; nudgeInk(p); emit('rendered', p); return; }
     const img = !p.proxy && R.raster && R.raster[p.n - 1];   /* saved page images only when pdf.js could not load: they are pictures, not text */
     if (img) { try { const im = await imageFor(p.n); if (token !== p.token) return drop(); if (im && im.naturalWidth > 0) { ctx.clearRect(0, 0, W, H); ctx.drawImage(im, 0, 0, W, H); done = true; } } catch (e) { console.warn('MEDIXA raster unavailable, using PDF renderer', e); } }
     if (!done && p.proxy && p.proxy.render) {
@@ -84,6 +84,7 @@
   }
   /* stop a pending sharp render but keep the current sharp layer on screen (it is placed in % of the page and scales) */
   function cancelHd(p) { if (p.hdTask) { try { p.hdTask.cancel(); } catch {} p.hdTask = null; } p.hdTok = (p.hdTok || 0) + 1; }
+  M.on('hlchange', n => { const p = R.pages.find(q => q.n === n); if (p && p.rendered) { dropHd(p); draw(p); } });
   function dropHd(p) {
     if (p.hdTask) { try { p.hdTask.cancel(); } catch {} p.hdTask = null; }
     p.hdTok = (p.hdTok || 0) + 1;
@@ -112,6 +113,7 @@
     try { await p.hdTask.promise; } catch (e) { if (tok === p.hdTok) p.hdTask = null; c.width = 0; return; }
     if (tok !== p.hdTok) { c.width = 0; return; }
     p.hdTask = null;
+    if (M.bakeHighlights) { const x = c.getContext('2d'); x.save(); x.setTransform(1, 0, 0, 1, -Math.round(x0 * d), -Math.round(y0 * d)); M.bakeHighlights(p.n, x, vp.width, vp.height); x.restore(); }
     /* place it in % of the page section, so it scrolls with the page and keeps covering the right place while a zoom
        re-lays the page out (until the new one replaces it) */
     const SW = Math.max(1, p.el.clientWidth), SH = Math.max(1, p.el.clientHeight);
