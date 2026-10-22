@@ -149,7 +149,7 @@ body.st-compact.st-has-quick #st-edge-nav{top:calc(var(--reader-tools-top) + 104
  body.st-compact #st-compact-nav,body.st-compact #studio-hdr-actions{height:52px;border-radius:26px}
  body.st-compact header button,body.st-compact header a.st-hdr-btn{width:44px;min-width:44px;height:44px;min-height:44px}
  body.st-compact #st-docmenu{top:calc(var(--reader-top) + 60px)}
- body.st-compact #status,body.st-compact .st-addwrap,body.st-compact #st-edge-nav,body.st-compact .st-fingerbtn{display:none}
+ body.st-compact #status,body.st-compact .st-addwrap,body.st-compact #st-edge-nav{display:none}
  body.st-compact #studio-toolbar,body.st-compact.medixa-focus #studio-toolbar{top:auto;bottom:max(10px,env(safe-area-inset-bottom));height:auto;min-height:52px;max-width:calc(100vw - 16px);padding:4px;flex-wrap:wrap;border-radius:26px}
  body.st-compact #studio-toolbar>div>.st-btn,body.st-compact #studio-toolbar .st-stylewrap>.st-btn{width:44px;min-width:44px;height:44px;min-height:44px}
  html body.st-compact.mx-docked{padding-bottom:calc(var(--st-tb-h,60px) + 78px)!important}
