@@ -290,7 +290,7 @@
       /* One path, one stroke(): overlapping segments of the same stroke never darken. */
       if (!document.body.classList.contains('medixa-dark') && (!S.styles.highlight || S.styles.highlight.blend !== 'normal')) ctx.globalCompositeOperation = 'multiply';
       if (s.tip === 'flat') { ctx.lineCap = 'butt'; ctx.lineJoin = 'bevel'; }
-      ctx.globalAlpha = s.op || 0.3; ctx.lineWidth = C.widthAt(s.width || 3, 1, 'highlight') * w / 800; drawPath(ctx, s.points, w, h); ctx.stroke();
+      ctx.globalAlpha = s.op || 0.3; ctx.lineWidth = C.widthAt(s.width || 3, 1, 'highlight') * w / 800; drawPath(ctx, hlPoints(s), w, h); ctx.stroke();
     } else if (s.dash && s.dash !== 'solid') {
       const st = s.pen ? C.penStyle(s.pen) : { alpha: 1 };
       ctx.globalAlpha = (st.alpha || 1) * (s.op || 1); ctx.lineWidth = base; applyDash(s.dash);
@@ -333,6 +333,12 @@
     }
     ctx.fill('nonzero');
   }
+  /* Shown as a straight band when the highlighter is set to straight (also for marks drawn before that default):
+     the stored points are kept, only the drawing uses the first and last point. */
+  function hlPoints(s) {
+    const st = S.styles.highlight;
+    return s.tool === 'highlight' && st && st.alwaysStraight && s.points.length > 2 ? [s.points[0], s.points[s.points.length - 1]] : s.points;
+  }
   /* Consecutive highlights are painted per colour/opacity/tip group with ONE fill/stroke each, so where highlights overlap
      the colour does not stack up into a darker band (a marker over a marker looks like one marker). */
   function drawHighlights(ctx, list, w, h) {
@@ -349,7 +355,7 @@
         ctx.lineCap = s0.tip === 'flat' ? 'butt' : 'round';
         ctx.lineJoin = s0.tip === 'flat' ? 'bevel' : 'round';
         ctx.lineWidth = C.widthAt(s0.width || 3, 1, 'highlight') * w / 800;
-        ctx.beginPath(); for (const s of g) addPath(ctx, s.points, w, h); ctx.stroke();
+        ctx.beginPath(); for (const s of g) addPath(ctx, hlPoints(s), w, h); ctx.stroke();
       }
       ctx.restore();
     }
