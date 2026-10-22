@@ -251,6 +251,17 @@
     let u; try { u = new Uint8Array(await readBuf(p.blob)); } catch (e) { throw fail('decode', e); }
     return store(u, p.type, p.w, p.h, p.alpha);
   }
+  /* صورة وصلت من حساب الطالب على جهاز آخر: تُحفظ بالمعرّف نفسه الذي رفعها (بلا إعادة ضغط، فالمعرّف لا يتغير) */
+  async function putRaw(id, u, type) {
+    if (!okId(id)) throw fail('type');
+    const d = _dims(u); if (!d) throw fail('decode');
+    const rec = { id, type, w: d[0], h: d[1], alpha: type === 'image/png', size: u.length, created: Date.now(), blob: new Blob([u], { type }) };
+    await withStore('readwrite', (st, set, guard) => {
+      const g = st.get(id);
+      g.onsuccess = guard(() => { if (!g.result) st.put(rec, id); set(true); });
+    });
+    return id;
+  }
   async function get(id) {
     if (!okId(id)) return null;
     const r = await withStore('readonly', (st, set) => { const g = st.get(id); g.onsuccess = () => set(g.result || null); });
@@ -337,7 +348,7 @@
   }
 
   return {
-    prepare, put, get, bytes, has, ids, estimate, bitmap, peek, dataUrl, putDataUrl,
+    prepare, put, putRaw, get, bytes, has, ids, estimate, bitmap, peek, dataUrl, putDataUrl,
     LIMITS: { bytes: MAX_BYTES, pixels: MAX_PIXELS, side: MAX_SIDE, alphaMin: ALPHA_MIN, quality: JPEG_Q, budget: BUDGET },
     MESSAGES: MSG, _sniff, _fit, _dims, _sha256
   };

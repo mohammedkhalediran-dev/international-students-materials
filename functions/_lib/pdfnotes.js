@@ -12,6 +12,10 @@ export const USER_LIMIT = 5 * 1024 * 1024;   // مجموع ما يحفظه ال�
 const ROW_MAX = { ink: 400 * 1024, study: 800 * 1024, layout: 64 * 1024, occl: 400 * 1024 };
 const MAX_ROWS = 60;
 const MAX_BODY = 4 * 1024 * 1024;
+// صور الكتابة (Step 66): حتى 3 ميغا للصورة بعد الضغط، 20 ميغا لكل الطالب، وتُقسَّم إلى أجزاء 48 كيلوبايت.
+const ASSET_MAX = 3 * 1024 * 1024, ASSET_LIMIT = 20 * 1024 * 1024, PART = 48 * 1024;
+const ASSET_TYPES = ["image/jpeg", "image/png"];
+const validAsset = (s) => typeof s === "string" && /^img_[0-9a-f]{32}$/.test(s);
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -71,15 +75,57 @@ async function writeRows(req, env, me, now) {
   return json({ ok: true, results, usage: { bytes: total, docs: u.docs, limit: USER_LIMIT } });
 }
 
+function b64of(u8) { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+function u8of(b64) { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+
+async function assetUsage(env, userId) {
+  const r = await env.DB.prepare("SELECT COALESCE(SUM(LENGTH(d)), 0) AS bytes FROM pdf_assets WHERE user_id = ?").bind(userId).first();
+  return (r && r.bytes) || 0;
+}
+
+// PUT /api/pdfnotes/asset?id=img_…  (جسم الطلب = بايتات الصورة، نوعها في content-type). الصورة تُحفظ مرة واحدة فقط: المعرّف بصمة محتواها.
+async function putAsset(req, env, me, url) {
+  const id = url.searchParams.get("id"), type = (req.headers.get("content-type") || "").split(";")[0].trim();
+  if (!validAsset(id) || !ASSET_TYPES.includes(type)) return fail("bad_request", 400);
+  const have = await env.DB.prepare("SELECT 1 AS x FROM pdf_assets WHERE user_id = ? AND id = ? LIMIT 1").bind(me.id, id).first();
+  if (have) return json({ ok: true, dup: true });
+  const buf = new Uint8Array(await req.arrayBuffer());
+  if (!buf.length) return fail("bad_request", 400);
+  if (buf.length > ASSET_MAX) return fail("too_large", 413);
+  if ((await assetUsage(env, me.id)) + buf.length * 4 / 3 > ASSET_LIMIT) return fail("quota", 413);
+  const b64 = b64of(buf), stmts = [];
+  for (let i = 0, part = 0; i < b64.length; i += PART, part++) {
+    stmts.push(env.DB.prepare("INSERT INTO pdf_assets (user_id, id, part, type, d) VALUES (?, ?, ?, ?, ?)").bind(me.id, id, part, type, b64.slice(i, i + PART)));
+  }
+  await env.DB.prepare("DELETE FROM pdf_assets WHERE user_id = ? AND id = ?").bind(me.id, id).run();
+  for (let i = 0; i < stmts.length; i += 40) await env.DB.batch(stmts.slice(i, i + 40));
+  return json({ ok: true, parts: stmts.length });
+}
+
+// GET /api/pdfnotes/asset?id=img_…  صور الطالب نفسه فقط
+async function getAsset(env, me, url) {
+  const id = url.searchParams.get("id");
+  if (!validAsset(id)) return fail("bad_request", 400);
+  const rows = ((await env.DB.prepare("SELECT part, type, d FROM pdf_assets WHERE user_id = ? AND id = ? ORDER BY part").bind(me.id, id).all()).results) || [];
+  if (!rows.length) return fail("not_found", 404);
+  const u = u8of(rows.map((r) => r.d).join(""));
+  return new Response(u, { status: 200, headers: { "content-type": rows[0].type, "cache-control": "private, max-age=31536000, immutable" } });
+}
+
 export async function handlePdfNotes(req, env, opts = {}) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, "");
-  if (p !== "/api/pdfnotes") return null;
+  if (p !== "/api/pdfnotes" && p !== "/api/pdfnotes/asset") return null;
   if (!env.DB) return fail("not_configured", 503);
   if (req.method !== "GET" && !sameOrigin(req)) return fail("forbidden", 403);
   const now = (opts.now || Date.now)();
   const me = await currentUser(req, env, now);
   if (!me) return fail("unauthorized", 401);
   try {
+    if (p === "/api/pdfnotes/asset") {
+      if (req.method === "GET") return await getAsset(env, me, url);
+      if (req.method === "PUT") return await putAsset(req, env, me, url);
+      return fail("not_found", 404);
+    }
     if (req.method === "GET") {
       const doc = url.searchParams.get("doc");
       if (!doc) return json({ ok: true, usage: await usage(env, me.id) });

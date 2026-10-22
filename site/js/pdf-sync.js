@@ -24,7 +24,7 @@
   const kindOf = k => k.indexOf('ink:') === 0 ? 'ink' : k;
 
   /* ---------- حالة المزامنة المحلية ---------- */
-  function loadState() { try { const s = JSON.parse(localStorage.getItem(STATE_KEY)); if (s && s.rows && typeof s.rows === 'object') return s; } catch (e) { /* جديد */ } return { v: 1, rows: {} }; }
+  function loadState() { try { const s = JSON.parse(localStorage.getItem(STATE_KEY)); if (s && s.rows && typeof s.rows === 'object') { if (!s.assets || typeof s.assets !== 'object') s.assets = {}; return s; } } catch (e) { /* جديد */ } return { v: 1, rows: {}, assets: {} }; }
   function saveState() { try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) { /* الامتلاء: نعيد المحاولة لاحقاً */ } }
   let state = loadState();
   const conflicts = new Set(), failed = {};     /* صفوف عليها تعارض أو رفضها الخادم (لا نكرر المحاولة حتى تتغير) */
@@ -91,6 +91,68 @@
     try { const S = window.MedixaStudio && window.MedixaStudio.S; return !!S && (['editing', 'pending', 'failed', 'conflict'].indexOf(S.state) >= 0 || S.dirty === true); } catch (e) { return false; }
   }
 
+  /* ---------- الصور التي يُدرجها الطالب (Step 66، بطلب محمد 2026-10-22) ----------
+     الصفحة تحفظ موضع الصورة فقط، والصورة نفسها تُرفع إلى الحساب قبل الصف الذي يشير إليها، فلا يصل إلى جهاز آخر
+     صف يشير إلى صورة غير موجودة في الحساب. عند فتح الصفحة تُجلب الصور الناقصة على هذا الجهاز. */
+  const IMG_ID = /^img_[0-9a-f]{32}$/;
+  const ASSET_TEXT = {
+    asset_held: '⚠ صورة لم تُرفع إلى حسابك بعد، فلن تظهر على أجهزتك الأخرى حتى ترتفع. سنعيد المحاولة.',
+    asset_big: '⚠ إحدى الصور أكبر من 3 ميغابايت فلم تُرفع إلى حسابك. صغّرها ثم أعد إدراجها.',
+    asset_quota: '⚠ امتلأت مساحة الصور في حسابك (20 ميغابايت). الصور محفوظة على هذا الجهاز.',
+    asset_off: '⚠ خدمة الصور في الحساب لم تُفعَّل بعد. الصور محفوظة على هذا الجهاز.',
+    asset_net: '☁ بانتظار الاتصال لرفع الصور إلى حسابك.',
+    asset_missing: '⚠ بعض صور هذا الملف لم تصل إلى هذا الجهاز بعد. أعد فتح الصفحة بعد لحظات.'
+  };
+  const assetsOf = d => { try { const a = JSON.parse(d); if (!Array.isArray(a)) return []; const out = []; for (const it of a) if (it && IMG_ID.test(it.asset)) out.push(it.asset); return out; } catch (e) { return []; } };
+  const imgStore = () => window.MedixaAssets || null;
+  /* يرفع الصور التي تشير إليها الصفوف المتغيرة ولم تُرفع بعد. يعيد الصفوف التي يجب تأجيلها والسبب */
+  async function uploadAssets(rows) {
+    const A = imgStore(), hold = new Set(); let problem = null;
+    if (!A) return { hold, problem };
+    for (const r of rows) {
+      if (kindOf(r.k) !== 'ink') continue;
+      for (const id of assetsOf(r.d)) {
+        if (state.assets[id]) continue;
+        let got = null; try { got = await A.bytes(id); } catch (e) { got = null; }
+        if (!got) { hold.add(r.k); problem = problem || 'asset_held'; continue; }
+        let res;
+        try {
+          res = await fetch('api/pdfnotes/asset?id=' + id, { method: 'PUT', credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': got.type }, body: got.bytes });
+        } catch (e) { res = { status: 0 }; }
+        const st = res.status;
+        if (st === 200) { state.assets[id] = true; continue; }
+        hold.add(r.k);
+        if (st === 401) problem = 'unauthorized';
+        else if (st === 503 || st === 404) problem = 'asset_off';
+        else if (st === 413) { let why = 'too_large'; try { why = (await res.json()).error || why; } catch (e) { /* يبقى الافتراضي */ } problem = why === 'quota' ? 'asset_quota' : 'asset_big'; }
+        else problem = 'asset_net';
+      }
+    }
+    saveState();
+    return { hold, problem };
+  }
+  /* يجلب من الحساب الصور التي تشير إليها الصفوف البعيدة ولا توجد على هذا الجهاز */
+  async function downloadAssets(remote) {
+    const A = imgStore(); let missing = false;
+    if (!A) return false;
+    for (const k of Object.keys(remote)) {
+      if (kindOf(k) !== 'ink') continue;
+      for (const id of assetsOf(remote[k].d)) {
+        let has = false; try { has = await A.has(id); } catch (e) { has = false; }
+        if (has) continue;
+        try {
+          const res = await fetch('api/pdfnotes/asset?id=' + id, { credentials: 'same-origin', cache: 'no-store' });
+          if (res.status !== 200) { missing = true; continue; }
+          const u = new Uint8Array(await res.arrayBuffer());
+          await A.putRaw(id, u, (res.headers.get('content-type') || 'image/jpeg').split(';')[0]);
+          state.assets[id] = true;
+        } catch (e) { missing = true; }
+      }
+    }
+    saveState();
+    return missing;
+  }
+
   /* ---------- رفع الصفوف ---------- */
   const ERR_TEXT = {
     quota: ['⚠ امتلأت مساحة ملاحظاتك في الحساب (5 ميغابايت). ما زالت محفوظة على هذا الجهاز.', 'warn'],
@@ -116,6 +178,8 @@
   function report(r) {
     if (r.stop) return;
     if (conflicts.size) return ui('⚠ تغيّرت ملاحظاتك من جهاز آخر', 'conflict', { label: 'حدّث للدمج', run: reload });
+    if (r.assetProblem === 'unauthorized') return ui('سجّل الدخول لحفظ ملاحظاتك في حسابك', 'guest', { label: 'دخول', href: 'login.html?next=' + encodeURIComponent('pdf-notes.html' + location.search) });
+    if (r.assetProblem && ASSET_TEXT[r.assetProblem]) return ui(ASSET_TEXT[r.assetProblem], r.assetProblem === 'asset_net' ? 'offline' : 'warn');
     if (r.problem && ERR_TEXT[r.problem]) return ui(ERR_TEXT[r.problem][0], ERR_TEXT[r.problem][1]);
     if (r.disabled) return ui('', 'off');
     if (r.offline) return ui('☁ بانتظار الاتصال — ملاحظاتك محفوظة على الجهاز', 'offline');
@@ -132,7 +196,11 @@
       const dirty = Core.dirtyRows(local, state).filter(r => !bad[kindOf(r.k)] && !conflicts.has(r.k) && failed[r.k] !== Core.hashOf(r.data));
       if (!dirty.length) return;
       ui('☁ جارٍ الحفظ في حسابك…', 'saving');
-      report(await push(dirty, keepalive));
+      const assets = await uploadAssets(dirty);
+      if (assets.problem === 'unauthorized') return report({ stop: false, assetProblem: 'unauthorized' });
+      const ready = dirty.filter(r => !assets.hold.has(r.k));
+      const out = ready.length ? await push(ready, keepalive) : {};
+      out.assetProblem = assets.problem; report(out);
     } finally { running = false; }
   }
 
@@ -151,6 +219,8 @@
     for (const k of Object.keys(plan.rows)) if (bad[kindOf(k)]) { delete plan.rows[k]; delete plan.writeLocal[kindOf(k)]; }
     for (const name of Object.keys(plan.writeLocal)) if (bad[name]) delete plan.writeLocal[name];
 
+    /* 0) الصور التي يشير إليها ما في الحساب ولا توجد على هذا الجهاز */
+    const imgMissing = await downloadAssets(remote);
     /* 1) ما يلزم كتابته محلياً (من الحساب إلى الجهاز) */
     const names = Object.keys(plan.writeLocal);
     if (names.length) {
@@ -166,7 +236,11 @@
     }
     saveState();
     let outcome = { anyOk: false };
-    if (uploads.length) outcome = await push(uploads, false);
+    const assets = await uploadAssets(uploads);
+    if (assets.problem === 'unauthorized') return report({ stop: false, assetProblem: 'unauthorized' });
+    const ready = uploads.filter(r => !assets.hold.has(r.k));
+    if (ready.length) outcome = await push(ready, false);
+    outcome.assetProblem = assets.problem || (imgMissing ? 'asset_missing' : null);
     report(outcome);
     /* 3) إن تغيّر المحلي نعيد تحميل الصفحة مرة واحدة ليقرأها المحرّك (مرة كل 30 ثانية على الأكثر لمنع التكرار) */
     if (names.length) {
