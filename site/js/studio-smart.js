@@ -440,7 +440,7 @@
         mk('st-sel-hl', 'تظليل', () => highlight(curA(), hlColor()), 'hl');
         mk('st-sel-ul', 'تسطير', () => highlight(curA(), penColor(), 'underline'), 'ul');
         mk('st-sel-st', 'شطب', () => highlight(curA(), penColor(), 'strike'), 'st');
-        mk('st-sel-tr', 'ترجمة', () => { const y = curA(); if (y) translateNow(y); }, 'tr');
+        mk('st-sel-tr', 'ترجمة', x => { const y = curA(); if (y) openTranslate(y, x); }, 'tr');
         const f = mk('st-sel-find', 'بحث', x => { const y = curA(); if (y) menuToggle(y, x); }, 'web'); f.setAttribute('aria-haspopup', 'menu'); f.setAttribute('aria-expanded', 'false');
         mk('st-sel-share', 'مشاركة', () => { const x = curA(); if (!x) return; const t = textOf(x); tsClear(); shareText(t); }, 'share');
         const o = mk('st-sel-more', 'المزيد: أدوات الدراسة', x => moreToggle(x), 'more'); o.setAttribute('aria-haspopup', 'menu'); o.setAttribute('aria-expanded', 'false');
@@ -682,11 +682,6 @@
 
   /* ----- ترجمة ----- */
   const TX = { id: 'st-tx', pre: 'st-tx', kind: 'tx', tok: 0, ctl: null, a: null, to: 'ar' }; panels.push(TX);
-  /* «ترجمة» كما في الفيديو: صفحة Google Translate بالنص المحدد؛ القارئ يبقى مكانه ولا يُحفظ شيء */
-  function translateNow(a) {
-    const t = textOf(a); if (!t) return;
-    openExternal(gtUrl(t, langOf(t) === 'ar' ? 'en' : 'ar'));
-  }
   function openTranslate(a, from) {
     TX.a = a; TX.to = langOf(textOf(a)) === 'ar' ? 'en' : 'ar';
     const d = panel(TX, 'ترجمة');
@@ -830,7 +825,7 @@
     const acts = el('div', 'st-hp-acts'), q = (s.quote || '').trim();
     const anchor = () => { const it = itemById(hpId); return it && { pageId: it.page, rects: it.rects, quote: it.quote || '', text: it.quote || '', kind: 'text', saved: true }; };
     if (q) {
-      actBtn(acts, 'st-hp-tr', 'ترجمة نص التظليل', 'ترجمة', () => { const a = anchor(); if (a) translateNow(a); }, 'tr').id = 'st-hp-tr';
+      actBtn(acts, 'st-hp-tr', 'ترجمة نص التظليل', 'ترجمة', () => { const a = anchor(); if (a) openTranslate(a, null); }, 'tr').id = 'st-hp-tr';
       if (explainShown()) actBtn(acts, 'st-hp-ex', 'شرح نص التظليل', 'شرح', () => { const a = anchor(); if (a) openExplain(a, null); }, 'ex').id = 'st-hp-ex';
       const f = actBtn(acts, 'st-hp-find', 'بحث عن نص التظليل', 'بحث', b => { const a = anchor(); if (a) menuToggle(a, b); }, 'find'); f.id = 'st-hp-find'; f.setAttribute('aria-haspopup', 'menu'); f.setAttribute('aria-expanded', 'false');
     }
