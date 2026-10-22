@@ -632,30 +632,17 @@
     const x = el('button', 'st-ta-x'); x.type = 'button'; x.innerHTML = svg(ICON.x); x.setAttribute('aria-label', 'إغلاق ' + title); x.title = 'إغلاق'; x.onclick = () => closePanel(P);
     head.append(h, x); d.replaceChildren(head); P.el = d; return d;
   }
-  /* «نطق» كما في الفيديو: صوت Google للنص المحدد أو الترجمة، عند الضغط فقط. إن تعذّر الصوت يُقرأ بصوت الجهاز.
-     lang: 'ar' أو 'en' */
-  let speechAudio = null;
+  /* «نطق»: يقرأ النص أو الترجمة بصوت الجهاز عند الضغط فقط، ويختار أفضل صوت متاح للغة. lang: 'ar' أو 'en' */
   function speak(text, lang) {
     const t = String(text || '').trim().slice(0, 2000), code = lang === 'ar' ? 'ar' : 'en';
     if (!t) return;
-    const parts = t.match(/[\s\S]{1,180}(?:\s|$)|[\s\S]{1,180}/g) || [t];
-    try {
-      speechAudio = speechAudio || new Audio();
-      let k = 0;
-      const next = () => {
-        if (k >= parts.length) return;
-        speechAudio.src = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + code + '&q=' + encodeURIComponent(parts[k++].trim());
-        speechAudio.play().catch(() => speakDevice(t, code));
-      };
-      speechAudio.onended = next;
-      speechAudio.onerror = () => speakDevice(t, code);
-      next();
-    } catch { speakDevice(t, code); }
-  }
-  function speakDevice(t, code) {
     try {
       const sy = window.speechSynthesis; if (!sy || !window.SpeechSynthesisUtterance) return;
-      sy.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = code === 'ar' ? 'ar-SA' : 'en-US'; u.rate = 0.92; sy.speak(u);
+      sy.cancel();
+      const u = new SpeechSynthesisUtterance(t), voices = sy.getVoices().filter(v => String(v.lang).toLowerCase().startsWith(code));
+      u.voice = voices.find(v => /Enhanced|Premium|Siri|Majed|Maged|Samantha|Ava|Tessa/i.test(v.name)) || voices[0] || null;
+      u.lang = code === 'ar' ? 'ar-SA' : 'en-US'; u.rate = 0.92;
+      sy.speak(u);
     } catch {}
   }
   function quoteView(text) { const q = el('p', 'st-ta-quote', text.length > 240 ? text.slice(0, 240) + '…' : text); q.dir = 'auto'; return q; }
