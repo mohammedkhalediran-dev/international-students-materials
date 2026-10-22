@@ -1,33 +1,218 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-admin-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>إدارة الحسابات | Medixa</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="color-scheme" content="dark light">
+  <title>مركز الإدارة | Medixa</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <meta name="theme-color" content="#13294B">
-  <link rel="stylesheet" href="css/style.css?v=p3-23">
-  <link rel="stylesheet" href="css/upload.css?v=p3-23">
+  <meta name="theme-color" content="#0b1019">
+  <link rel="stylesheet" href="css/admin.css?v=step58">
   <script>
-    try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
+    /* تفضيل المظهر فقط (ليس صلاحيات ولا بيانات حسابات) */
+    try { if (localStorage.getItem("ms.admin.theme") === "light") document.documentElement.setAttribute("data-admin-theme", "light"); } catch (e) {}
   </script>
 </head>
 <body>
-  <header class="up-top">
-    <div class="container up-top-in">
-      <a class="brand" href="index.html"><span>Medixa</span></a>
-      <a class="btn btn-secondary btn-sm" href="login.html">حسابي</a>
+<svg class="sr-only" aria-hidden="true"><defs>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 15a4 4 0 0 1 3 4v1"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zM8 12l3 3 5-6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 21V9m-5 5 5-5 5 5M4 8V3h16v5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m16 3 5 5-12 12H4v-5zM13 6l5 5"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></symbol>
+  <symbol id="i-login" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></symbol>
+</defs></svg>
+
+<aside class="sidebar" id="sidebar" aria-label="قائمة الإدارة">
+  <div class="brand"><div class="logo"><img src="assets/logo.png" alt=""></div><div><strong>MEDIXA</strong><small>مساحة الإدارة</small></div></div>
+  <p class="navlabel">إدارة المنصة</p>
+  <nav aria-label="أقسام الإدارة">
+    <button class="navbtn active" type="button" data-view="accounts" aria-current="page"><svg aria-hidden="true"><use href="#i-users"/></svg>الحسابات<span class="count num" id="navCount">—</span></button>
+    <button class="navbtn" type="button" data-view="roles"><svg aria-hidden="true"><use href="#i-shield"/></svg>الأدوار والصلاحيات</button>
+    <button class="navbtn" type="button" data-view="notifications"><svg aria-hidden="true"><use href="#i-bell"/></svg>مركز الإشعارات</button>
+    <button class="navbtn" type="button" data-view="activity"><svg aria-hidden="true"><use href="#i-clock"/></svg>سجل التغييرات</button>
+    <a class="navbtn" href="timetable-admin.html"><svg aria-hidden="true"><use href="#i-clock"/></svg>الجدول الجامعي</a>
+    <a class="navbtn" href="grades-admin.html"><svg aria-hidden="true"><use href="#i-check"/></svg>إدارة الدرجات</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="workspace"><strong>كل شيء في مكان واحد.</strong><p>حسابات الطلاب، وصول الفريق، وإشعارات Medixa.</p></div>
+    <div class="user"><div class="avatar purple" id="meAvatar">—</div><div><strong id="meName">…</strong><small>مشرف</small></div></div>
+    <a class="backlink" href="index.html"><svg aria-hidden="true"><use href="#i-home"/></svg>العودة إلى الموقع</a>
+  </div>
+</aside>
+<div class="scrim" id="scrim" hidden></div>
+
+<main id="main">
+  <header class="topbar">
+    <div class="crumb">
+      <button class="iconbtn mobile-menu" id="menuToggle" type="button" aria-label="فتح القائمة" aria-controls="sidebar" aria-expanded="false"><svg aria-hidden="true"><use href="#i-menu"/></svg></button>
+      <span class="hidephone">لوحة التحكم</span><span class="hidephone" aria-hidden="true">/</span><b id="crumbTitle">إدارة الحسابات</b>
+    </div>
+    <div class="topactions">
+      <span class="envtag" title="البيانات من قاعدة Medixa الحقيقية">بيانات حقيقية</span>
+      <button class="iconbtn" id="themeToggle" type="button" aria-label="تبديل المظهر" aria-pressed="false"><svg aria-hidden="true"><use href="#i-sun"/></svg></button>
+      <button class="iconbtn" type="button" data-view="notifications" aria-label="مركز الإشعارات"><svg aria-hidden="true"><use href="#i-bell"/></svg></button>
     </div>
   </header>
-  <main class="container up-main" id="main">
-    <h1 class="up-title">إدارة الحسابات</h1>
-    <p class="up-lead">هذه الصفحة للمشرفين فقط. يمكنك إيقاف حساب أو إعادة تفعيله، وتحديد دور كل شخص: طالب، أو رافع ملفات، أو ممثل الدفعة (يرفع الملفات ويكتب التبليغات).</p>
-    <p class="up-msg" id="msg" role="alert" hidden></p>
-    <section class="card up-card" aria-label="الحسابات"><div id="list"></div></section>
-  </main>
-  <script src="js/auth.js?v=p3-23"></script>
-  <script src="js/admin.js?v=p3-23"></script>
+
+  <div class="content">
+    <!-- يظهر بدل الأقسام لغير المشرف أو عند تعذّر التحقق -->
+    <section class="gate panel" id="gate" hidden aria-live="polite"><h1 id="gateTitle"></h1><p id="gateText"></p><a class="btn primary" id="gateBtn" href="login.html?next=admin.html"></a></section>
+
+    <section id="accounts" class="view" hidden>
+      <div class="heading">
+        <div><div class="eyebrow">PEOPLE &amp; ACCESS</div><h1>إدارة الحسابات والصلاحيات</h1><p>نظرة أوضح على طلابك، وتحكّم أسهل بوصول فريقك.</p></div>
+        <div class="buttons">
+          <button class="btn" type="button" id="export"><svg aria-hidden="true"><use href="#i-down"/></svg>تصدير CSV</button>
+          <button class="btn primary" type="button" id="add"><svg aria-hidden="true"><use href="#i-plus"/></svg>إضافة مستخدم</button>
+        </div>
+      </div>
+      <div class="stats" id="stats" aria-label="إحصاءات الحسابات"></div>
+      <div class="panel">
+        <div class="panelhead"><h2>جميع الحسابات <span class="pill num" id="totalPill"></span></h2><span class="subtle">«نشط» = الحساب مفعّل، وليس بالضرورة متصلاً الآن</span></div>
+        <div class="toolbar" role="search">
+          <div class="search"><svg aria-hidden="true"><use href="#i-search"/></svg><input id="search" class="field" type="search" placeholder="ابحث بالاسم أو البريد الإلكتروني…" aria-label="البحث عن مستخدم بالاسم أو البريد" autocomplete="off"></div>
+          <select class="field" id="roleFilter" aria-label="تصفية حسب الدور"><option value="">كل الأدوار</option><option value="admin">مشرف</option><option value="student">طالب</option><option value="uploader">رافع ملفات</option><option value="rep">ممثل الدفعة</option></select>
+          <select class="field" id="statusFilter" aria-label="تصفية حسب الحالة"><option value="">كل الحالات</option><option value="active">نشط</option><option value="suspended">موقوف</option></select>
+          <select class="field" id="semFilter" aria-label="تصفية حسب الكورس"><option value="">كل الكورسات</option><option value="1">الكورس الأول</option><option value="2">الكورس الثاني</option><option value="3">الكورس الثالث</option><option value="none">غير محدد</option></select>
+          <button class="iconbtn resetfilter" id="resetFilters" type="button" title="مسح الفلاتر" aria-label="مسح الفلاتر"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+        </div>
+        <table aria-describedby="results">
+          <thead><tr><th scope="col">المستخدم</th><th scope="col">آخر دخول</th><th scope="col" class="stagecol">الكورس</th><th scope="col">الدور</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="listState" class="state" hidden></div>
+        <div class="tablefooter"><span id="results" aria-live="polite"></span><nav class="pages" id="pages" aria-label="صفحات النتائج"></nav></div>
+      </div>
+      <div class="lower">
+        <article class="panel mini"><h3><svg aria-hidden="true"><use href="#i-shield"/></svg>وصول منظّم لكل دور</h3><p>طالب، رافع ملفات، ممثل الدفعة أو مشرف. اعرض نطاق كل دور قبل تعديل صلاحية الحساب.</p><button class="linkbtn" type="button" data-view="roles">استعراض الأدوار والصلاحيات ←</button></article>
+        <article class="panel mini"><h3><svg aria-hidden="true"><use href="#i-clock"/></svg>آخر تغيير مسجّل</h3><div id="latestActivity" class="summaryline">…</div><button class="linkbtn" type="button" data-view="activity">عرض سجل التغييرات ←</button></article>
+      </div>
+    </section>
+
+    <section id="roles" class="view" hidden>
+      <div class="heading"><div><div class="eyebrow">ACCESS CONTROL</div><h1>الأدوار والصلاحيات</h1><p>ما يستطيعه كل دور فعلاً في Medixa الآن، كما يطبّقه الخادم.</p></div></div>
+      <div class="notice"><svg aria-hidden="true"><use href="#i-shield"/></svg><span>المشرف يُحدَّد من إعداد ADMIN_EMAILS في Cloudflare فقط، ولا يُمنح من هذه الصفحة. بقية الأدوار يعيّنها المشرف من تعديل الحساب.</span></div>
+      <div class="cards" id="roleCards"></div>
+    </section>
+
+    <section id="notifications" class="view" hidden>
+      <div class="heading"><div><div class="eyebrow">NOTIFICATION CENTER</div><h1>مركز الإشعارات</h1><p>حالة خدمة الإشعارات الحقيقية، ومعاينة لما يظهر للطالب.</p></div></div>
+      <div class="cards">
+        <div class="panel settings">
+          <h2>حالة الخدمة</h2>
+          <div class="setting"><div><h3>مفاتيح الإشعارات على الخادم</h3><p>تبقى المفاتيح في Cloudflare ولا تظهر هنا.</p></div><span class="pill" id="pushConfigured">…</span></div>
+          <div class="setting"><div><h3>الأجهزة المشتركة</h3><p>كل جهاز فعّل الإشعارات (زائر أو صاحب حساب).</p></div><span class="pill num" id="pushTotal">…</span></div>
+          <div class="setting"><div><h3>تفضيلات الطلاب (تخصيص)</h3><p>اختيار الأنواع والمواد لكل جهاز.</p></div><span class="pill" id="pushPrefs">…</span></div>
+          <div class="semgrid" id="pushBySem" aria-label="الأجهزة حسب الكورس"></div>
+          <p class="hint">ما يُرسَل تلقائياً: محاضرة جديدة أو اختبار أو أسئلة سنوات سابقة لطلاب كورس المادة، والتبليغ لكل المشتركين.</p>
+        </div>
+        <div class="panel settings">
+          <span class="pill amber">معاينة داخل الصفحة · لا يُرسل شيئاً</span>
+          <h2 class="mt">شكل الإشعار</h2>
+          <div class="seg" role="group" aria-label="نوع الإشعار في المعاينة"><button type="button" data-sample="lecture" aria-pressed="true">محاضرة</button><button type="button" data-sample="group" aria-pressed="false">مجمّع</button><button type="button" data-sample="announcement" aria-pressed="false">تبليغ</button></div>
+          <div class="preview" aria-live="polite">
+            <div class="head"><div class="logo"><img src="assets/icon-192.png" alt=""></div><div><strong>Medixa <small>· الآن</small></strong><p class="title" id="pvTitle"></p></div></div>
+            <p class="body" id="pvBody"></p>
+            <div class="acts" id="pvActs"></div>
+          </div>
+          <p class="hint">الأزرار تظهر على Android وChrome وEdge في الكمبيوتر. على iPhone وiPad لا تظهر، والضغط على الإشعار يفتح المحاضرة.</p>
+        </div>
+        <div class="panel settings span2">
+          <h2>إرسال اختبار فعلي</h2>
+          <p class="hint">يرسل إشعاراً حقيقياً إلى أجهزتك أنت فقط (الأجهزة التي فعّلت فيها الإشعارات وأنت مسجّل الدخول بهذا الحساب). لا يصل إلى أي طالب.</p>
+          <p class="hint" id="mineLine"></p>
+          <button class="btn mt" type="button" id="pushTest"><svg aria-hidden="true"><use href="#i-bell"/></svg>إرسال إشعار اختبار إلى أجهزتي</button>
+          <p class="result" id="pushResult" role="status"></p>
+          <details class="keys" id="keysBox">
+            <summary>مفاتيح VAPID (متقدم)</summary>
+            <p class="hint" id="keysState"></p>
+            <p class="hint">التوليد يتم على جهازك فقط وبضغطة منك، ولا يُرسل إلى أي مكان. لا تولّد مفاتيح جديدة إلا إذا تسرّب المفتاح السرّي: كل الطلاب سيحتاجون تفعيل الإشعارات من جديد.</p>
+            <button class="btn mt" type="button" id="pushMake">توليد زوج مفاتيح جديد</button>
+            <div id="pushOut" hidden>
+              <label for="pushPub">VAPID_PUBLIC_KEY</label><input class="field ltr" id="pushPub" readonly>
+              <button class="btn mt-sm" type="button" data-copy="pushPub"><svg aria-hidden="true"><use href="#i-copy"/></svg>نسخ</button>
+              <label for="pushPriv">VAPID_PRIVATE_KEY (سرّي)</label><input class="field ltr" id="pushPriv" readonly>
+              <button class="btn mt-sm" type="button" data-copy="pushPriv"><svg aria-hidden="true"><use href="#i-copy"/></svg>نسخ</button>
+              <p class="hint">ضعهما في Cloudflare: المشروع medixa ← Settings ← Variables and Secrets ← Production، ثم أعد النشر. لا تكتب المفتاح السرّي في أي محادثة.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="activity" class="view" hidden>
+      <div class="heading"><div><div class="eyebrow">ACTIVITY LOG</div><h1>سجل التغييرات</h1><p>كل تغيير في الحسابات من هذه الصفحة: من نفّذه، وعلى من، ومتى، والنتيجة.</p></div></div>
+      <div class="notice warn" id="auditMissing" hidden><svg aria-hidden="true"><use href="#i-clock"/></svg><span>السجل غير مفعّل بعد على الخادم: يحتاج تطبيق migrations/0005_admin.sql على قاعدة D1. التعديلات تعمل الآن لكنها لا تُسجَّل.</span></div>
+      <div class="panel"><div id="logs"></div><div class="tablefooter"><span id="logResults"></span><nav class="pages" id="logPages" aria-label="صفحات السجل"></nav></div></div>
+    </section>
+
+    <footer class="footer"><span class="num">MEDIXA / ADMIN WORKSPACE</span><span>البيانات من قاعدة Medixa · كل تعديل يُحفظ في الخادم</span></footer>
+  </div>
+</main>
+
+<dialog id="editor" aria-labelledby="editorTitle">
+  <form id="userForm" novalidate>
+    <div class="dialoghead"><h2 id="editorTitle">تعديل الحساب</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <div class="dialogbody">
+      <label for="nameInput">الاسم الكامل</label><input class="field" id="nameInput" readonly aria-describedby="nameHint">
+      <label for="emailInput">البريد الإلكتروني</label><input class="field ltr" id="emailInput" readonly aria-describedby="nameHint">
+      <p class="hint" id="nameHint">الاسم والبريد من حساب Google، ويتحدّثان تلقائياً عند كل دخول، فلا يُعدَّلان من هنا.</p>
+      <div class="formgrid">
+        <div><label for="roleInput">الدور</label>
+          <select class="field" id="roleInput" aria-describedby="roleErr roleHint"><option value="student">طالب</option><option value="uploader">رافع ملفات</option><option value="rep">ممثل الدفعة</option><option value="admin" disabled>مشرف</option></select>
+          <p class="hint" id="roleHint" hidden>دور المشرف مقفل: يُحدَّد من ADMIN_EMAILS.</p><p class="fielderr" id="roleErr" role="alert"></p></div>
+        <div><label for="semInput">الكورس</label>
+          <select class="field" id="semInput" aria-describedby="semErr semHint"><option value="" disabled>غير محدد</option><option value="1">الكورس الأول</option><option value="2">الكورس الثاني</option><option value="3">الكورس الثالث</option></select>
+          <p class="hint" id="semHint">يصل للطالب في مزامنته التالية.</p><p class="fielderr" id="semErr" role="alert"></p></div>
+      </div>
+      <p id="formError" class="formerror" role="alert"></p>
+    </div>
+    <div class="dialogfoot"><button type="button" class="btn" data-close>إلغاء</button><button type="submit" class="btn primary" id="saveBtn">حفظ التعديلات</button></div>
+  </form>
+</dialog>
+
+<dialog id="confirm" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+  <div class="dialoghead"><h2 id="confirmTitle">تأكيد</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="dialogbody"><p id="confirmText"></p><p class="formerror" id="confirmError" role="alert"></p></div>
+  <div class="dialogfoot"><button type="button" class="btn" data-close autofocus>إلغاء</button><button type="button" class="btn danger" id="confirmBtn">تأكيد</button></div>
+</dialog>
+
+<dialog id="detail" aria-labelledby="detailTitle">
+  <div class="dialoghead"><h2 id="detailTitle">تفاصيل الحساب</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="dialogbody" id="detailBody"></div>
+  <div class="dialogfoot"><button type="button" class="btn" id="detailEdit"><svg aria-hidden="true"><use href="#i-edit"/></svg>تعديل</button><button type="button" class="btn" data-close>إغلاق</button></div>
+</dialog>
+
+<dialog id="addInfo" aria-labelledby="addTitle">
+  <div class="dialoghead"><h2 id="addTitle">إضافة مستخدم</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="dialogbody">
+    <p>لا يمكن إنشاء حساب يدوياً في Medixa: الحساب يُنشأ تلقائياً عند أول دخول للطالب بحساب Google، ويبدأ بدور «طالب». بعدها تعدّل دوره من هنا.</p>
+    <label for="loginLink">رابط الدخول لترسله للطالب</label>
+    <input class="field ltr" id="loginLink" readonly>
+    <p class="hint">إن كانت شاشة موافقة Google في وضع الاختبار (Testing)، فلن يستطيع الدخول إلا من أضفت بريده في Google Cloud Console ضمن Test users.</p>
+    <p class="result" id="copyResult" role="status"></p>
+  </div>
+  <div class="dialogfoot"><button type="button" class="btn" data-close>إغلاق</button><button type="button" class="btn primary" id="copyLink"><svg aria-hidden="true"><use href="#i-copy"/></svg>نسخ الرابط</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="js/auth.js?v=plan66"></script>
+<script src="js/admin.js?v=step58"></script>
 </body>
 </html>

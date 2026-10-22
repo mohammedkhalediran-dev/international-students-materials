@@ -1,4 +1,5 @@
 # python3 -I tests/auth_e2e.py — دخول Google (برمز اختبار) ومزامنة بين جهازين وصفحة الدخول وعودة الزائر.
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import subprocess, time, sys, os
 from playwright.sync_api import sync_playwright
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -58,9 +59,12 @@ try:
     pc.goto(BASE + 'index.html'); pc.wait_for_timeout(400)
     chk(google_login(pc, email='boss@x.com', sub='sub-boss', name='Boss') == 200, 'admin login ok')
     pc.goto(BASE + 'admin.html'); pc.wait_for_timeout(1500)
-    chk(pc.locator('select.field').count() == 1, 'admin page shows one role select (admin row has none)')
-    pc.select_option('select.field', 'rep'); pc.wait_for_timeout(1200)
-    chk('تم تغيير الدور' in pc.inner_text('#msg'), 'admin sets rep role')
+    # Step 53: مركز الإدارة الجديد — تعديل الحساب ثم تأكيد تغيير الدور
+    ali = pc.locator('#rows tr', has_text='Ali Test')
+    chk(ali.count() == 1 and pc.locator('#rows tr', has_text='Boss').locator('[data-action=status]').is_disabled(), 'admin page lists accounts; own row protected')
+    ali.locator('[data-action=edit]').click(); pc.wait_for_selector('#editor[open]')
+    pc.select_option('#roleInput', 'rep'); pc.click('#saveBtn'); pc.wait_for_selector('#confirm[open]'); pc.click('#confirmBtn'); pc.wait_for_timeout(1200)
+    chk('تم الحفظ في الخادم' in pc.inner_text('#toast'), 'admin sets rep role')
     pa.reload(); pa.wait_for_timeout(1500)
     chk(pa.locator('#formCard').is_visible(), 'rep sees the announcement form')
     pa.fill('#title', 'موعد الامتحان'); pa.fill('#body', 'يوم الأحد القادم')

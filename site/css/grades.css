@@ -1,0 +1,75 @@
+/* css/grades.css — درجاتي الجامعية وإدارتها (Step 57). يبني على مكوّن .tt في timetable.css (اللوحة، الأزرار، الحقول، الجدول)
+   ويضيف فقط ما يخص الدرجات. الألوان من متغيرات --tt-* والمسافات من نظام style.css. */
+
+.gr .tt-panel + .tt-panel { margin-top: var(--space-4); }
+.gr .tt-status:empty { display: none; }
+
+/* ربط الحساب */
+.gr-claim { max-width: 520px; margin-top: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+.gr-claim > * { min-width: 0; }
+.gr-claim input { width: 100%; min-width: 0; box-sizing: border-box; font-size: var(--text-lg); }
+.gr-claim #grPassport { letter-spacing: 0.08em; text-transform: uppercase; }
+.gr-notes { margin: 0; padding-inline-start: var(--space-5); color: var(--tt-muted); font-size: var(--text-sm); display: grid; gap: var(--space-1); }
+
+/* درجات الطالب */
+.gr-meta { margin-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); flex-wrap: wrap; }
+.gr-who { margin: 0; color: var(--tt-muted); font-size: var(--text-sm); }
+.gr-who b { color: var(--tt-ink); }
+.gr-batch { margin-top: var(--space-4); border: 1px solid var(--tt-surface-line); border-radius: var(--radius-md); background: var(--tt-surface); overflow: hidden; }
+.gr-batch-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--tt-surface-line); }
+.gr-batch-head h3 { margin: 0; font-size: var(--text-base); color: var(--tt-ink); }
+.gr-batch-head small { color: var(--tt-muted); }
+.gr-stats { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: stretch; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--tt-surface-line); }
+.gr-stat { flex: 1 1 0; min-width: 7em; display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--tt-pill-line); border-radius: var(--radius-md); background: var(--tt-pill-bg); }
+.gr-stat-label { color: var(--tt-muted); font-size: var(--text-xs); }
+.gr-stat-value { color: var(--tt-pill-ink); font-size: var(--text-xl); font-variant-numeric: tabular-nums; }
+.gr-stats-note { flex-basis: 100%; margin: 0; color: var(--tt-muted); font-size: var(--text-xs); }
+.gr-top { padding: var(--space-1) var(--space-4); border-top: 1px solid var(--tt-surface-line); }
+.gr-top summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: 44px; cursor: pointer; list-style: none; font-size: var(--text-sm); font-weight: 700; color: var(--tt-ink); }
+.gr-top summary::-webkit-details-marker { display: none; }
+.gr-top summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--tt-muted); border-bottom: 2px solid var(--tt-muted); transform: rotate(45deg); transition: transform .2s; }
+.gr-top[open] summary::after { transform: rotate(-135deg); }
+.gr-top[open] summary { margin-bottom: var(--space-2); }
+.gr-top-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.gr-top-list li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--tt-card-ink); font-size: var(--text-sm); }
+.gr-top-list li:nth-child(odd) { background: var(--tt-btn-hover); }
+.gr-top-list li.is-me { border: 1px solid var(--tt-pill-line); background: var(--tt-pill-bg); font-weight: 700; }
+.gr-top-rank { color: var(--tt-muted); font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+.gr-top-name { overflow-wrap: anywhere; }
+.gr-top-avg { color: var(--tt-pill-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.gr-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.gr-table th { text-align: start; padding: var(--space-2) var(--space-4); color: var(--tt-muted); font-weight: 600; }
+.gr-table th:last-child { text-align: end; }
+.gr-table td { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--tt-surface-line); color: var(--tt-card-ink); vertical-align: middle; }
+.gr-table td.gr-course { text-align: start; overflow-wrap: anywhere; }
+.gr-table td.gr-grade { width: 1%; white-space: nowrap; text-align: end; }
+.gr-grade bdi { display: inline-block; min-width: 3.6em; padding: 2px var(--space-3); border-radius: var(--radius-pill); border: 1px solid var(--tt-pill-line); background: var(--tt-pill-bg); color: var(--tt-pill-ink); font-weight: 700; font-size: var(--text-base); text-align: center; font-variant-numeric: tabular-nums; }
+.gr-grade.is-text bdi { background: transparent; border-color: var(--tt-surface-line); color: var(--tt-muted); font-weight: 500; font-size: var(--text-sm); }
+.gr-table tbody tr:nth-child(even) td { background: var(--tt-btn-hover); }
+
+/* الإدارة */
+.gr-map { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gr-prev { min-width: 560px; }
+.gr-prev td { padding: var(--space-2); }
+.gr-list { margin-top: var(--space-3); display: grid; gap: var(--space-2); }
+.gr-item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border: 1px solid var(--tt-surface-line); border-radius: var(--radius-md); background: var(--tt-surface); }
+.gr-item-main { min-width: 0; display: grid; gap: 2px; }
+.gr-item-main strong { color: var(--tt-ink); overflow-wrap: anywhere; }
+.gr-item-main small { color: var(--tt-muted); overflow-wrap: anywhere; }
+.gr-item .tt-btn { min-height: 38px; padding: var(--space-1) var(--space-3); }
+.gr-badge { font-size: var(--text-xs); font-weight: 600; padding: 2px var(--space-2); border-radius: var(--radius-pill); border: 1px solid var(--tt-day-line); color: var(--tt-muted); }
+.gr-badge.is-on { color: var(--tt-green-ico); border-color: var(--tt-green-line); background: var(--tt-green-bg); }
+
+@media (max-width: 720px) {
+  .gr-map { grid-template-columns: 1fr 1fr; }
+  .gr-table th, .gr-table td { padding-inline: var(--space-3); }
+}
+.gr-mismatch { display: block; color: var(--tt-amber-ico); }
+/* Step 61: الملف الشخصي */
+.pf-account { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: var(--space-4) 0 0; padding: var(--space-4); border: 1px solid var(--tt-day-line); border-radius: var(--radius-lg); }
+.pf-account dt { color: var(--tt-muted); font-size: var(--text-sm); }
+.pf-account dd { margin: 0; color: var(--tt-ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pf-grades { margin-top: var(--space-4); }
+.gr-profile { margin-top: var(--space-5); }
+.gr-done { margin: 0; color: var(--tt-green-ico); font-weight: 600; }
+.gr-edit { display: inline-block; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--tt-accent); }

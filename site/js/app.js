@@ -68,6 +68,21 @@
   MS.save = save;
   MS.KEY = KEY;
 
+  /* «كورسي» (بقرار محمد 2026-10-19): بعد أن يختار الطالب كورسه لا تظهر له الكورسات الأخرى في الواجهة.
+     نحذفها من SEMESTERS وCOURSES في الصفحة نفسها، فتختفي من الرئيسية والقائمة والبحث والمخطط وبنك الأسئلة معاً.
+     القوائم الكاملة في MS.ALL_SEMESTERS وMS.ALL_COURSES (لنافذة الاختيار والإعدادات). صفحات الرفع والإدارة لا تتأثر. */
+  if (typeof SEMESTERS !== "undefined" && typeof COURSES !== "undefined") {
+    MS.ALL_SEMESTERS = SEMESTERS.slice();
+    MS.ALL_COURSES = COURSES.slice();
+    var mine = load("ms.sem", null);
+    var staff = /\/(upload|admin|announce|login|privacy|terms)\.html$/.test(location.pathname);
+    if (!staff && SEMESTERS.some(function (s) { return s.id === mine; })) {
+      for (var si = SEMESTERS.length - 1; si >= 0; si--) if (SEMESTERS[si].id !== mine) SEMESTERS.splice(si, 1);
+      for (var ci = COURSES.length - 1; ci >= 0; ci--) if (COURSES[ci].semester !== mine) COURSES.splice(ci, 1);
+      MS.myCourseOnly = mine;
+    }
+  }
+
   /* ---------- الأيقونات ---------- */
   var ICONS = {
     lungs: '<path d="M12 4v7"/><path d="M12 8c-1.6 0-5 2-6 6-.7 2.6-.3 4.6 1.5 4.6 2 0 3-1.5 3.5-3 .3-1 .5-2 .5-3.4"/><path d="M12 8c1.6 0 5 2 6 6 .7 2.6.3 4.6-1.5 4.6-2 0-3-1.5-3.5-3-.3-1-.5-2-.5-3.4"/>',
@@ -107,8 +122,9 @@
     play: '<circle cx="12" cy="12" r="9"/><path d="M10.5 8.8l4.2 3.2-4.2 3.2z"/>',
     chart: '<path d="M6 20v-7M12 20V6M18 20v-10"/>',
     cap: '<path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11.5V16c1.5 1.4 3.2 2 5 2s3.5-.6 5-2v-4.5"/><path d="M21 9v5"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
     user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.6-3.6 3.4-5.5 7-5.5s6.4 1.9 7 5.5"/>',
-    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6"/>',
+    gear: '<path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.8l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.8v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
     logout: '<path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M15 8l4 4-4 4M19 12H9"/>'
   };
 
@@ -168,7 +184,8 @@
      بلا قرار: تظهر ملفات كورس الطالب الحالي فقط، فلا تظهر مواد الكورسات القديمة. */
   MS.currentSemester = function () {
     var s = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.current; })[0];
-    return s ? s.id : null;
+    var selected=load("ms.sem",null);
+    return SEMESTERS.some(function(x){return x.id===selected;})?selected:(s?s.id:null);
   };
   MS.inLatest = function (c, f) {
     if (typeof f.latest === "boolean") return f.latest;
@@ -405,7 +422,11 @@
       themeBtn.appendChild(MS.icon(dark ? "sun" : "moon", 20));
       themeBtn.setAttribute("aria-label", dark ? "التبديل إلى الوضع النهاري" : "التبديل إلى الوضع الليلي");
     }
+    if (load(KEY.theme,"light") === "system") document.documentElement.setAttribute("data-theme",matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
     paintTheme();
+    window.addEventListener("medixa-theme", paintTheme);
+    var schemeQuery=matchMedia("(prefers-color-scheme: dark)");
+    if(schemeQuery.addEventListener)schemeQuery.addEventListener("change",function(e){if(load(KEY.theme,"light")==="system"){document.documentElement.setAttribute("data-theme",e.matches?"dark":"light");paintTheme();}});
     themeBtn.addEventListener("click", function () {
       var next = effectiveTheme() === "dark" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", next);
@@ -427,13 +448,14 @@
           box.scrollIntoView({ block: "center" });
           box.focus({ preventScroll: true });
         } else {
-          location.href = "index.html#search";
+          location.href = "workspace.html?view=search";
         }
       });
     }
 
     var favLink = MS.$("favLink");
     if (favLink) {
+      favLink.href="workspace.html?view=favorites";
       favLink.appendChild(MS.icon("star", 20));
       favLink.addEventListener("click", function (e) {
         // في الرئيسية: الضغط مرة ثانية على نفس الرابط يعيد تطبيق التصفية
@@ -447,6 +469,15 @@
     // القائمة الجانبية (الرسم والطي والدرج والتمييز) في js/nav.js
     if (MS.nav) MS.nav.init(menuBtn);
     menuBtn.appendChild(MS.icon("menu", 22));
+    if (!document.querySelector(".mobile-dock")) {
+      var dock = MS.el("nav", "mobile-dock"); dock.setAttribute("aria-label", I18N.t("التنقل الرئيسي"));
+      [["home","الرئيسية","index.html"],["book","الكورسات","index.html#semesters"],["search","بحث","workspace.html?view=search"],["star","المفضلة","workspace.html?view=favorites"],["tools","أدوات الدراسة","workspace.html?view=planner"]].forEach(function(it){
+        var a=MS.el("a");a.href=it[2];a.appendChild(MS.icon(it[0],22));a.appendChild(MS.el("span","",it[1]));
+        if(location.pathname.endsWith(it[2].split("?")[0]) && (it[2].includes("?") ? location.search===it[2].slice(it[2].indexOf("?")) : !it[2].includes("#"))) a.setAttribute("aria-current","page");
+        dock.appendChild(a);
+      });document.body.appendChild(dock);
+    }
+    document.documentElement.classList.toggle("reduced-motion",!!load("ms.reducedMotion",false));
   };
 
   /* ---------- نصوص مشتركة ---------- */

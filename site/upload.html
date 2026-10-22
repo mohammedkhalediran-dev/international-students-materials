@@ -11,13 +11,14 @@
   <link rel="icon" type="image/png" href="assets/icon-192.png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <meta name="theme-color" content="#13294B">
-  <link rel="stylesheet" href="css/style.css?v=p3-23">
-  <link rel="stylesheet" href="css/upload.css?v=p3-23">
+  <link rel="stylesheet" href="css/style.css?v=side66e">
+  <link rel="stylesheet" href="css/motion.css?v=side66c">
+  <link rel="stylesheet" href="css/upload.css?v=step58">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
   </script>
 </head>
-<body>
+<body class="admin-page">
   <noscript>
     <p class="load-error">هذه الصفحة تحتاج إلى تفعيل JavaScript.</p>
   </noscript>
@@ -33,7 +34,7 @@
   </header>
 
   <main class="container up-main" id="main">
-    <h1 class="up-title">رفع المحاضرات</h1>
+    <div class="admin-hero"><img src="assets/medical-thorax.webp" alt="" width="220" height="220"><div><p class="eyebrow">Medixa</p><h1 class="up-title">إدارة المحتوى والمحاضرات</h1></div></div>
     <p class="up-lead">هذه الصفحة للمشرفين فقط. أدخل الرمز الخاص بك لتبدأ.</p>
 
     <section class="card up-card" id="loginCard" aria-label="الدخول">
@@ -178,10 +179,10 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-23"></script>
+  <script src="data/courses.js?v=step67"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/app.js?v=p3-23"></script>
-  <script src="js/upload-names.js?v=p3-23"></script>
-  <script src="js/upload.js?v=p3-23"></script>
+  <script src="js/app.js?v=side66"></script><script src="js/auth.js?v=plan66"></script>
+  <script src="js/upload-names.js?v=step58"></script>
+  <script src="js/upload.js?v=step58"></script>
 </body>
 </html>

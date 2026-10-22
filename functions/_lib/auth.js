@@ -2,11 +2,15 @@
 // يحتاج ربط D1 باسم DB ومتغير GOOGLE_CLIENT_ID. اختياري: ADMIN_EMAILS (بريد المشرفين مفصولاً بفاصلة)،
 // REQUIRE_LOGIN=1 (يقيّد الموقع كله؛ يطبّقه functions/_middleware.js).
 // المسارات: GET /api/auth/config، POST /api/auth/google|logout، GET /api/auth/me، GET|PUT /api/sync،
-//           GET /api/auth/users وPOST /api/auth/user (للمشرف فقط: إيقاف/تفعيل وتعيين الدور).
+//           GET /api/auth/users وPOST /api/auth/user (للمشرف فقط: إيقاف/تفعيل وتعيين الدور والكورس، مع الحمايات والسجل)،
+//           و/api/auth/admin/* لمركز الإدارة (functions/_lib/admin.js).
 //           GET /api/announcements (عام)، POST /api/announcements وPOST /api/announcements/delete (ممثل الدفعة أو المشرف).
 // الأدوار: student (الأصل) | uploader (رفع الملفات) | rep (ممثل الدفعة: رفع + تبليغات) | admin (من ADMIN_EMAILS).
 
-export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
+import { notify, announcementMessage, audience } from "./push.js";
+import { handleAdmin } from "./admin.js";
+
+export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem", "ms.planner", "ms.tasks", "ms.focus"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
 export const UPLOAD_ROLES = ["uploader", "rep", "admin"];
 export const ANNOUNCE_ROLES = ["rep", "admin"];
@@ -135,6 +139,8 @@ async function googleLogin(req, env, now, opts) {
     u = { ...u, email, name, role };
   }
   const cookie = await startSession(env, u.id, req, now);
+  // وقت آخر دخول للوحة الإدارة (العمود من migrations/0005؛ قبله يُتجاهل بلا خطأ)
+  try { await env.DB.prepare("UPDATE users SET last_login_at = ? WHERE id = ?").bind(now, u.id).run(); } catch { /* لا شيء */ }
   return json({ ok: true, user: publicUser(u) }, 200, { "set-cookie": cookie });
 }
 
@@ -177,22 +183,7 @@ async function adminUsers(env) {
   return json({ ok: true, users: rows.results || [] });
 }
 
-async function adminUpdate(req, env) {
-  const b = await readJson(req);
-  if (!b || !Number.isInteger(b.id)) return fail("bad_request", 400);
-  if (b.role !== undefined) {
-    if (!ROLES.includes(b.role)) return fail("bad_role", 400);
-    const t = await env.DB.prepare("SELECT role FROM users WHERE id = ?").bind(b.id).first();
-    if (!t) return fail("not_found", 404);
-    if (t.role === "admin") return fail("admin_locked", 409); // المشرف يُحدَّد من ADMIN_EMAILS لا من هنا
-    await env.DB.prepare("UPDATE users SET role = ? WHERE id = ?").bind(b.role, b.id).run();
-  }
-  if (typeof b.active === "boolean") {
-    await env.DB.prepare("UPDATE users SET active = ? WHERE id = ?").bind(b.active ? 1 : 0, b.id).run();
-    if (!b.active) await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(b.id).run();
-  }
-  return json({ ok: true });
-}
+/* تعديل الحسابات انتقل إلى functions/_lib/admin.js (Step 53) مع حماية المشرف الحالي وآخر مشرف وسجل التغييرات */
 
 /* ---------- التبليغات ---------- */
 async function announcementsList(env) {
@@ -202,7 +193,7 @@ async function announcementsList(env) {
   return json({ ok: true, items });
 }
 
-async function announcementAdd(req, user, env, now) {
+async function announcementAdd(req, user, env, now, opts = {}) {
   const b = await readJson(req);
   if (!b) return fail("bad_request", 400);
   const title = String(b.title || "").trim();
@@ -210,7 +201,13 @@ async function announcementAdd(req, user, env, now) {
   if (!title || title.length > MAX_TITLE || body.length > MAX_BODY) return fail("bad_request", 400);
   const r = await env.DB.prepare("INSERT INTO announcements (title, body, author_id, author_name, created_at) VALUES (?, ?, ?, ?, ?)")
     .bind(title, body, user.id, user.name, now).run();
-  return json({ ok: true, id: r.meta && r.meta.last_row_id });
+  const id = r.meta && r.meta.last_row_id;
+  // إشعار لكل المشتركين (لا يؤخّر الرد؛ على Cloudflare عبر waitUntil)
+  const msg = announcementMessage({ id, title, body });
+  const reach = await audience(env, msg).catch(() => 0); // عدد الأجهزة المشتركة التي سيصلها (يظهر لمن نشر)
+  const task = notify(env, msg, opts.pushFetch || fetch).catch(() => null);
+  if (opts.waitUntil) opts.waitUntil(task); else await task;
+  return json({ ok: true, id, reach });
 }
 
 async function announcementDelete(req, env) {
@@ -256,11 +253,11 @@ export async function handleAuth(req, env, opts = {}) {
 
   if (isAnn && req.method === "POST") {
     if (!ANNOUNCE_ROLES.includes(user.role)) return fail("forbidden", 403);
-    return p === "/api/announcements" ? announcementAdd(req, user, env, now) : announcementDelete(req, env);
+    return p === "/api/announcements" ? announcementAdd(req, user, env, now, opts) : announcementDelete(req, env);
   }
 
-  if (user.role !== "admin") return fail("forbidden", 403);
+  if (user.role !== "admin") return fail("forbidden", 403); // كل ما بعده للمشرف فقط (قراءة وتعديل)
   if (p === "/api/auth/users" && req.method === "GET") return adminUsers(env);
-  if (p === "/api/auth/user" && req.method === "POST") return adminUpdate(req, env);
-  return fail("not_found", 404);
+  const res = await handleAdmin(req, env, user, p, opts);
+  return res || fail("not_found", 404);
 }

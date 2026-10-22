@@ -1,10 +1,15 @@
+.admin-page { padding-inline-start:0; }
+.admin-hero { display:flex; flex-direction:row-reverse; align-items:center; justify-content:space-between; overflow:hidden; min-height:200px; border-bottom:1px solid var(--color-border); }
+.admin-hero img { width:30%; max-height:220px; object-fit:contain; }
+.admin-hero h1 { font-size:var(--text-2xl); }
+#loginCard { max-width:600px; margin-inline:auto; }
 /* css/upload.css — صفحة رفع المحاضرات (للمشرفين فقط)
    كل القيم من متغيرات style.css؛ لا ألوان ولا مسافات مباشرة. */
 
 .up-top { background: var(--band-bg); border-bottom: 1px solid var(--band-line); }
 .up-top-in { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--header-h); }
 
-.up-main { max-width: 860px; padding-block: var(--space-6) var(--space-8); }
+.up-main { max-width: 1120px; padding-block: var(--space-6) var(--space-8); }
 .up-title { font-size: var(--text-xl); font-weight: 800; }
 .up-lead { margin-top: var(--space-1); color: var(--color-muted); }
 .up-card { margin-top: var(--space-5); padding: var(--space-5); }
