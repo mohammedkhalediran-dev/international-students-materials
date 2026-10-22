@@ -735,13 +735,7 @@
     const L = pg.live; if (!L || pg.active !== a) return;
     const k = aspect(pg.n);
     if (a.tool === 'highlight') {
-      if (S.styles.highlight.shapeSnap !== false && C.recognizeShape) {
-        const r = C.recognizeShape(L.points, k);
-        if (r && (r.tool === 'rectangle' || r.tool === 'ellipse')) {
-          a.snapped = r.tool; L.tool = r.tool; L.points = r.points; L.fill = L.color; L.op = S.styles.highlight.op || 0.3; L.width = Math.max(2, S.styles.highlight.width || 3);
-          delete L.tip; paint(pg); emit('snap', r.tool); return;
-        }
-      }
+      /* a highlighter never turns into a circle or a box (holding still used to draw them): it is a band or nothing */
       if (S.styles.highlight.straight) { a.straight = true; a.hsnap = S.styles.highlight.hsnap; L.points = C.straighten(L.points, { horizontal: a.hsnap, k }); paint(pg); emit('snap', 'line'); return; }
     }
     if (a.tool === 'pen' && S.input.shapeSnap && C.recognizeShape) {
