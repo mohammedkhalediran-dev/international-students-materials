@@ -119,6 +119,7 @@
     var timer = null;
     access().then(function (a) {
       if (!a.allowed) return; // الزائر وطلاب الكورسات الأخرى: لا يظهر القسم إطلاقاً
+      box.hidden = false;
       if (a.admin) { var m = box.querySelector("#ttManage"); if (m) m.hidden = false; }
       load(true);
     });
@@ -128,7 +129,6 @@
       if (first) { cards.innerHTML = ""; for (var s = 0; s < 3; s++) cards.appendChild(el("div", "tt-skel")); }
       var now = new Date(), today = iso(now);
       range(today, add(today, 8)).then(function (d) {
-        box.hidden = false; /* يظهر القسم مرة واحدة بمحتواه، لا بهيكل فارغ يتغير */
         cards.innerHTML = "";
         if (d.__status !== 200) {
           cards.hidden = true; cards.after(el("div", "tt-empty", t(d.error === "not_migrated" ? "الجدول غير مفعّل بعد." : "تعذّر تحميل الجدول. حاول لاحقاً.")));
@@ -144,6 +144,7 @@
         if (!pick.items.length) {
           cards.hidden = true; cards.after(el("div", "tt-empty", t(list.length ? "لا محاضرات غداً." : "لا محاضرات منشورة خلال الأسبوع القادم.")));
         } else pick.items.forEach(function (o, i) { cards.appendChild(card(o, i, true)); });
+        cards.classList.remove("tt-in"); void cards.offsetWidth; cards.classList.add("tt-in");   /* حركة ظهور المحاضرات */
         if (window.I18N) I18N.apply();
         // بعد انتهاء آخر محاضرة اليوم (أو عند منتصف الليل) يتحوّل القسم وحده
         clearTimeout(timer);
