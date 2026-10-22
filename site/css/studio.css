@@ -134,6 +134,10 @@ main#pages{max-width:none;overflow-x:auto;padding-inline:10px}
 .page.st-has-margin canvas.pdf{background:#fff;box-shadow:0 0 0 1px #9db6bf}
 .page canvas.pdf-hd,.page canvas.ink-hd,.st-blank canvas.ink-hd{position:absolute;pointer-events:none;max-width:none}
 .page canvas.ink{position:absolute;inset:0;width:100%;height:100%}
+/* ink layers blend with the PDF under them (multiply on the page, not inside the canvas): the text stays dark and the
+   highlight sits under it, instead of tinting the letters. Dark mode keeps normal blending. */
+.page canvas.ink,.page canvas.ink-hd,.page canvas.over,.st-blank canvas.ink,.st-blank canvas.ink-hd{mix-blend-mode:multiply}
+body.medixa-dark .page canvas.ink,body.medixa-dark .page canvas.ink-hd,body.medixa-dark .page canvas.over,body.medixa-dark .st-blank canvas.ink,body.medixa-dark .st-blank canvas.ink-hd{mix-blend-mode:normal}
 /* live layer (stroke in progress, lasso, eraser cursor) above the committed ink; never takes input */
 .page canvas.over,.st-blank canvas.over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 /* touch belongs to the ink engine inside the document (draw / one-finger pan / two-finger pan + pinch). Text selection
