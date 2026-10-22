@@ -43,6 +43,12 @@
     p.pdf.width = 0; p.pdf.height = 0; M.setPageActive(p.id, false); if (p.text) p.text.replaceChildren(); dropHd(p);
   }
   /* Template marks for blank pages (same geometry the export uses). */
+  /* Safari keeps the multiply blend of the ink layer from before the page pixels arrived (the dim text at opening).
+     Re-applying the blend once the page is drawn makes the browser composite the ink layer again. */
+  function nudgeInk(p) {
+    const layers = p.pdf.parentNode ? p.pdf.parentNode.querySelectorAll('canvas.ink, canvas.ink-hd') : [];
+    for (const c of layers) { c.style.mixBlendMode = 'normal'; requestAnimationFrame(() => requestAnimationFrame(() => { c.style.mixBlendMode = ''; })); }
+  }
   function paintTemplate(ctx, W, H, rec) {
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
     const geo = C.templateGeometry(rec.template, rec.w, rec.h), k = W / rec.w;
@@ -60,7 +66,7 @@
     const ctx = (off || p.pdf).getContext('2d'); let done = false;
     const swap = () => { if (!off) return; if (p.pdf.width !== W || p.pdf.height !== H) { p.pdf.width = W; p.pdf.height = H; } p.pdf.getContext('2d').drawImage(off, 0, 0); off.width = off.height = 0; };
     const drop = () => { if (off) off.width = off.height = 0; };
-    if (p.kind === 'blank') { paintTemplate(ctx, W, H, p.rec); swap(); p.rendered = true; p.rw = W; emit('rendered', p); return; }
+    if (p.kind === 'blank') { paintTemplate(ctx, W, H, p.rec); swap(); p.rendered = true; p.rw = W; nudgeInk(p); emit('rendered', p); return; }
     const img = !p.proxy && R.raster && R.raster[p.n - 1];   /* saved page images only when pdf.js could not load: they are pictures, not text */
     if (img) { try { const im = await imageFor(p.n); if (token !== p.token) return drop(); if (im && im.naturalWidth > 0) { ctx.clearRect(0, 0, W, H); ctx.drawImage(im, 0, 0, W, H); done = true; } } catch (e) { console.warn('MEDIXA raster unavailable, using PDF renderer', e); } }
     if (!done && p.proxy && p.proxy.render) {
@@ -72,7 +78,7 @@
     }
     if (token !== p.token) return drop();
     swap();
-    p.rendered = true; p.rw = W; emit('rendered', p);
+    p.rendered = true; p.rw = W; nudgeInk(p); emit('rendered', p);
     textLayer(p, token); hdSoon();
   }
   /* stop a pending sharp render but keep the current sharp layer on screen (it is placed in % of the page and scales) */
