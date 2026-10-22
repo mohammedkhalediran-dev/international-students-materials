@@ -2,7 +2,7 @@
    بلا حساب يبقى كل شيء محلياً كما كان. مع الحساب: تُحفظ نسخة على الخادم وتُدمج عند الدخول. */
 (function () {
   "use strict";
-  var SYNC = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem"];
+  var SYNC = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem", "ms.planner", "ms.tasks", "ms.focus"];
   var TKEY = "ms.sync.t"; // وقت آخر تعديل محلي لكل مفتاح
   var MS = window.MS || null;
   var user = null;

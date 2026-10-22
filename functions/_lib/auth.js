@@ -10,7 +10,7 @@
 import { notify, announcementMessage, audience } from "./push.js";
 import { handleAdmin } from "./admin.js";
 
-export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem"];
+export const SYNC_KEYS = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem", "ms.planner", "ms.tasks", "ms.focus"];
 export const ROLES = ["student", "uploader", "rep"];          // يعيّنها المشرف؛ admin يأتي من ADMIN_EMAILS فقط
 export const UPLOAD_ROLES = ["uploader", "rep", "admin"];
 export const ANNOUNCE_ROLES = ["rep", "admin"];
