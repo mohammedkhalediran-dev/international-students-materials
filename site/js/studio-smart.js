@@ -632,16 +632,15 @@
     const x = el('button', 'st-ta-x'); x.type = 'button'; x.innerHTML = svg(ICON.x); x.setAttribute('aria-label', 'إغلاق ' + title); x.title = 'إغلاق'; x.onclick = () => closePanel(P);
     head.append(h, x); d.replaceChildren(head); P.el = d; return d;
   }
-  /* «نطق»: يقرأ النص أو الترجمة بصوت الجهاز عند الضغط فقط، ويختار أفضل صوت متاح للغة. lang: 'ar' أو 'en' */
+  /* «نطق»: يقرأ النص أو الترجمة بصوت الجهاز عند الضغط فقط. lang: 'ar' أو 'en' */
   function speak(text, lang) {
     const t = String(text || '').trim().slice(0, 2000), code = lang === 'ar' ? 'ar' : 'en';
     if (!t) return;
     try {
       const sy = window.speechSynthesis; if (!sy || !window.SpeechSynthesisUtterance) return;
       sy.cancel();
-      const u = new SpeechSynthesisUtterance(t), voices = sy.getVoices().filter(v => String(v.lang).toLowerCase().startsWith(code));
-      u.voice = voices.find(v => /Enhanced|Premium|Siri|Majed|Maged|Samantha|Ava|Tessa/i.test(v.name)) || voices[0] || null;
-      u.lang = code === 'ar' ? 'ar-SA' : 'en-US'; u.rate = 0.92;
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = code === 'ar' ? 'ar-SA' : 'en-US';
       sy.speak(u);
     } catch {}
   }
