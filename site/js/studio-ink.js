@@ -33,7 +33,7 @@
   ];
   const DEF_STYLES = {
     pen: { color: '#e43d56', width: 3, pen: 'ballpoint', smooth: 0.45, wr: [0.25, 2.2], op: 1, dash: 'solid', presets: DEF_PEN_PRESETS },
-    highlight: { color: '#f2c230', width: 3, op: 0.3, straight: true, hsnap: true, alwaysStraight: false, tip: 'round', blend: 'multiply', shapeSnap: true, presets: DEF_HL_PRESETS },
+    highlight: { color: '#f2c230', width: 3, op: 0.3, straight: true, hsnap: true, alwaysStraight: true, tip: 'round', blend: 'multiply', shapeSnap: true, presets: DEF_HL_PRESETS },
     shape: { color: '#2f6fed', width: 3, head: 'end', dash: 'solid' },
     text: { color: '#18334b', width: 3, size: 18, bold: false, italic: false },
     eraser: { mode: 'stroke', size: 12, target: 'all', keepShapes: false, autoSize: true, autoBack: false }
@@ -96,7 +96,14 @@
     }
     return o;
   }
-  function loadStyles() { const v = rd(STYLE_KEY, {}), out = {}; for (const g of Object.keys(DEF_STYLES)) out[g] = cleanStyle(g, v && v[g]); return out; }
+  /* التظليل المستقيم افتراضياً (طلب محمد 2026-10-22): شريط نظيف على السطر بدل بقع متراكبة. يُطبَّق مرة واحدة على
+     التفضيل المحفوظ عند الفتح، ثم يبقى اختيار الطالب. */
+  const HL_STRAIGHT_KEY = 'medixa.studio.hlstraight.v1';
+  function loadStyles() {
+    const v = rd(STYLE_KEY, {}), out = {}; for (const g of Object.keys(DEF_STYLES)) out[g] = cleanStyle(g, v && v[g]);
+    if (!rd(HL_STRAIGHT_KEY, 0)) { out.highlight.alwaysStraight = true; out.highlight.straight = true; out.highlight.hsnap = true; wr(STYLE_KEY, out); wr(HL_STRAIGHT_KEY, 1); }
+    return out;
+  }
   function loadInput() {
     const v = rd(INPUT_KEY, null), o = Object.assign({}, DEF_INPUT);
     if (v && typeof v === 'object') { for (const k of Object.keys(DEF_INPUT)) if (typeof v[k] === typeof DEF_INPUT[k]) o[k] = v[k]; }
