@@ -7,8 +7,10 @@
   var root = document.documentElement;
   function still() { return matchMedia("(prefers-reduced-motion: reduce)").matches || root.classList.contains("reduced-motion"); }
   // إعداد «تقليل الحركة» في الموقع يلغي انتقال الصفحات أيضاً
-  window.addEventListener("pageswap", function (e) { if (e.viewTransition && still()) e.viewTransition.skipTransition(); });
-  window.addEventListener("pagereveal", function (e) { if (e.viewTransition && still()) e.viewTransition.skipTransition(); });
+  // عند فتح الموقع (أول ثانيتين) ومن صفحة الدخول لا ينزلق شيء: كان المشهد السابق يظهر متداخلاً مع الرئيسية في أول الفتح
+  function quiet() { return still() || performance.now() < 2000 || /login/.test(location.pathname); }
+  window.addEventListener("pageswap", function (e) { if (e.viewTransition && quiet()) e.viewTransition.skipTransition(); });
+  window.addEventListener("pagereveal", function (e) { if (e.viewTransition && quiet()) e.viewTransition.skipTransition(); });
   if (still()) return;
 
   /* ---- Step 60: صورة المادة تنتقل من بطاقتها إلى رأس صفحة المادة ---- */
