@@ -632,6 +632,13 @@
     const x = el('button', 'st-ta-x'); x.type = 'button'; x.innerHTML = svg(ICON.x); x.setAttribute('aria-label', 'إغلاق ' + title); x.title = 'إغلاق'; x.onclick = () => closePanel(P);
     head.append(h, x); d.replaceChildren(head); P.el = d; return d;
   }
+  /* «نطق» كما في الفيديو: قراءة النص بصوت الجهاز (بالضغط فقط؛ لا يُرسل شيء إلى أي خدمة). lang: 'ar' أو 'en' */
+  function speak(text, lang) {
+    try {
+      const sy = window.speechSynthesis; if (!sy || !window.SpeechSynthesisUtterance || !text) return;
+      sy.cancel(); const u = new SpeechSynthesisUtterance(String(text).slice(0, 2000)); u.lang = lang === 'ar' ? 'ar-SA' : 'en-US'; sy.speak(u);
+    } catch {}
+  }
   function quoteView(text) { const q = el('p', 'st-ta-quote', text.length > 240 ? text.slice(0, 240) + '…' : text); q.dir = 'auto'; return q; }
   function slots(P, d) {
     P.msg = el('p', 'st-ta-msg'); P.msg.id = P.pre + '-msg'; P.msg.setAttribute('role', 'status'); P.msg.setAttribute('aria-live', 'polite');
@@ -685,7 +692,7 @@
   function openTranslate(a, from) {
     TX.a = a; TX.to = langOf(textOf(a)) === 'ar' ? 'en' : 'ar';
     const d = panel(TX, 'ترجمة');
-    d.append(quoteView(textOf(a)), seg('اتجاه الترجمة', 'to', [['ar', 'إلى العربية'], ['en', 'إلى الإنجليزية']], TX.to, v => { TX.to = v; runTranslate(false); }));
+    d.append(quoteView(textOf(a)), btn('st-tx-speak-src', 'نطق النص', () => speak(textOf(a), langOf(textOf(a)))), seg('اتجاه الترجمة', 'to', [['ar', 'إلى العربية'], ['en', 'إلى الإنجليزية']], TX.to, v => { TX.to = v; runTranslate(false); }));
     slots(TX, d);
     TX.note = el('p', 'st-ta-note', 'يُرسل النص المحدد فقط إلى خدمة الترجمة في MEDIXA.'); TX.gnote = el('p', 'st-ta-note', 'زر Google يفتح موقع Google في تبويب جديد ويرسل إليه النص المحدد.'); TX.gnote.hidden = true;
     d.append(TX.note, TX.gnote);
@@ -705,7 +712,7 @@
     show_({ busy: true, msg: 'جارٍ الترجمة…' });
     const r = await aiPost(P, 'translate', { text: cut(text), to: P.to }); if (tok !== P.tok) return;
     const out = r.status === 200 && r.j.ok === true && typeof r.j.text === 'string' ? r.j.text.trim() : '';
-    if (out) return show_({ msg: 'ترجمة آلية ' + ((r.j.to || P.to) === 'en' ? 'إلى الإنجليزية' : 'إلى العربية') + (first2000 ? ' لأول 2000 حرف' : '') + '؛ راجعها مع المحاضرة.', out, acts: [btn('st-tx-copy', 'نسخ الترجمة', () => copyText(out, 'نُسخت الترجمة'))] });
+    if (out) return show_({ msg: 'ترجمة آلية ' + ((r.j.to || P.to) === 'en' ? 'إلى الإنجليزية' : 'إلى العربية') + (first2000 ? ' لأول 2000 حرف' : '') + '؛ راجعها مع المحاضرة.', out, acts: [btn('st-tx-speak', 'نطق الترجمة', () => speak(out, (r.j.to || P.to) === 'en' ? 'en' : 'ar')), btn('st-tx-copy', 'نسخ الترجمة', () => copyText(out, 'نُسخت الترجمة'))] });
     const f = failure(P, r, runTranslate, first2000, []);
     if (r.status === 401 || r.status === 503 || r.status === 0 || r.status >= 500) f.acts.push(google());
     show_(f);
