@@ -113,7 +113,7 @@
 
   <script src="data/courses.js?v=step67"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/i18n.js?v=step65"></script>
+  <script src="js/i18n.js?v=exam70"></script>
   <script src="js/app.js?v=side66"></script><script src="js/study-summary.js?v=step58"></script><script src="js/auth.js?v=plan66"></script>
   <script src="js/nav.js?v=side66"></script><script src="js/motion.js?v=mv82"></script><script src="js/my-course.js?v=step58"></script><script src="js/pdf-viewer.js?v=step68"></script>
   <script>
@@ -265,6 +265,32 @@
         ringSub.textContent = done === total ? "أنهيت كل محاضرات المادة" : "تقدمك محفوظ على هذا الجهاز";
       }
       updateRing();
+
+      /* ---------- أسئلة السنوات السابقة: مربع منفصل أعلى الصفحة (من ملف وضع الدراسة، موضوع exam) ---------- */
+      var examSlot = el("div", "");
+      root.appendChild(examSlot);
+      (function loadExamBoxes() {
+        var appSrc = document.querySelector('script[src^="js/app.js"]');
+        var ver = appSrc && /[?&]v=([\w.-]+)/.exec(appSrc.getAttribute("src"));
+        (course.lectures || []).filter(function (l) { return l.study; }).forEach(function (lec) {
+          var key = course.id + "-" + lec.number;
+          var sc = document.createElement("script");
+          sc.src = "data/study/" + key + ".js" + (ver ? "?v=" + ver[1] : "");
+          sc.onload = function () {
+            var data = window.STUDY && window.STUDY[key];
+            var ex = data && (data.topics || []).filter(function (t) { return t.id === "exam"; })[0];
+            if (!ex || !ex.quiz || !ex.quiz.length) return;
+            var card = el("section", "card exam-box");
+            card.appendChild(el("h2", "", "أسئلة السنوات السابقة"));
+            card.appendChild(el("p", "subtle", ex.quiz.length + " سؤال — " + lec.title));
+            var go = el("a", "btn btn-primary btn-sm", "ابدأ الاختبار");
+            go.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number + "&exam=1";
+            card.appendChild(go);
+            examSlot.appendChild(card);
+          };
+          document.head.appendChild(sc);
+        });
+      })();
 
       /* ---------- المحاضرات ---------- */
       var listHead = el("div", "list-head");
