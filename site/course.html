@@ -266,31 +266,20 @@
       }
       updateRing();
 
-      /* ---------- أسئلة السنوات السابقة: مربع منفصل أعلى الصفحة (من ملف وضع الدراسة، موضوع exam) ---------- */
-      var examSlot = el("div", "");
-      root.appendChild(examSlot);
-      (function loadExamBoxes() {
+      /* أسئلة السنوات السابقة: زر صغير بجانب «ذاكرها خطوة بخطوة» للمحاضرة نفسها (موضوع exam في ملف وضع الدراسة) */
+      function withExam(lec, cb) {
         var appSrc = document.querySelector('script[src^="js/app.js"]');
         var ver = appSrc && /[?&]v=([\w.-]+)/.exec(appSrc.getAttribute("src"));
-        (course.lectures || []).filter(function (l) { return l.study; }).forEach(function (lec) {
-          var key = course.id + "-" + lec.number;
-          var sc = document.createElement("script");
-          sc.src = "data/study/" + key + ".js" + (ver ? "?v=" + ver[1] : "");
-          sc.onload = function () {
-            var data = window.STUDY && window.STUDY[key];
-            var ex = data && (data.topics || []).filter(function (t) { return t.id === "exam"; })[0];
-            if (!ex || !ex.quiz || !ex.quiz.length) return;
-            var card = el("section", "card exam-box");
-            card.appendChild(el("h2", "", "أسئلة السنوات السابقة"));
-            card.appendChild(el("p", "subtle", ex.quiz.length + " سؤال — " + lec.title));
-            var go = el("a", "btn btn-primary btn-sm", "ابدأ الاختبار");
-            go.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number + "&exam=1";
-            card.appendChild(go);
-            examSlot.appendChild(card);
-          };
-          document.head.appendChild(sc);
-        });
-      })();
+        var key = course.id + "-" + lec.number;
+        var sc = document.createElement("script");
+        sc.src = "data/study/" + key + ".js" + (ver ? "?v=" + ver[1] : "");
+        sc.onload = function () {
+          var data = window.STUDY && window.STUDY[key];
+          var ex = data && (data.topics || []).filter(function (t) { return t.id === "exam"; })[0];
+          if (ex && ex.quiz && ex.quiz.length) cb(ex);
+        };
+        document.head.appendChild(sc);
+      }
 
       /* ---------- المحاضرات ---------- */
       var listHead = el("div", "list-head");
@@ -493,6 +482,13 @@
             sl.appendChild(MS.icon("book", 18));
             sl.appendChild(el("span", "", "ذاكرها خطوة بخطوة"));
             tools.insertBefore(sl, tools.firstChild);
+            withExam(lec, function () {
+              var xb = el("a", "mark-btn study-link");
+              xb.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number + "&exam=1";
+              xb.appendChild(MS.icon("star", 18));
+              xb.appendChild(el("span", "", "أسئلة السنوات السابقة"));
+              tools.insertBefore(xb, sl.nextSibling);
+            });
           }
           body.appendChild(tools);
 
