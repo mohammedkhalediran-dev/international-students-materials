@@ -14,7 +14,7 @@
 window.STUDY = window.STUDY || {};
 STUDY["physiology-kidney-1"] = {
   topics: [
-    // اختبار تفاعلي منفصل يضم الأسئلة الـ31 كاملة (يظهر أولاً).
+    // مربع واحد يضم أسئلة السنوات السابقة الـ31 (يظهر أولاً).
     {
       "id": "exam",
       "term": "Kidney Exam",
