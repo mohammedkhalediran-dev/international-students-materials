@@ -17,8 +17,8 @@ STUDY["physiology-kidney-1"] = {
     // مربع واحد يضم أسئلة السنوات السابقة الـ31 (يظهر أولاً).
     {
       "id": "exam",
-      "term": "Kidney Exam",
-      "title": "الاختبار التفاعلي",
+      "term": "Past Exam Questions",
+      "title": "أسئلة السنوات السابقة",
       "facts": [],
       "quiz": [
         {
