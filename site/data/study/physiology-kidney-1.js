@@ -14,6 +14,356 @@
 window.STUDY = window.STUDY || {};
 STUDY["physiology-kidney-1"] = {
   topics: [
+    // اختبار تفاعلي منفصل يضم الأسئلة الـ31 كاملة (يظهر أولاً).
+    {
+      "id": "exam",
+      "term": "Kidney Exam",
+      "title": "الاختبار التفاعلي",
+      "facts": [],
+      "quiz": [
+        {
+          "q": "The primary means of eliminating most metabolic waste products is the:",
+          "options": [
+            "Lungs",
+            "Liver",
+            "Kidneys",
+            "Skin"
+          ],
+          "answer": 2,
+          "why": "الكلية هي الوسيلة الأساسية لإخراج معظم فضلات الأيض، والكبد والرئتان لا تقومان بهذا الدور بالكامل."
+        },
+        {
+          "q": "Which waste product comes from creatine in skeletal muscle?",
+          "options": [
+            "Urea",
+            "Creatinine",
+            "Uric acid",
+            "Bilirubin"
+          ],
+          "answer": 1,
+          "why": "الكرياتينين يتكون من الكرياتين الموجود في العضلات الهيكلية."
+        },
+        {
+          "q": "Uric acid is produced mainly from the breakdown of:",
+          "options": [
+            "Amino acids",
+            "Creatine",
+            "Nucleic acids",
+            "Hemoglobin"
+          ],
+          "answer": 2,
+          "why": "حمض اليوريك يأتي من تكسير الأحماض النووية، وهي البيورينات."
+        },
+        {
+          "q": "Bilirubin is an end product of the breakdown of:",
+          "options": [
+            "Hemoglobin",
+            "Creatine",
+            "Glucose",
+            "Urea"
+          ],
+          "answer": 0,
+          "why": "البيليروبين ناتج تكسر الهيموغلوبين، وتطرحه الكلية."
+        },
+        {
+          "q": "The kidneys are the ONLY way to eliminate which of the following acids?",
+          "options": [
+            "Carbonic acid (CO2 with water)",
+            "Sulfuric acid",
+            "Lactic acid",
+            "Acetone"
+          ],
+          "answer": 1,
+          "why": "الكلية هي الطريقة الوحيدة لإخراج بعض الأحماض مثل الكبريتيك والفوسفوريك الناتجة من تكسير البروتين."
+        },
+        {
+          "q": "When ADH is high, what happens in the collecting ducts?",
+          "options": [
+            "Water excretion increases",
+            "Water reabsorption increases",
+            "Sodium excretion increases",
+            "No change"
+          ],
+          "answer": 1,
+          "why": "الهرمون المضاد لإدرار البول يزيد نفاذية الأنابيب الجامعة للماء، فيعود الماء إلى الدم وينتج بول أقل وأكثر تركيزاً."
+        },
+        {
+          "q": "Lack of ADH causes which condition?",
+          "options": [
+            "Diabetes insipidus",
+            "Hyperkalemia",
+            "Acidosis",
+            "Anemia"
+          ],
+          "answer": 0,
+          "why": "نقص الهرمون المضاد لإدرار البول يسبب بولاً كثيراً ومخففاً مع عطش شديد."
+        },
+        {
+          "q": "Which is the main positive ion inside cells?",
+          "options": [
+            "Sodium",
+            "Potassium",
+            "Chloride",
+            "Calcium"
+          ],
+          "answer": 1,
+          "why": "البوتاسيوم هو الأيون الموجب الرئيسي داخل الخلايا، والصوديوم هو الرئيسي خارجها."
+        },
+        {
+          "q": "Hyperkalemia (high potassium) can cause which dangerous complication?",
+          "options": [
+            "Cardiac arrhythmias",
+            "Jaundice",
+            "Bone fracture",
+            "Anemia"
+          ],
+          "answer": 0,
+          "why": "ارتفاع البوتاسيوم في الدم يغير النشاط الكهربائي للقلب ويسبب اضطراب النظم."
+        },
+        {
+          "q": "After a sudden 10-fold increase in sodium intake, sodium excretion becomes equal to intake within:",
+          "options": [
+            "2 hours",
+            "2 to 3 days",
+            "2 weeks",
+            "It never happens"
+          ],
+          "answer": 1,
+          "why": "بعد زيادة الصوديوم في الغذاء يحتاج الجسم إلى يومين أو ثلاثة حتى يساوي الإخراج الدخول."
+        },
+        {
+          "q": "Compared with the lungs, the kidneys regulate acid-base balance:",
+          "options": [
+            "Faster, within minutes",
+            "Slower, over hours to days",
+            "Only during sleep",
+            "Not at all"
+          ],
+          "answer": 1,
+          "why": "الرئتان تغيران إخراج ثاني أكسيد الكربون بسرعة، أما الكلية فتعدل البيكربونات وإخراج الحمض ببطء، من ساعات إلى أيام."
+        },
+        {
+          "q": "Sodium-hydrogen exchange in the proximal tubule is needed for:",
+          "options": [
+            "Reabsorption of bicarbonate",
+            "Excretion of glucose",
+            "Production of renin",
+            "Secretion of ADH"
+          ],
+          "answer": 0,
+          "why": "البيكربونات تعبر الغشاء الراسي للخلية الظهارية للتوبول القريب بالاعتماد على تبادل الصوديوم مع الهيدروجين."
+        },
+        {
+          "q": "The kidney cells that secrete renin are the:",
+          "options": [
+            "Macula densa cells",
+            "Granular cells",
+            "Podocytes",
+            "Mesangial cells"
+          ],
+          "answer": 1,
+          "why": "الخلايا الحبيبية في الجهاز المجاور للكبيبة هي التي تصنع وتفرز الرينين."
+        },
+        {
+          "q": "Which kidney hormone stimulates red blood cell production in the bone marrow?",
+          "options": [
+            "Renin",
+            "Calcitriol",
+            "Erythropoietin",
+            "ADH"
+          ],
+          "answer": 2,
+          "why": "الكلية تفرز الإريثروبويتين الذي ينشط إنتاج خلايا الدم الحمراء في نخاع العظم."
+        },
+        {
+          "q": "The active form of vitamin D produced by the kidney is:",
+          "options": [
+            "25-hydroxyvitamin D",
+            "1,25-dihydroxyvitamin D3 (calcitriol)",
+            "Vitamin D2",
+            "Renin"
+          ],
+          "answer": 1,
+          "why": "الكلية تحوّل الشكل المخزون إلى الشكل النشط 1,25 عند الموضع رقم 1 من الهيدروكسيل."
+        },
+        {
+          "q": "Each human kidney contains about how many nephrons?",
+          "options": [
+            "10,000",
+            "100,000",
+            "1,000,000",
+            "10,000,000"
+          ],
+          "answer": 2,
+          "why": "كل كلية تحتوي تقريباً على مليون نيفرون، ولا تتجدد هذه النيفرونات بعد الولادة."
+        },
+        {
+          "q": "The renal functional unit is the:",
+          "options": [
+            "Glomerulus",
+            "Nephron",
+            "Ureter",
+            "Papilla"
+          ],
+          "answer": 1,
+          "why": "النيفرون هو الوحدة الوظيفية للكلية، لأنه وحده يكوّن البول."
+        },
+        {
+          "q": "Which nephrons have vasa recta around their long loops of Henle?",
+          "options": [
+            "Cortical nephrons",
+            "Juxtamedullary nephrons",
+            "Superficial nephrons only",
+            "Collecting ducts"
+          ],
+          "answer": 1,
+          "why": "النيفرونات المجاورة للنخاع لها حلقات هنلة طويلة ومعها الأوعية المستقيمة، وتشكل نحو 20 إلى 30 بالمئة من النيفرونات."
+        },
+        {
+          "q": "The macula densa is located at the end of the:",
+          "options": [
+            "Descending thin limb",
+            "Thick ascending limb",
+            "Proximal tubule",
+            "Collecting duct"
+          ],
+          "answer": 1,
+          "why": "بقعة الكثافة توجد في نهاية الفرع الصاعد السميك لحلقة هنلة."
+        },
+        {
+          "q": "Urine flows from the papilla to which structure next?",
+          "options": [
+            "Minor calyx",
+            "Major calyx",
+            "Renal pelvis",
+            "Ureter"
+          ],
+          "answer": 0,
+          "why": "البول يمر من الحليمة إلى الكأس الصغير أولاً، ثم الكأس الكبير، ثم الحوض، ثم الحالب."
+        },
+        {
+          "q": "Renal blood flow in a normal adult at rest is about:",
+          "options": [
+            "500 mL/min",
+            "1100 mL/min",
+            "3000 mL/min",
+            "5000 mL/min"
+          ],
+          "answer": 1,
+          "why": "الكلية تستقبل حوالي 22 بالمئة من الناتج القلبي، أي حوالي 1100 مل في الدقيقة."
+        },
+        {
+          "q": "The highest hydrostatic pressure (about 60 mmHg) is found in the:",
+          "options": [
+            "Glomerular capillaries",
+            "Peritubular capillaries",
+            "Renal vein",
+            "Ureter"
+          ],
+          "answer": 0,
+          "why": "الضغط داخل الشعيرات الكبيبية حوالي 60 ملم زئبق، وهو عالٍ ليدفع الترشيح، أما الشعيرات حول الأنابيب فحوالي 13 ملم زئبق."
+        },
+        {
+          "q": "Which substance is normally NOT filtered at the glomerulus?",
+          "options": [
+            "Water",
+            "Glucose",
+            "Plasma proteins (albumin)",
+            "Sodium"
+          ],
+          "answer": 2,
+          "why": "الترشيح يسمح بالماء والأملاح والجلوكوز واليوريا، لكن البروتينات الكبيرة والخلايا الحمراء تبقى في الدم."
+        },
+        {
+          "q": "Which substance is freely filtered and completely reabsorbed, so it does not appear in urine?",
+          "options": [
+            "Creatinine",
+            "Glucose",
+            "Urea",
+            "Uric acid"
+          ],
+          "answer": 1,
+          "why": "الجلوكوز يُرشَّح بالكامل ثم يُعاد امتصاصه بالكامل في الظروف الطبيعية، لذلك لا يظهر في البول."
+        },
+        {
+          "q": "Creatinine is freely filtered, not reabsorbed, and not secreted. Its excretion rate equals:",
+          "options": [
+            "Its reabsorption rate",
+            "Its filtration rate",
+            "Zero",
+            "Its secretion rate only"
+          ],
+          "answer": 1,
+          "why": "الكرياتينين لا يُعاد امتصاصه ولا يُفرز، فكمية إخراجه تساوي كمية ترشيحه."
+        },
+        {
+          "q": "The proximal tubule reabsorbs about what percentage of filtered sodium and water?",
+          "options": [
+            "10 percent",
+            "30 percent",
+            "65 to 70 percent",
+            "100 percent"
+          ],
+          "answer": 2,
+          "why": "التوبول القريب يعيد حوالي 65 إلى 70 بالمئة من الصوديوم والماء المرشحين."
+        },
+        {
+          "q": "The fundamental equation for urine formation is:",
+          "options": [
+            "Excretion = Filtration − Reabsorption + Secretion",
+            "Excretion = Filtration + Reabsorption − Secretion",
+            "Excretion = Secretion only",
+            "Excretion = Filtration only"
+          ],
+          "answer": 0,
+          "why": "البول يتكون من الترشيح، ينقص منه ما يعاد امتصاصه، ويضاف إليه ما يفرز."
+        },
+        {
+          "q": "The thick ascending limb of Henle's loop is:",
+          "options": [
+            "Permeable to water",
+            "Impermeable to water",
+            "Impermeable to sodium",
+            "Permeable to urea only"
+          ],
+          "answer": 1,
+          "why": "الفرع الصاعد السميك لا يسمح بمرور الماء، ويعيد امتصاص الصوديوم والبوتاسيوم والكلوريد، وهذا يكوّن التدرج الأسموزي في النخاع."
+        },
+        {
+          "q": "The main normal mechanism that controls GFR from moment to moment is:",
+          "options": [
+            "ADH",
+            "Renal autoregulation",
+            "Insulin",
+            "Sympathetic stimulation"
+          ],
+          "answer": 1,
+          "why": "التنظيم الذاتي للكلية يحافظ على ثبات الترشيح الكبيبي عند تغير ضغط الدم."
+        },
+        {
+          "q": "When arterial pressure falls, the afferent arteriole dilates and the efferent arteriole constricts. This tends to:",
+          "options": [
+            "Decrease GFR",
+            "Increase glomerular pressure and help maintain GFR",
+            "Stop filtration",
+            "Decrease renal blood flow only"
+          ],
+          "answer": 1,
+          "why": "توسع الوارد وتضيق الصادر يرفع ضغط الشعيرات الكبيبية، فيحافظ الجسم على الترشيح."
+        },
+        {
+          "q": "The vasa recta mainly help by:",
+          "options": [
+            "Producing renin",
+            "Returning reabsorbed water and solutes and preserving the medullary gradient",
+            "Filtering proteins",
+            "Secreting ADH"
+          ],
+          "answer": 1,
+          "why": "الأوعية المستقيمة تعيد الماء والمواد المعاد امتصاصها إلى الدورة، وتحافظ على التدرج الأسموزي اللازم لتركيز البول."
+        }
+      ]
+    },
     {
       id: "t1",
       term: "Renal Functions",
