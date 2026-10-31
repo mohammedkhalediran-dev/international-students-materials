@@ -25,7 +25,7 @@ COURSES.forEach(c=>c.lectures.forEach(l=>{
   if(!t.term||!LAT.test(t.term))fail('study term (English) '+at);
   if(!t.title||LAT.test(t.title))fail('study title must be Arabic only '+at);
   (t.words||[]).forEach(x=>{if(!x.en||!x.pron||!ARB.test(x.pron)||x.pron.split('-').length<2||x.pron.split('-').length>3)fail('study pron '+at+' '+x.en)});
-  if(!t.facts||!t.facts.length)fail('study facts '+at);
+  if((!t.facts||!t.facts.length)&&t.id!=='exam')fail('study facts '+at);
   (t.facts||[]).forEach((f,i)=>{
    if(!f.en||!LAT.test(f.en))fail('study fact en '+at+'#'+i);
    if(!f.ar||LAT.test(f.ar))fail('study fact ar (no Latin letters) '+at+'#'+i);

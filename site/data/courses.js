@@ -222,6 +222,7 @@ const COURSES = [
         number: 1,
         title: "Introduction to kidney functions, renal organization, and the basic mechanisms of urine formation",
         titleAr: "مقدمة في وظائف الكلية وتنظيمها وآلية تكوين البول",
+        study: true,
         files: [
           { label: "Session 1 notes", path: "فسيولوجيا-الكلية/المحاضرة-1-Physiology-of-Kidneys-Session-1.pdf", added: "2026-10-15" },
           { label: "Slides: Renal Physiology", path: "فسيولوجيا-الكلية/المحاضرة-1-Kidney-Slides.pdf", added: "2026-10-15" },

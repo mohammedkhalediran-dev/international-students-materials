@@ -266,6 +266,21 @@
       }
       updateRing();
 
+      /* أسئلة السنوات السابقة: زر صغير بجانب «ذاكرها خطوة بخطوة» للمحاضرة نفسها (موضوع exam في ملف وضع الدراسة) */
+      function withExam(lec, cb) {
+        var appSrc = document.querySelector('script[src^="js/app.js"]');
+        var ver = appSrc && /[?&]v=([\w.-]+)/.exec(appSrc.getAttribute("src"));
+        var key = course.id + "-" + lec.number;
+        var sc = document.createElement("script");
+        sc.src = "data/study/" + key + ".js" + (ver ? "?v=" + ver[1] : "");
+        sc.onload = function () {
+          var data = window.STUDY && window.STUDY[key];
+          var ex = data && (data.topics || []).filter(function (t) { return t.id === "exam"; })[0];
+          if (ex && ex.quiz && ex.quiz.length) cb(ex);
+        };
+        document.head.appendChild(sc);
+      }
+
       /* ---------- المحاضرات ---------- */
       var listHead = el("div", "list-head");
       listHead.appendChild(el("h2", "", "المحاضرات"));
@@ -467,6 +482,13 @@
             sl.appendChild(MS.icon("book", 18));
             sl.appendChild(el("span", "", "ذاكرها خطوة بخطوة"));
             tools.insertBefore(sl, tools.firstChild);
+            withExam(lec, function () {
+              var xb = el("a", "mark-btn study-link");
+              xb.href = "study.html?id=" + encodeURIComponent(course.id) + "&lec=" + lec.number + "&exam=1";
+              xb.appendChild(MS.icon("star", 18));
+              xb.appendChild(el("span", "", "أسئلة السنوات السابقة"));
+              tools.insertBefore(xb, sl.nextSibling);
+            });
           }
           body.appendChild(tools);
 

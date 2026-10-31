@@ -10,8 +10,8 @@
     "reason": "Login integration (Step 39), Web Push (Step 49), and Step 52: after a successful upload the notice goes through lectureNotice (no duplicate for a second file of the same lecture, lectures of one subject within 30 minutes grouped into one notice, quizzes/past questions notify too) before notify(); still waitUntil, does not delay the response. Step 55: the official timetable routes (/api/timetable*) are handled by handleTimetable right after auth; access is checked on the server (course 03 or admin). Step 57: university grades routes (/api/grades*) are handled by handleGrades right after the timetable; each student reads only their own grades, upload/unlink is admin-only, passport numbers are never stored (keyed HMAC fingerprint). Study Studio (2026-10-19): /api/ai/* (translate/explain of text the student selected and pressed, Workers AI binding AI, signed-in + same-origin + rate limit) is handled by handleAi right after the grades routes. Step 63: the PDF notes sync route (/api/pdfnotes) is handled by handlePdfNotes after the grades routes; each student reads and writes only their own rows (quota 5 MB, optimistic concurrency)."
   },
   "site/data/courses.js": {
-    "step": 67,
-    "sha256": "d80ae8e9b593db14e267a50d9216418aba0bafcfd6bc9b42646fa51751882c79",
-    "reason": "Study mode entries (lecture with study: true, no static files; PDFs stay the ones uploaded from upload.html and merged by MS.applyUploads): General Principles of nutrition lecture 1 (Fat soluble vitamins) and Biochemistry of Hormones lecture 1 (Hormon basic overview 1405). Content in site/data/study/. 2026-10-21, at Mohammed's request."
+    "step": 68,
+    "sha256": "6b93a1ae8634410414387769ed979e96ae03009e14281d8f47e1ca279b7bb5ef",
+    "reason": "Study mode entry for Physiology of Kidney lecture 1 (study: true, no static files; the uploaded PDF stays as it is). Content in site/data/study/physiology-kidney-1.js (31 past-exam questions, interactive quiz). 2026-10-29, at Mohammed's request."
   }
 }

@@ -2,7 +2,7 @@ window.MEDIXA_VIEWS=window.MEDIXA_VIEWS||{};
 (function(){
   "use strict";
   function banks(){
-    var out=[];COURSES.forEach(function(c){c.lectures.forEach(function(l){var key=c.id+"-"+l.number,study=window.STUDY&&window.STUDY[key];if(!study)return;var questions=[];(study.topics||[]).forEach(function(topic){(topic.quiz||[]).forEach(function(q){questions.push({q:q.q,options:q.options.slice(),answer:q.answer,why:q.why,topic:topic.term});});});if(questions.length)out.push({key:key,c:c,l:l,questions:questions});});});return out;
+    var out=[];COURSES.forEach(function(c){c.lectures.forEach(function(l){var key=c.id+"-"+l.number,study=window.STUDY&&window.STUDY[key];if(!study)return;var questions=[];(study.topics||[]).forEach(function(topic){if(topic.id==='exam')return;(topic.quiz||[]).forEach(function(q){questions.push({q:q.q,options:q.options.slice(),answer:q.answer,why:q.why,topic:topic.term});});});if(questions.length)out.push({key:key,c:c,l:l,questions:questions});});});return out;
   }
   function history(){var h=MS.load("ms.quizHistory",[]);return Array.isArray(h)?h:[];}
   function date(value){return new Date(value).toLocaleString(MS.lang==="ar"?"ar-IQ":MS.lang==="fa"?"fa-IR":"en-GB",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});}

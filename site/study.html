@@ -187,6 +187,9 @@
           var ti = Math.min(Math.max(parseInt(s.ti, 10) || 0, 0), topics.length - 1);
           return { ti: ti, ans: s.ans && typeof s.ans === "object" ? s.ans : {} };
         })();
+        if (params.get("exam")) {
+          topics.forEach(function (tp, i) { if (tp.id === "exam") st.ti = i; });
+        }
         function save() {
           var all = MS.load(MS.KEY.study, {}) || {};
           all[key] = { ti: st.ti, ans: st.ans };
