@@ -1,0 +1,17 @@
+{
+  "netlify/lib/core.mjs": {
+    "step": 39,
+    "sha256": "e89e2072a813a2d0188cfe7e373264164bc14eb08bcaeca8fea9f1591ec1ae0f",
+    "reason": "Login integration: uploads by signed-in account (roles uploader/rep/admin) via deps.account; returns 401 instead of 503 when only accounts are configured. Already deployed and tested on the main test site."
+  },
+  "functions/api/[[path]].js": {
+    "step": 63,
+    "sha256": "7d3bc10c60949ab294421b7fc50af6081c788b68071dd45d757bf298cccc1376",
+    "reason": "Login integration (Step 39), Web Push (Step 49), and Step 52: after a successful upload the notice goes through lectureNotice (no duplicate for a second file of the same lecture, lectures of one subject within 30 minutes grouped into one notice, quizzes/past questions notify too) before notify(); still waitUntil, does not delay the response. Step 55: the official timetable routes (/api/timetable*) are handled by handleTimetable right after auth; access is checked on the server (course 03 or admin). Step 57: university grades routes (/api/grades*) are handled by handleGrades right after the timetable; each student reads only their own grades, upload/unlink is admin-only, passport numbers are never stored (keyed HMAC fingerprint). Study Studio (2026-10-19): /api/ai/* (translate/explain of text the student selected and pressed, Workers AI binding AI, signed-in + same-origin + rate limit) is handled by handleAi right after the grades routes. Step 63: the PDF notes sync route (/api/pdfnotes) is handled by handlePdfNotes after the grades routes; each student reads and writes only their own rows (quota 5 MB, optimistic concurrency)."
+  },
+  "site/data/courses.js": {
+    "step": 68,
+    "sha256": "6b93a1ae8634410414387769ed979e96ae03009e14281d8f47e1ca279b7bb5ef",
+    "reason": "Study mode entry for Physiology of Kidney lecture 1 (study: true, no static files; the uploaded PDF stays as it is). Content in site/data/study/physiology-kidney-1.js (31 past-exam questions, interactive quiz). 2026-10-29, at Mohammed's request."
+  }
+}

@@ -7,7 +7,7 @@
   var MS = window.MS;
   var T = function (s) { return window.I18N && I18N.t ? I18N.t(s) : s; };
   var KEY_NAV = "ms.nav";       // تفضيل طي القائمة على الكمبيوتر: "min" أو "full"
-  var KEY_SEM = "ms.sem";       // كورس الطالب الحقيقي (رقم) إن حُفظ؛ لا واجهة تضبطه بعد فلا تظهر شارة «الحالي»
+  var KEY_SEM = "ms.sem";       // كورس الطالب (رقم) يختاره من js/my-course.js؛ تظهر شارة «الحالي» عليه
   var DESKTOP = "(min-width: 1081px)";
 
   /* ---------- الإعداد ----------
@@ -17,28 +17,28 @@
     { items: [{ id: "home", label: "الرئيسية", icon: "home", href: "index.html#home", enabled: true }] },
     { title: "دراستي", items: [
       { id: "courses", label: "الكورسات والمواد", icon: "book", href: "index.html#semesters", enabled: true, children: "semesters" },
-      { id: "latest", label: "أحدث المحاضرات", icon: "play", href: "index.html#latest", enabled: true },
-      { id: "favorites", label: "المفضلة", icon: "star", href: "index.html#favorites", enabled: true },
+      { id: "latest", label: "أحدث المحاضرات", icon: "play", href: "workspace.html?view=lectures", enabled: true },
+      { id: "favorites", label: "المفضلة", icon: "star", href: "workspace.html?view=favorites", enabled: true },
       { id: "resume", label: "متابعة القراءة", icon: "file", enabled: true, dynamic: "resume" },
-      { id: "professors", label: "الأساتذة", icon: "users", href: "index.html#professors", enabled: true }
+      { id: "professors", label: "الأساتذة", icon: "users", href: "workspace.html?view=professors", enabled: true }
     ] },
     { title: "تنظيم الدراسة", items: [
       { id: "tools", label: "أدوات الطالب", icon: "tools", href: "index.html#tools", enabled: true },
-      { id: "plan", label: "مخطط الدراسة", icon: "list", soon: true },        // لا صفحة بعد
-      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", soon: true } // لا صفحة بعد
+      { id: "plan", label: "مخطط الدراسة", icon: "list", href: "workspace.html?view=planner", enabled: true },        // لا صفحة بعد
+      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", href: "exams.html", enabled: true }
     ] },
     { title: "التدريب", items: [
-      { id: "qbank", label: "بنك الأسئلة", icon: "help", soon: true },      // «قريباً»
-      { id: "results", label: "نتائج التدريب", icon: "chart", soon: true }
+      { id: "qbank", label: "بنك الأسئلة", icon: "help", href: "workspace.html?view=questions", enabled: true },      // «قريباً»
+      { id: "results", label: "نتائج التدريب", icon: "chart", href: "workspace.html?view=results", enabled: true }
     ] },
     { title: "حسابي", items: [
-      { id: "grades", label: "درجاتي الجامعية", icon: "cap", soon: true },  // يحتاج تحقق هوية من الخادم قبل أي عرض
-      { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
+      { id: "grades", label: "درجاتي الجامعية", icon: "cap", href: "grades.html", enabled: true },  // Step 57: الخادم يتحقق من الحساب ويعطي كل طالب درجاته فقط
+      { id: "profile", label: "الملف الشخصي", icon: "user", href: "profile.html", enabled: true }  // Step 61: الاسم كما في الجامعة + ربط الجواز
     ] }
   ];
   var FOOT = [
-    { id: "settings", label: "الإعدادات", icon: "gear", soon: true },        // اللغة والوضع الليلي في الرأس حالياً
-    { id: "help", label: "المساعدة", icon: "help", href: "index.html#help", enabled: true },
+    { id: "settings", label: "الإعدادات", icon: "gear", href: "workspace.html?view=settings", enabled: true },        // اللغة والوضع الليلي في الرأس حالياً
+    { id: "help", label: "المساعدة", icon: "help", href: "workspace.html?view=help", enabled: true },
     { id: "logout", label: "تسجيل الخروج", icon: "logout", enabled: false }     // لا تسجيل دخول في الموقع
   ];
   /* قسم الصفحة الرئيسية الظاهر ← عنصر القائمة */
@@ -62,7 +62,7 @@
   }
 
   /* ---------- الرسم ---------- */
-  var side, scroll, tip, links = {}, toggles = [], activeId = null, spyId = null;
+  var side, scroll, tip, pill, links = {}, toggles = [], activeId = null, spyId = null;
 
   function linkNode(it, href) {
     var a = el("a", "nav-link");
@@ -160,7 +160,7 @@
     top.appendChild(cls);
     side.appendChild(top);
 
-    // كتلة الحساب: لا حسابات للطلاب بعد، فتُعرض صفة الزائر الحقيقية بلا اسم أو درجات وهمية
+    // كتلة الحساب: تبدأ «زائر»، ثم يحدّثها js/auth.js باسم الطالب وزر الخروج إن كانت هناك جلسة دخول
     var user = el("div", "sb-user");
     var av = el("span", "sb-avatar"); av.appendChild(MS.icon("user", 22));
     user.appendChild(av);
@@ -169,9 +169,10 @@
     var sem = mySem(), semObj = (typeof SEMESTERS !== "undefined" ? SEMESTERS : []).filter(function (x) { return x.id === sem; })[0];
     ut.appendChild(el("small", "", semObj ? semName(semObj) : "تقدّمك محفوظ على هذا الجهاز"));
     user.appendChild(ut);
-    side.appendChild(user);
 
+    /* بطاقة الحساب والإشعارات داخل منطقة التمرير (لا تبقى ثابتة وتأخذ نصف القائمة) */
     scroll = el("div", "sb-scroll");
+    scroll.appendChild(user);
     var nav = el("nav", "nav"); nav.id = "nav"; nav.setAttribute("aria-label", T("التنقل الرئيسي"));
     NAV.forEach(function (sec, i) {
       var ul = listNode(sec.items);
@@ -182,6 +183,10 @@
       nav.appendChild(s);
     });
     scroll.appendChild(nav);
+    /* خلفية منزلقة تتبع العنصر النشط */
+    pill = el("span", "nav-pill"); pill.setAttribute("aria-hidden", "true");
+    nav.insertBefore(pill, nav.firstChild);
+    var k = 0; [].forEach.call(nav.querySelectorAll(".nav-item"), function (n) { n.style.setProperty("--i", k++); });
     side.appendChild(scroll);
 
     var fl = listNode(FOOT);
@@ -198,6 +203,11 @@
   /* ---------- الحالة النشطة ---------- */
   function resolveActive() {
     var p = page();
+    if (p === "workspace.html") {
+      return {search:"courses",lectures:"latest",favorites:"favorites",professors:"professors",planner:"plan",questions:"qbank",results:"results",settings:"settings",help:"help"}[new URLSearchParams(location.search).get("view")] || "courses";
+    }
+    if (p === "grades.html") return "grades";
+    if (p === "profile.html") return "profile";
     if (p === "index.html") {
       if (location.hash === "#favorites") return "favorites";
       if (spyId && (location.hash === "" || location.hash === "#home" || SPY[location.hash.slice(1)])) return spyId;
@@ -213,6 +223,7 @@
       if (k === id) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
     activeId = id;
+    movePill();
     var sem = pageSemester();
     toggles.forEach(function (t) {
       var inside = !!sem || id === t.id;
@@ -221,7 +232,19 @@
     });
   }
 
+  /* الخلفية المنزلقة: تنتقل إلى الرابط النشط، وتُحسب مجدداً بعد فتح مجموعة أو تغيير الحجم */
+  function movePill() {
+    if (!pill) return;
+    var a = activeId && links[activeId], nav = pill.parentNode;
+    if (!a || !a.offsetParent || a.getBoundingClientRect().height < 4) { pill.classList.remove("on"); nav.classList.remove("has-pill"); return; }
+    var r = a.getBoundingClientRect(), n = nav.getBoundingClientRect();
+    pill.style.setProperty("--y", (r.top - n.top) + "px"); pill.style.setProperty("--h", r.height + "px");
+    nav.classList.add("has-pill"); pill.classList.add("on");
+  }
+  window.addEventListener("resize", movePill);
+
   function setOpen(t, open) {
+    setTimeout(movePill, 260);
     t.li.classList.toggle("is-open", open);
     t.btn.setAttribute("aria-expanded", String(open));
     t.btn.setAttribute("aria-label", T(open ? "طي الكورسات" : "توسيع الكورسات"));
@@ -299,7 +322,7 @@
     function measure() {
       ticking = false;
       var line = window.innerHeight * 0.35, id = null;
-      secs.forEach(function (s) { if (s.getBoundingClientRect().top <= line) id = SPY[s.id]; });
+      secs.forEach(function (s) { if (!s.hidden && s.getBoundingClientRect().height && s.getBoundingClientRect().top <= line) id = SPY[s.id]; });
       if (id && id !== spyId) { spyId = id; if (location.hash !== "#favorites") paint(); }
     }
     window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(measure); } }, { passive: true });

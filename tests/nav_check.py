@@ -1,4 +1,5 @@
 # python3 -I tests/nav_check.py [مجلد_اللقطات] — فحص القائمة الجانبية: الكمبيوتر والطي والدرج والحالة النشطة واللغات والوضع الليلي
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); import guest_mode  # noqa: E402 — صفحة الدخول أولاً (Step 60): الفحوص القديمة تعمل كزائر
 import os, re, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 

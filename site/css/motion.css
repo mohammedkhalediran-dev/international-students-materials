@@ -1,0 +1,99 @@
+/* css/motion.css — لمسات حركية صغيرة (Step 59، بطلب محمد 2026-10-19).
+   استجابة الضغط، رفع خفيف عند المرور بالمؤشر، ظهور ناعم للقوائم، هيكل تحميل، واحتفال صغير عند النجاح في وضع الدراسة.
+   transform وopacity فقط. تتوقف تلقائياً مع prefers-reduced-motion ومع إعداد «تقليل الحركة» في الموقع (قواعد style.css العامة). */
+
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+  --motion-ease: cubic-bezier(.2, .8, .2, 1);
+  --motion-enter: cubic-bezier(.16, 1, .3, 1);
+}
+
+/* ---- 1) استجابة الضغط: يصغر العنصر قليلاً لحظة اللمس فيشعر الطالب أن الضغطة وصلت ---- */
+.btn, .tt-btn, .icon-btn, .section-link, .semester-tile, .course-card, .latest-item, .tool-tile, .quick-item, .resume-card, .file-link, .mm-cta, .gr-item .tt-btn {
+  transition: transform var(--motion-fast) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), background-color var(--motion-base), border-color var(--motion-base);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active, .tt-btn:active, .icon-btn:active, .mm-cta:active, .file-link:active { transform: scale(.94); transition-duration: 60ms; }
+.semester-tile:active, .course-card:active, .latest-item:active, .tool-tile:active, .quick-item:active, .resume-card:active { transform: scale(.96); transition-duration: 80ms; box-shadow: var(--shadow-sm); }
+
+/* ---- 2) رفع خفيف للبطاقات عند المرور بالمؤشر (الكمبيوتر فقط) ---- */
+@media (hover: hover) and (pointer: fine) {
+  .semester-tile:hover, .course-card:hover, .tool-tile:hover, .latest-item:hover, .resume-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+
+/* ---- 3) ظهور العناصر عند الوصول إليها بالتمرير (يضيف js/motion.js الصنفين؛ بدونه يبقى كل شيء ظاهراً) ---- */
+.mr { opacity: 0; transform: translateY(28px) scale(.97); }
+.mr.mr-in { opacity: 1; transform: none; transition: opacity 600ms var(--motion-enter) var(--mr-delay, 0ms), transform 700ms var(--motion-enter) var(--mr-delay, 0ms); }
+
+/* ---- 4) هيكل تحميل: أسطر رمادية تلمع بهدوء مكان المحتوى بدل صفحة فارغة ---- */
+@keyframes motion-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.skel { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+.skel i { position: relative; display: block; height: 14px; border-radius: var(--radius-pill); background: var(--color-surface-alt); overflow: hidden; }
+.skel i:nth-child(1) { width: 60%; height: 18px; }
+.skel i:nth-child(2) { width: 100%; }
+.skel i:nth-child(3) { width: 85%; }
+.skel i:nth-child(4) { width: 92%; }
+.skel i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--color-surface), transparent); opacity: .7; animation: motion-shimmer 1.3s ease-in-out infinite; }
+
+/* ---- 5) احتفال صغير عند النجاح في وضع الدراسة ---- */
+@keyframes motion-pop { 0% { transform: scale(.4); opacity: 0; } 55% { transform: scale(1.35); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes motion-burst { from { transform: scale(.4); opacity: 1; } to { transform: scale(3); opacity: 0; } }
+.study-card.is-pass .study-score { display: inline-block; position: relative; animation: motion-pop 600ms var(--motion-enter) both; }
+.study-card.is-pass .study-score::before, .study-card.is-pass .study-score::after {
+  content: ""; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
+  border: 2px solid var(--color-success); animation: motion-burst 900ms ease-out 200ms both;
+}
+.study-card.is-pass .study-score::after { border-color: var(--color-secondary); animation-delay: 380ms; }
+
+/* ===================== Step 60: موشن تفاعلي (بطلب محمد 2026-10-19) ===================== */
+
+/* ---- 6) انتقال ناعم بين الصفحات (View Transitions بين المستندات؛ سفاري 18.2+ وكروم 126+، وغيرها يتجاهله).
+   الرأس والقائمة ثابتان، والمحتوى يخرج سريعاً ويدخل من الأسفل؛ وصورة المادة تنتقل من بطاقتها إلى رأس صفحتها. ---- */
+@view-transition { navigation: auto; }
+.site-header { view-transition-name: site-header; }
+.sidebar { view-transition-name: site-nav; }
+.course-art { view-transition-name: course-art; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-10px) scale(.985); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(18px); } }
+::view-transition-old(root) { animation: vt-out 160ms var(--motion-ease) both; }
+::view-transition-new(root) { animation: vt-in 380ms var(--motion-enter) 40ms both; }
+::view-transition-group(course-art) { animation-duration: 460ms; animation-timing-function: var(--motion-enter); }
+::view-transition-group(site-header), ::view-transition-group(site-nav) { animation: none; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* ---- 7) موجة اللمس: دائرة تنتشر من مكان الإصبع (js/motion.js يضيف .rp داخل العنصر) ---- */
+.rp-rel { position: relative; }
+.rp { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 0; }
+.rp i { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: currentColor; opacity: .22; transform: scale(0); animation: rp-wave 560ms var(--motion-enter) forwards; }
+.btn-primary .rp i, .mm-cta .rp i { background: var(--color-surface); opacity: .35; }
+@keyframes rp-wave { to { transform: scale(var(--rp-s, 20)); opacity: 0; } }
+
+/* ---- 8) ميلان ثلاثي الأبعاد للبطاقات يتبع المؤشر أو الإصبع، مع لمعة خفيفة ---- */
+.tilt { transform-style: preserve-3d; will-change: transform; }
+.tilt.is-tilting { transition: transform 90ms linear, box-shadow var(--motion-base); }
+.tilt-glare { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1; opacity: 0; transition: opacity var(--motion-base);
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), color-mix(in srgb, var(--color-surface) 55%, transparent), transparent 60%); mix-blend-mode: soft-light; }
+.tilt.is-tilting .tilt-glare { opacity: 1; }
+
+/* ---- 9) أشرطة التقدم تمتلئ عند ظهورها ---- */
+.bar i { transition: width 900ms var(--motion-enter); }
+
+/* ---- 10) النوافذ تنبثق من مكانها، والقائمة الجانبية تنزلق عناصرها بالتتابع ---- */
+@keyframes dlg-in { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+@keyframes dlg-fade { from { opacity: 0; } }
+.mc-dialog[open], .edit-dialog[open] { animation: dlg-in 300ms var(--motion-enter) both; }
+.viewer[open] { animation: vt-in 320ms var(--motion-enter) both; }
+.mc-dialog[open]::backdrop, .viewer[open]::backdrop, .edit-dialog[open]::backdrop { animation: dlg-fade 240ms ease both; }
+@keyframes nav-in { from { opacity: 0; transform: translateX(var(--nav-from, 18px)); } }
+html[dir="ltr"] { --nav-from: -18px; }
+.nav-open .sidebar .nav-item { animation: nav-item-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 28ms + 120ms); }
+
+/* ---- 11) وضع الدراسة: البطاقة تدخل، الإجابة الصحيحة تنبض والخاطئة تهتز ---- */
+@keyframes study-in { from { opacity: 0; transform: translateX(var(--study-from, -24px)); } }
+html[dir="ltr"] { --study-from: 24px; }
+.study-card { animation: study-in 380ms var(--motion-enter) both; }
+@keyframes ok-pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 55%, transparent); } 40% { transform: scale(1.03); } 100% { transform: scale(1); box-shadow: 0 0 0 14px transparent; } }
+@keyframes no-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+.study-opt.is-correct { animation: ok-pulse 650ms var(--motion-enter); }
+.study-opt.is-wrong { animation: no-shake 420ms ease; }

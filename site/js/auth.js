@@ -2,7 +2,7 @@
    بلا حساب يبقى كل شيء محلياً كما كان. مع الحساب: تُحفظ نسخة على الخادم وتُدمج عند الدخول. */
 (function () {
   "use strict";
-  var SYNC = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study"];
+  var SYNC = ["ms.fav", "ms.read", "ms.last", "ms.exam", "ms.review", "ms.study", "ms.sem", "ms.planner", "ms.tasks", "ms.focus"];
   var TKEY = "ms.sync.t"; // وقت آخر تعديل محلي لكل مفتاح
   var MS = window.MS || null;
   var user = null;
@@ -107,31 +107,96 @@
     a.id = "accountBtn";
     a.className = "btn btn-secondary btn-sm";
     a.href = "login.html?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search);
-    a.textContent = user ? (user.name.split(" ")[0] || "حسابي") : "تسجيل الدخول";
+    var label = user ? (user.name.split(" ")[0] || "حسابي") : "تسجيل الدخول";
+    // على الهاتف يظهر الزر أيقونة فقط (44px) حتى لا يتجاوز الرأس عرض الشاشة؛ الاسم يبقى للقارئ الصوتي
+    if (window.MS && MS.icon) { var ic = MS.icon("user", 20); ic.setAttribute("aria-hidden", "true"); a.appendChild(ic); }
+    var t = document.createElement("span"); t.className = "acct-label"; t.textContent = label; a.appendChild(t);
+    a.setAttribute("aria-label", label);
     if (user) a.setAttribute("data-i18n-skip", "");
     box.insertBefore(a, box.firstChild);
   }
 
+  /* ---------- القائمة الجانبية (nav.js يرسم «زائر»؛ نحدّثها بعد معرفة الجلسة) ---------- */
+  function paintSidebar() {
+    var box = document.querySelector(".sb-user");
+    if (!box || box.getAttribute("data-auth")) return;
+    var text = box.querySelector(".sb-user-text"), strong = text && text.querySelector("strong"), small = text && text.querySelector("small");
+    if (!text || !strong) return;
+    box.setAttribute("data-auth", user ? "user" : "guest");
+    var act;
+    if (user) {
+      strong.textContent = user.name || user.email;
+      strong.setAttribute("data-i18n-skip", "");
+      // سطر مستقل (سطر الكورس يملؤه js/my-course.js)
+      var note = document.createElement("small"); note.className = "sb-acct-note"; note.textContent = "تقدّمك محفوظ في حسابك";
+      text.appendChild(note);
+      act = document.createElement("button");
+      act.type = "button";
+      act.textContent = "تسجيل الخروج";
+      act.addEventListener("click", function () {
+        act.disabled = true;
+        MSAuth.logout().then(function () { location.reload(); });
+      });
+    } else {
+      act = document.createElement("a");
+      act.href = "login.html?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search);
+      act.textContent = "سجّل الدخول لحفظ تقدّمك";
+    }
+    act.className = "sb-auth-action";
+    text.appendChild(act);
+    if (window.I18N && I18N.apply) I18N.apply();
+  }
+
+  var meStatus = 200;
   window.MSAuth = {
     api: api,
     user: function () { return user; },
     me: function () {
-      return api("GET", "auth/me").then(function (r) { user = r.status === 200 ? r.data.user : null; return user; });
+      return api("GET", "auth/me").then(function (r) {
+        meStatus = r.status;
+        if (r.status === 200) { user = r.data.user; try { localStorage.setItem("ms.userCache", JSON.stringify(user)); } catch (e) {} }
+        else if (r.status === 0) { try { user = JSON.parse(localStorage.getItem("ms.userCache") || "null"); } catch (e) { user = null; } } // بلا إنترنت: آخر حساب معروف على هذا الجهاز
+        else { user = null; try { localStorage.removeItem("ms.userCache"); } catch (e) {} }
+        return user;
+      });
     },
     afterLogin: function (u) { user = u; },
     logout: function () {
       return flush().then(function () { return api("POST", "auth/logout"); }).then(function () {
-        SYNC.concat([TKEY]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
+        SYNC.concat([TKEY, "ms.authed", "ms.guest", "ms.userCache"]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
         user = null;
       });
     }
   };
 
   // صفحة الدخول تدير نفسها (js/login.js)
-  if (/\/(login|admin|announce)\.html$/.test(location.pathname)) return;
+  if (/\/(login|admin|announce)(\.html)?$/.test(location.pathname)) return; // Cloudflare يختصر login.html إلى /login
+
+  /* نبضة نشاط كل دقيقة والصفحة ظاهرة ومتصلة: يعرف المشرف كم ساعة استعمل الطالب الموقع وكم منها في القراءة والدراسة */
+  var pingTimer = null;
+  function startPing() {
+    if (pingTimer || !user) return;
+    var study = /\/(pdf-notes|study)(\.html)?$/.test(location.pathname);
+    pingTimer = setInterval(function () {
+      if (document.visibilityState === "visible" && navigator.onLine !== false) api("POST", "auth/ping", { mode: study ? "study" : "site" });
+    }, 60000);
+  }
 
   MSAuth.me().then(function () {
+    // صفحة الدخول أولاً (بطلب محمد 2026-10-19): من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يذهب إليها
+    if (user) lsSet("ms.authed", "1");
+    else if (meStatus === 0 && lsGet("ms.authed")) { /* بلا إنترنت: لا نحوّله إلى صفحة الدخول ولا نمسح دخوله */ }
+    else {
+      lsDel("ms.authed");
+      if (!lsGet("ms.guest") && !/\/(login|privacy|terms)(\.html)?$/.test(location.pathname)) {
+        location.replace("login.html?gate=1&next=" + encodeURIComponent((location.pathname.split("/").pop() || "index.html") + location.search + location.hash));
+        return;
+      }
+    }
+    startPing();
+    try { document.dispatchEvent(new CustomEvent("ms:user", { detail: user })); } catch (e) { /* متصفح قديم */ } // يقرؤه بانر الرئيسية للترحيب بالاسم
     paintHeader();
+    paintSidebar();
     if (!user) return;
     pull().then(function (changed) {
       var guard = "ms.sync.reloaded";

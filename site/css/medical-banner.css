@@ -1,0 +1,215 @@
+/* css/medical-banner.css — بانر الرئيسية الطبي المتحرك (المرجع: MEDIXA-Medical-Banner.html، بطلب محمد 2026-10-19)
+   مكوّن مستقل بنطاق .mm-banner مثل semester.css. ألوانه متغيرات --mm-* في أول الملف (فاتح ثم داكن).
+   المشهد مرسوم في عالم ثابت 460×360 يُكبَّر ويُصغَّر كله (js/medical-banner.js)، والحركة على transform وopacity فقط. */
+
+.mm-banner {
+  --mm-bg: #f3f5f8;
+  --mm-ink: #202b40;
+  --mm-secondary: #5c6b80;
+  --mm-blue: #3969e8;
+  --mm-cyan: #3f97b0;
+  --mm-paper: #ffffff;
+  --mm-paper-back: #e9eef5;
+  --mm-line: #d6dfec;
+  --mm-shadow: rgba(41, 67, 99, 0.17);
+  --mm-shadow-soft: rgba(41, 67, 99, 0.10);
+  --mm-button: #25364e;
+  --mm-button-hover: #3969e8;
+  --mm-button-text: #ffffff;
+  --mm-glint: rgba(255, 255, 255, 0.67);
+  --mm-glint-blue: rgba(120, 170, 255, 0.33);
+  --mm-ambient-1: rgba(57, 105, 232, 0.07);
+  --mm-ambient-2: rgba(63, 151, 176, 0.08);
+  --mm-border: var(--color-border);
+  --mm-radius: 20px;
+  container-type: inline-size;
+  margin-block: 0;
+}
+:root[data-theme="dark"] .mm-banner {
+  --mm-bg: #111a26;
+  --mm-ink: #eef4fc;
+  --mm-secondary: #a3b0c5;
+  --mm-blue: #8bb3ff;
+  --mm-cyan: #6bbfd4;
+  --mm-paper: #283346;
+  --mm-paper-back: #1b2535;
+  --mm-line: #495b73;
+  --mm-shadow: rgba(0, 0, 0, 0.5);
+  --mm-shadow-soft: rgba(0, 0, 0, 0.32);
+  --mm-button: #e4edfa;
+  --mm-button-hover: #ffffff;
+  --mm-button-text: #15223a;
+  --mm-glint: rgba(255, 255, 255, 0.5);
+  --mm-glint-blue: rgba(139, 179, 255, 0.3);
+  --mm-ambient-1: rgba(139, 179, 255, 0.07);
+  --mm-ambient-2: rgba(107, 191, 212, 0.08);
+  --mm-border: rgba(255, 255, 255, 0.06);
+}
+
+/* ---- الإطار ---- */
+.mm-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 2.28;
+  min-height: 196px;
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius);
+  background: var(--mm-bg);
+  color: var(--mm-ink);
+  direction: ltr;
+}
+.mm-ambient {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 17% 25%, var(--mm-ambient-1), transparent 55%),
+    radial-gradient(ellipse at 45% 100%, var(--mm-ambient-2), transparent 64%);
+}
+.mm-bottom-line { position: absolute; inset-inline: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--mm-cyan), transparent); opacity: .25; }
+
+/* ---- الهوية والنص (ثابتة في اليمين) ---- */
+.mm-brand { position: absolute; right: 5.4%; top: 7.5%; z-index: 5; display: flex; align-items: center; gap: 8px; font-family: Inter, Arial, sans-serif; font-size: clamp(12px, 1.45cqw, 13px); font-weight: 700; letter-spacing: 3.2px; color: var(--mm-ink); }
+.mm-brand b { color: var(--mm-blue); font-weight: 700; }
+.mm-logo { width: clamp(18px, 2.4cqw, 24px); height: auto; padding: 2px; border-radius: 6px; background: var(--logo-bg); }
+.mm-copy { position: absolute; right: 5.4%; top: 25%; z-index: 5; width: 40.2%; direction: rtl; text-align: right; }
+html[dir="ltr"] .mm-copy { direction: ltr; text-align: left; }
+.mm-eyebrow { display: flex; align-items: center; gap: 7px; max-width: 100%; margin: 0 0 6px; color: var(--mm-secondary); font-size: clamp(12px, 1.6cqw, 14px); white-space: nowrap; }
+.mm-eyebrow > span:first-child { flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--mm-cyan); }
+.mm-eyebrow-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.mm-eyebrow-text.is-greet { color: var(--mm-ink); font-weight: 600; animation: mm-greet .9s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes mm-greet { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.mm-copy h1 { margin: 0; color: var(--mm-ink); font-size: clamp(22px, 5.3cqw, 48px); font-weight: 600; line-height: 1.26; letter-spacing: -1px; }
+.mm-copy h1 > span { display: block; }
+html[lang="en"] .mm-copy h1 { font-size: clamp(20px, 4.5cqw, 42px); letter-spacing: -.6px; }
+.mm-copy h1 .mm-l2 { color: var(--mm-blue); }
+.mm-sub { margin: 10px 0 13px; color: var(--mm-secondary); font-size: clamp(12px, 1.6cqw, 15px); line-height: 1.7; }
+.mm-cta {
+  display: inline-flex; align-items: center; gap: 14px; min-height: 40px; padding: 9px 18px; white-space: nowrap;
+  border-radius: 999px; background: var(--mm-button); color: var(--mm-button-text);
+  font-size: clamp(12px, 1.6cqw, 15px); font-weight: 600; text-decoration: none;
+  box-shadow: 0 7px 13px -7px var(--mm-shadow);
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1), background-color .3s;
+}
+.mm-cta:hover { background: var(--mm-button-hover); transform: translateY(-2px); }
+.mm-cta:focus-visible { outline: none; box-shadow: var(--focus-ring), 0 7px 13px -7px var(--mm-shadow); }
+.mm-cta svg { width: 16px; height: 16px; flex: none; }
+html[dir="ltr"] .mm-cta svg { transform: scaleX(-1); }
+
+/* ---- المشهد (يسار) ---- */
+.mm-visual { position: absolute; left: 0; top: 0; bottom: 0; width: 54%; overflow: hidden; touch-action: pan-y; } /* السحب الأفقي يميل المشهد، والعمودي يمرّر الصفحة */
+.mm-scroll { position: absolute; inset: 0; will-change: transform, opacity; }
+.mm-world { position: absolute; left: 50%; top: 50%; width: 460px; height: 360px; transform: translate(-50%, -50%); transform-style: preserve-3d; perspective: 950px; }
+.mm-world > * { position: absolute; will-change: transform, opacity; }
+.mm-brain { left: 61px; top: 20px; width: 340px; height: 340px; z-index: 4; transform-origin: 50% 55%; }
+.mm-brain-image { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(5px 22px 15px var(--mm-shadow)); user-select: none; -webkit-user-drag: none; }
+.mm-brain-light { position: absolute; inset: 0; overflow: hidden; -webkit-mask: url("../assets/brain-pearl.webp") center / contain no-repeat; mask: url("../assets/brain-pearl.webp") center / contain no-repeat; mix-blend-mode: soft-light; pointer-events: none; }
+.mm-brain-light > i { position: absolute; inset: 0 -60%; background: linear-gradient(110deg, transparent 38%, var(--mm-glint) 49%, var(--mm-glint-blue) 53%, transparent 62%); transform: translateX(-60%); will-change: transform; }
+.mm-floor { left: 124px; top: 308px; width: 215px; height: 22px; border-radius: 50%; background: var(--mm-shadow); filter: blur(16px); }
+.mm-orbit { left: 84px; top: 184px; width: 300px; height: 150px; border-radius: 50%; border: 1px solid var(--mm-blue); opacity: 0; }
+.mm-plane { left: 105px; top: 65px; width: 245px; height: 226px; z-index: 2; overflow: hidden; border-radius: 18px; background: linear-gradient(145deg, var(--mm-paper), var(--mm-paper-back)); box-shadow: 0 0 0 1px var(--mm-line), 0 15px 32px -16px var(--mm-shadow); opacity: 0; }
+.mm-plane-front { z-index: 3; }
+.mm-plane-bar { position: absolute; left: 16px; right: 16px; top: 18px; height: 1px; background: var(--mm-line); }
+.mm-plane-bar::after { content: "MEDIXA / ANATOMY"; position: absolute; top: 9px; font: 8px/1 Arial, sans-serif; letter-spacing: 1px; color: var(--mm-secondary); }
+
+.mm-stage { left: 40px; top: 24px; z-index: 6; width: 260px; height: 16px; font: 9px/16px Arial, sans-serif; letter-spacing: 1.6px; color: var(--mm-secondary); white-space: nowrap; }
+.mm-stage > span { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateY(-5px); transition: opacity .3s ease-in, transform .35s ease-in; }
+.mm-stage > span.is-on { opacity: 1; transform: none; transition: opacity .6s ease-out .32s, transform .8s cubic-bezier(.16, 1, .3, 1) .32s; }
+.mm-stage b { color: var(--mm-blue); font-size: 11px; font-weight: 400; letter-spacing: 0; }
+.mm-motto { left: 94px; bottom: 17px; z-index: 6; font: 7px/1 Arial, sans-serif; letter-spacing: 1.7px; color: var(--mm-secondary); opacity: .8; white-space: nowrap; }
+
+.mm-tag { left: 36px; top: 251px; z-index: 7; display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 11px; background: var(--mm-paper); box-shadow: 0 12px 23px -10px var(--mm-shadow); }
+.mm-tag-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--mm-blue); box-shadow: 0 0 0 4px var(--mm-ambient-1); }
+.mm-tag div { display: flex; flex-direction: column; gap: 4px; font-family: Arial, sans-serif; }
+.mm-tag strong { font-size: 9px; font-weight: 500; letter-spacing: 1.4px; }
+.mm-tag div > span { font-size: 8px; color: var(--mm-secondary); }
+
+/* ---- البطاقات الطبية ---- */
+.mm-card { overflow: hidden; border-radius: 15px; background: linear-gradient(145deg, var(--mm-paper), var(--mm-paper-back)); box-shadow: 0 0 0 1px var(--mm-line), 1px 3px 1px var(--mm-shadow-soft), 0 22px 35px -13px var(--mm-shadow); font-family: Arial, sans-serif; color: var(--mm-ink); backface-visibility: hidden; opacity: 0; }
+.mm-card-label { display: flex; align-items: center; gap: 7px; color: var(--mm-secondary); font-size: 8px; letter-spacing: 1.05px; white-space: nowrap; }
+.mm-card-label svg { flex: none; width: 13px; height: 13px; fill: none; stroke: var(--mm-blue); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mm-card em { font-style: normal; color: var(--mm-blue); }
+.mm-note { left: 235px; top: 106px; z-index: 7; width: 174px; height: 208px; padding: 19px; }
+.mm-note h3 { margin: 20px 0 17px; font: 500 21px/1.14 Arial, sans-serif; letter-spacing: -.6px; color: var(--mm-ink); }
+.mm-line { height: 4px; margin-top: 8px; border-radius: 3px; background: var(--mm-line); }
+.mm-line-long { width: 100%; background: linear-gradient(90deg, var(--mm-blue), var(--mm-line)); opacity: .55; }
+.mm-line-medium { width: 78%; }
+.mm-line-short { width: 56%; }
+.mm-note-foot { position: absolute; left: 19px; bottom: 17px; font-size: 7px; letter-spacing: 1.2px; color: var(--mm-secondary); }
+.mm-clinical { left: 104px; top: 66px; z-index: 9; width: 255px; height: 248px; padding: 22px; }
+.mm-clinical-title { margin: 20px 0 15px; font-size: 25px; line-height: 1.08; letter-spacing: -.8px; }
+.mm-row { position: relative; display: flex; align-items: center; gap: 9px; margin-top: 4px; padding: 9px 7px; border-radius: 6px; font-size: 10px; color: var(--mm-secondary); }
+.mm-row > span { font-size: 8px; color: var(--mm-blue); }
+.mm-row-last::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--mm-blue); opacity: calc(var(--mm-pick, 0) * .1); }
+.mm-row-last b { margin-left: auto; color: var(--mm-blue); opacity: var(--mm-pick, 0); transform: scale(calc(.6 + var(--mm-pick, 0) * .4)); }
+.mm-card-foot { display: flex; justify-content: space-between; margin-top: 11px; font-size: 7px; letter-spacing: 1px; color: var(--mm-secondary); }
+.mm-dot { color: var(--mm-cyan); }
+.mm-physio { left: 22px; top: 74px; z-index: 7; width: 173px; height: 92px; padding: 15px 16px; }
+.mm-wave { display: block; width: 100%; height: 45px; margin-top: 6px; overflow: visible; }
+.mm-wave path { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mm-wave-base { stroke: var(--mm-line); }
+.mm-wave-lit { stroke: var(--mm-blue); stroke-dasharray: 70 310; }
+.mm-link-line { left: 47px; right: 43px; bottom: 26px; height: 1px; background: linear-gradient(90deg, transparent, var(--mm-blue), transparent); transform-origin: left; opacity: 0; }
+
+/* ---- البطاقات روابط: الوسم والبطاقات تفتح أقسامها (Step 54) ---- */
+.mm-world, .mm-world * { pointer-events: none; } /* الطبقات الزخرفية لا تلتقط اللمس؛ البطاقات الروابط فقط */
+.mm-world .mm-link, .mm-world .mm-link * { pointer-events: auto; }
+.mm-world .mm-link.is-faint, .mm-world .mm-link.is-faint * { pointer-events: none; }
+.mm-link { color: inherit; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mm-card.mm-link { display: block; }
+.mm-link::after {
+  content: "↗"; position: absolute; top: 10px; right: 10px;
+  display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--mm-blue); color: var(--mm-paper); font: 700 10px/1 Arial, sans-serif;
+  opacity: 0; transform: scale(.6); transition: opacity .25s, transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+.mm-tag.mm-link { position: absolute; }
+.mm-tag.mm-link::after { top: -7px; right: -7px; }
+.mm-link:hover::after { opacity: 1; transform: none; }
+.mm-card.mm-link, .mm-tag.mm-link { transition: box-shadow .3s ease; }
+.mm-card.mm-link:hover { box-shadow: 0 0 0 1.5px var(--mm-blue), 1px 3px 1px var(--mm-shadow-soft), 0 26px 40px -14px var(--mm-shadow); }
+.mm-tag.mm-link:hover { box-shadow: 0 0 0 1.5px var(--mm-blue), 0 12px 23px -10px var(--mm-shadow); }
+
+/* ---- بطاقتا «تابع» و«تبليغ» (تظهران فقط ببيانات حقيقية) ---- */
+.mm-world [hidden] { display: none !important; }
+.mm-resume { left: 288px; top: 258px; z-index: 8; width: 152px; padding: 11px 13px; }
+.mm-resume-name { display: -webkit-box; margin-top: 7px; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font: 600 12px/1.3 Arial, sans-serif; color: var(--mm-ink); }
+.mm-ann { left: 266px; top: 16px; z-index: 8; width: 178px; padding: 11px 13px; }
+.mm-ann-title { display: -webkit-box; margin: 7px 0 0; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font: 600 12px/1.4 "IBM Plex Sans Arabic", Tahoma, sans-serif; color: var(--mm-ink); }
+.mm-ann .mm-card-label svg { stroke: var(--mm-cyan); }
+
+/* ---- زر إيقاف الحركة (صغير في الزاوية) ---- */
+.mm-toggle {
+  position: absolute; left: 12px; bottom: 10px; z-index: 8;
+  display: grid; place-items: center; width: 30px; height: 30px; padding: 0;
+  border: 1px solid var(--mm-line); border-radius: 50%;
+  background: var(--mm-paper); color: var(--mm-secondary); cursor: pointer;
+  opacity: .72; transition: opacity .25s, color .25s;
+}
+.mm-toggle::before { content: ""; position: absolute; inset: -7px; }
+.mm-toggle:hover, .mm-toggle:focus-visible { opacity: 1; color: var(--mm-blue); }
+.mm-toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.mm-toggle svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.mm-toggle .mm-i-play { display: none; fill: currentColor; stroke-width: 1.6; }
+.mm-toggle[aria-pressed="true"] .mm-i-pause { display: none; }
+.mm-toggle[aria-pressed="true"] .mm-i-play { display: block; }
+
+/* ---- الشاشات الصغيرة: نُبقي العنوان والزر والدماغ والبطاقات الأساسية ---- */
+@container (max-width: 560px) {
+  .mm-hero { --mm-radius: 16px; }
+  .mm-brand { right: 5%; top: 8%; letter-spacing: 2px; gap: 6px; }
+  .mm-copy { right: 5%; top: 25%; width: 43%; }
+  .mm-sub, .mm-motto, .mm-plane-back, .mm-orbit { display: none; }
+  .mm-eyebrow { gap: 5px; margin-bottom: 4px; font-size: 12px; }
+  .mm-copy h1 { font-size: clamp(20px, 5.7cqw, 30px); letter-spacing: -.5px; }
+  .mm-cta { gap: 8px; min-height: 36px; margin-top: 12px; padding: 7px 12px; font-size: 12px; }
+  .mm-cta svg { width: 14px; height: 14px; }
+  .mm-visual { width: 51%; }
+  .mm-toggle { left: 8px; bottom: 8px; width: 28px; height: 28px; }
+}
+@container (max-width: 380px) {
+  .mm-copy { right: 4%; width: 50%; }
+  .mm-visual { width: 46%; }
+  .mm-cta { gap: 6px; padding: 7px 10px; }
+  .mm-stage { display: none; }
+}

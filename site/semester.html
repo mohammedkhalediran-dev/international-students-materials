@@ -13,12 +13,14 @@
   <meta name="theme-color" content="#13294B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
-  <link rel="stylesheet" href="css/style.css?v=p3-23">
-  <link rel="stylesheet" href="css/semester.css?v=p3-23">
+  <link rel="stylesheet" href="css/style.css?v=off98">
+  <link rel="stylesheet" href="css/motion.css?v=side66c">
+  <link rel="stylesheet" href="css/semester.css?v=step58">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
     try { var l = JSON.parse(localStorage.getItem("ms.lang")); if (l === "en" || l === "fa") { document.documentElement.lang = l; document.documentElement.dir = l === "en" ? "ltr" : "rtl"; } } catch (e) {}
     try { if (JSON.parse(localStorage.getItem("ms.nav")) === "min") document.documentElement.classList.add("nav-min"); } catch (e) {}
+    try { if (!localStorage.getItem("ms.authed") && !localStorage.getItem("ms.guest")) location.replace("login.html?gate=1&next=" + encodeURIComponent((location.pathname.split("/").pop() || "index.html") + location.search + location.hash)); } catch (e) {}
   </script>
 </head>
 <body class="semester-design">
@@ -36,7 +38,7 @@
   <header class="site-header">
     <div class="container header-inner">
       <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="القائمة" aria-expanded="false" aria-controls="sidebar"></button>
-      <a class="semester-brand" href="index.html" aria-label="Medixa">Medixa</a>
+      <a class="site-wordmark" href="index.html" aria-label="Medixa">Medixa</a>
       <button class="search-pill" id="searchBtn" type="button" aria-label="بحث"><span>ابحث عن مادة أو أستاذ أو محاضرة</span></button>
       <div class="header-actions">
         <a class="icon-btn" id="favLink" href="index.html#favorites" aria-label="المفضلة"></a>
@@ -93,30 +95,21 @@
     <div class="container footer-bottom" id="footBottom"></div>
   </footer>
 
-  <nav class="mobile-dock" aria-label="التنقل الرئيسي">
-    <a href="index.html" data-dock="home"><span>الرئيسية</span></a>
-    <a href="#content" data-dock="grid" aria-current="page"><span>المواد</span></a>
-    <button type="button" data-dock="search" onclick="document.getElementById('searchBtn').click()"><span>بحث</span></button>
-    <a href="index.html#latest" data-dock="file"><span>المحاضرات</span></a>
-    <a href="index.html#favorites" data-dock="star"><span>المفضلة</span></a>
-  </nav>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="data/courses.js?v=p3-23"></script>
+  <script src="data/courses.js?v=step67"></script>
   <script src="api/uploads.js"></script>
-  <script src="js/i18n.js?v=p3-23"></script>
-  <script src="js/app.js?v=p3-23"></script>
-  <script src="js/auth.js?v=p3-23"></script>
-  <script src="js/nav.js?v=p3-23"></script>
+  <script src="js/i18n.js?v=off95"></script>
+  <script src="js/app.js?v=side66"></script><script src="js/auth.js?v=adm100"></script>
+  <script src="js/nav.js?v=off98"></script><script src="js/motion.js?v=mv82"></script><script src="js/offline-auto.js?v=off97"></script><script src="js/my-course.js?v=step58"></script>
   <script>
     (function () {
       var $ = MS.$, el = MS.el;
       if (MS.dataError()) return;
       MS.initShared();
       MS.initHeader();
-      document.querySelectorAll('[data-dock]').forEach(function (node) {
-        node.insertBefore(MS.icon(node.getAttribute('data-dock'), 22), node.firstChild);
-      });
+
 
       var id = parseInt(new URLSearchParams(location.search).get("id"), 10);
       var sem = SEMESTERS.filter(function (s) { return s.id === id; })[0];

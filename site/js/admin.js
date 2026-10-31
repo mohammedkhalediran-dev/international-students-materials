@@ -1,58 +1,551 @@
-/* js/admin.js — إدارة الحسابات للمشرف (بالعربية فقط، مثل صفحة الرفع) */
+/* js/admin.js — مركز الإدارة (Step 53). يعمل على بيانات Medixa الحقيقية فقط عبر /api/auth/admin/*.
+   الصلاحيات تُفحص في الخادم لكل طلب؛ هذه الصفحة لا تخزّن صلاحيات ولا بيانات حسابات في المتصفح
+   (localStorage هنا لتفضيل المظهر فقط). لا تظهر رسالة نجاح قبل تأكيد الخادم. */
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
-  function msg(text, ok) { var n = $("msg"); n.textContent = text || ""; n.hidden = !text; n.className = "up-msg" + (ok ? " is-ok" : ""); }
+  var api = function (m, p, b) { return MSAuth.api(m, p, b); };
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function icon(n) { return '<svg aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
+  var NUM = new Intl.NumberFormat("ar-u-nu-latn");
+  var DT = new Intl.DateTimeFormat("ar-u-nu-latn", { day: "numeric", month: "short", year: "numeric" });
+  var DTT = new Intl.DateTimeFormat("ar-u-nu-latn", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-  var ROLE_NAME = { student: "طالب", uploader: "رافع ملفات", rep: "ممثل الدفعة", admin: "مشرف" };
+  var ROLES = {
+    admin: { name: "مشرف", color: "purple", icon: "shield", desc: "إدارة المنصة وفريق العمل", from: "ADMIN_EMAILS",
+      can: ["هذه الصفحة: الحسابات والأدوار والإيقاف والتصدير والسجل", "رفع المحاضرات والاختبارات من upload.html بلا رمز", "نشر التبليغات وحذفها", "مزامنة تقدّمه مثل أي حساب"], cannot: [] },
+    student: { name: "طالب", color: "blue", icon: "users", desc: "التعلّم والوصول للمحتوى (الدور الافتراضي لكل حساب جديد)", from: "student",
+      can: ["تصفّح مواد كورسه وأدوات الدراسة", "مزامنة المفضلة والتقدّم بين أجهزته", "الإشعارات وتخصيصها"], cannot: ["لا رفع ولا تبليغات ولا إدارة"] },
+    uploader: { name: "رافع ملفات", color: "green", icon: "up", desc: "تنظيم المحتوى التعليمي", from: "uploader",
+      can: ["رفع المحاضرات والاختبارات وأسئلة السنوات من upload.html بلا رمز", "كل ما يستطيعه الطالب"], cannot: ["لا تبليغات", "لا إدارة حسابات"] },
+    rep: { name: "ممثل الدفعة", color: "amber", icon: "bell", desc: "تنسيق مواد الدفعة وتبليغاتها", from: "rep",
+      can: ["رفع الملفات من upload.html بلا رمز", "نشر التبليغات وحذفها من announce.html (تصل كإشعار)", "كل ما يستطيعه الطالب"], cannot: ["لا إدارة حسابات"] }
+  };
+  var SEM = { 1: "الكورس الأول", 2: "الكورس الثاني", 3: "الكورس الثالث" };
+  var ACTION = { role: "تغيير الدور", status: "تغيير الحالة", semester: "تغيير الكورس", export: "تصدير CSV", push_test: "إشعار اختبار", timetable_add: "إضافة محاضرة للجدول", timetable_edit: "تعديل محاضرة في الجدول", timetable_delete: "حذف محاضرة من الجدول", timetable_publish: "نشر الجدول", timetable_unpublish: "إخفاء محاضرة من الجدول", timetable_cancel: "إلغاء محاضرة بتاريخ", timetable_move: "نقل محاضرة", timetable_restore: "إرجاع موعد محاضرة", timetable_import: "استيراد الجدول" };
+  var ERR = {
+    self_locked: "لا يمكنك إيقاف حسابك أنت من هذه الصفحة.", last_admin: "هذا آخر مشرف فعّال؛ لا يمكن إيقافه.",
+    admin_locked: "دور المشرف مقفل: يُحدَّد من ADMIN_EMAILS في Cloudflare.", bad_role: "هذا الدور غير مسموح.",
+    bad_semester: "اختر كورساً صحيحاً.", not_found: "الحساب غير موجود (ربما حُذف).", forbidden: "انتهت صلاحية المشرف لهذه الجلسة.",
+    unauthorized: "انتهت الجلسة. سجّل الدخول من جديد.", network: "تعذّر الاتصال بالخادم. تحقّق من الإنترنت ثم أعد المحاولة."
+  };
+  function errText(r) { var e = (r && r.data && r.data.error) || (r && r.status === 0 ? "network" : ""); return ERR[e] || "تعذّر تنفيذ الطلب (" + (r ? r.status : "?") + "). أعد المحاولة."; }
 
-  function load() {
-    MSAuth.api("GET", "auth/users").then(function (r) {
-      if (r.status === 401) { location.href = "login.html?next=admin.html"; return; }
-      if (r.status === 403) { msg("هذه الصفحة للمشرفين فقط."); return; }
-      if (r.status !== 200) { msg("تعذّر تحميل الحسابات. حاول مرة أخرى."); return; }
-      render(r.data.users);
+  var me = null, stats = null, state = { sort: "", dir: "desc", page: 1, per: matchMedia("(max-width: 620px)").matches ? 10 : 20 }, list = { users: [], pages: 1, count: 0 }, logPage = 1;
+  var opener = null;
+
+  /* ---------- أدوات عامة ---------- */
+  var toastTimer;
+  function toast(text, bad) { var t = $("toast"); clearTimeout(toastTimer); t.textContent = text; t.className = "toast" + (bad ? " err" : ""); t.hidden = false; toastTimer = setTimeout(function () { t.hidden = true; }, 4200); }
+  function busy(btn, on) { btn.disabled = on; if (on) btn.setAttribute("aria-busy", "true"); else btn.removeAttribute("aria-busy"); }
+  function initials(n) { return String(n || "؟").trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join(" "); }
+  function pill(color, text, dot) { return '<span class="pill ' + color + '">' + (dot ? '<span class="dot"></span>' : "") + esc(text) + "</span>"; }
+  function roleBadge(r) { var x = ROLES[r] || ROLES.student; return pill(x.color, x.name); }
+  function statusBadge(u) { return u.active ? pill("green", "نشط", true) : pill("red", "موقوف", true); }
+  function ago(ms) {
+    if (!ms) return '<span class="muted">لم يُسجَّل</span>';
+    var d = Date.now() - ms, day = 864e5;
+    if (d < 36e5) return "قبل أقل من ساعة";
+    if (d < day) return "اليوم";
+    if (d < 2 * day) return "أمس";
+    if (d < 7 * day) return "قبل " + NUM.format(Math.floor(d / day)) + " أيام";
+    return '<span class="num">' + esc(DT.format(ms)) + "</span>";
+  }
+  function hrs(sec) { sec = Number(sec) || 0; return sec < 3600 ? NUM.format(Math.round(sec / 60)) + " د" : NUM.format(Math.round(sec / 360) / 10) + " س"; }
+  function courseName(id) { try { var c = (typeof COURSES !== "undefined" ? COURSES : []).filter(function (x) { return x.id === id; })[0]; return c ? c.name : String(id).replace(/-/g, " "); } catch (e) { return String(id); } }
+  function openDialog(id, from) { opener = from || document.activeElement; $(id).showModal(); }
+  document.addEventListener("close", function (e) { if (e.target.tagName === "DIALOG" && opener && document.contains(opener)) { opener.focus(); } }, true);
+
+  /* ---------- المظهر والقائمة ---------- */
+  function setTheme(light) {
+    document.documentElement.setAttribute("data-admin-theme", light ? "light" : "dark");
+    $("themeToggle").setAttribute("aria-pressed", String(light));
+    try { localStorage.setItem("ms.admin.theme", light ? "light" : "dark"); } catch (e) { /* لا شيء */ }
+  }
+  $("themeToggle").setAttribute("aria-pressed", String(document.documentElement.getAttribute("data-admin-theme") === "light"));
+  $("themeToggle").addEventListener("click", function () { setTheme(document.documentElement.getAttribute("data-admin-theme") !== "light"); });
+  function menu(open) {
+    $("sidebar").classList.toggle("open", open); $("scrim").hidden = !open; $("menuToggle").setAttribute("aria-expanded", String(open));
+    if (open) { var f = document.querySelector(".navbtn.active"); if (f) f.focus(); }
+  }
+  $("menuToggle").addEventListener("click", function () { menu(!$("sidebar").classList.contains("open")); });
+  $("scrim").addEventListener("click", function () { menu(false); $("menuToggle").focus(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("sidebar").classList.contains("open")) { menu(false); $("menuToggle").focus(); } });
+
+  var TITLES = { accounts: "إدارة الحسابات", roles: "الأدوار والصلاحيات", notifications: "مركز الإشعارات", activity: "سجل التغييرات" };
+  function view(id, push) {
+    if (!TITLES[id]) id = "accounts";
+    document.querySelectorAll(".view").forEach(function (v) { v.hidden = v.id !== id; });
+    document.querySelectorAll(".navbtn").forEach(function (b) { var on = b.getAttribute("data-view") === id; b.classList.toggle("active", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+    $("crumbTitle").textContent = TITLES[id];
+    document.title = TITLES[id] + " | Medixa";
+    menu(false);
+    if (push !== false && location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
+    if (id === "notifications") loadPush();
+    if (id === "activity") loadAudit(1);
+    if (id === "roles") renderRoles();
+    window.scrollTo({ top: 0 });
+  }
+
+  /* ---------- الإحصاءات ---------- */
+  function loadStats() {
+    return api("GET", "auth/admin/stats").then(function (r) {
+      if (r.status !== 200) return;
+      stats = r.data.stats;
+      $("navCount").textContent = NUM.format(stats.total);
+      $("totalPill").textContent = NUM.format(stats.total) + " حساباً";
+      var t = stats.total || 1, cur = $("statusFilter").value;
+      var cards = [
+        ["إجمالي الحسابات", stats.total, "كل الأدوار والكورسات", "users", "", ""],
+        ["الحسابات النشطة", stats.active, Math.round(stats.active / t * 100) + "% مفعّلة، لا تعني متصلة", "check", "green", "active"],
+        ["دخلوا خلال 7 أيام", stats.recent, "حسب آخر تسجيل دخول", "login", "amber", null],
+        ["الحسابات الموقوفة", stats.suspended, stats.suspended ? "يمكن إعادة تفعيلها" : "لا يوجد حساب موقوف", "stop", "red", "suspended"],
+        ["نشطون هذا الأسبوع", stats.activeWeek || 0, "دخلوا أو استعملوا الموقع خلال 7 أيام", "login", "green", null],
+        ["غائبون أكثر من 14 يوماً", stats.away14 || 0, "حسابات فعّالة لم تُستعمل", "stop", "amber", null],
+        ["ساعات الاستخدام", Math.round(stats.hours || 0), (stats.studyHours ? NUM.format(stats.studyHours) + " ساعة منها في الدراسة" : "لا بيانات بعد (تُحسب من الآن)"), "eye", "blue", null],
+        ["أجهزة بإشعارات", stats.withDevices || 0, (stats.topCourses && stats.topCourses[0] ? "الأكثر فتحاً: " + courseName(stats.topCourses[0].id) + " (" + stats.topCourses[0].n + ")" : "حسابات فعّلت الإشعارات"), "users", "", null]
+      ];
+      $("stats").innerHTML = cards.map(function (c) {
+        var inner = '<div class="stat-top"><span>' + esc(c[0]) + '</span><span class="stat-icon">' + icon(c[3]) + "</span></div><strong>" + NUM.format(c[1]) + "</strong><small>" + esc(c[2]) + '</small><div class="track"><i style="width:' + Math.min(100, Math.round(c[1] / t * 100)) + '%"></i></div>';
+        return c[5] === null ? '<div class="stat ' + c[4] + '">' + inner + "</div>"
+          : '<button type="button" class="stat ' + c[4] + '" data-stat="' + c[5] + '" aria-pressed="' + (cur === c[5] && c[5] !== "" ? "true" : "false") + '" aria-label="عرض ' + esc(c[0]) + '">' + inner + "</button>";
+      }).join("");
+      renderRoles();
     });
   }
 
-  function render(users) {
-    var box = $("list");
-    box.textContent = "";
-    if (!users.length) { box.appendChild(el("p", "up-hint", "لا توجد حسابات بعد.")); return; }
-    users.forEach(function (u) {
-      var row = el("div", "up-item");
-      var main = el("div", "up-item-main");
-      main.appendChild(el("div", "up-item-name", u.name + (u.role !== "student" ? " (" + (ROLE_NAME[u.role] || u.role) + ")" : "") + (u.active ? "" : " (موقوف)")));
-      main.appendChild(el("div", "up-item-sub up-ltr", u.email));
-      row.appendChild(main);
-
-      var acts = el("div", "up-actions");
-      if (u.role !== "admin") {
-        var pick = el("select", "field");
-        pick.setAttribute("aria-label", "دور " + u.name);
-        ["student", "uploader", "rep"].forEach(function (r) {
-          var o = el("option", "", ROLE_NAME[r]); o.value = r; if (u.role === r) o.selected = true; pick.appendChild(o);
-        });
-        pick.addEventListener("change", function () {
-          MSAuth.api("POST", "auth/user", { id: u.id, role: pick.value }).then(function (r) {
-            if (r.status === 200) { msg("تم تغيير الدور.", true); load(); } else { msg("تعذّر تغيير الدور."); load(); }
-          });
-        });
-        acts.appendChild(pick);
+  /* ---------- قائمة الحسابات ---------- */
+  function query(extra) {
+    var q = new URLSearchParams();
+    var s = $("search").value.trim(); if (s) q.set("q", s);
+    [["role", "roleFilter"], ["status", "statusFilter"], ["sem", "semFilter"]].forEach(function (p) { if ($(p[1]).value) q.set(p[0], $(p[1]).value); });
+    if (extra) Object.keys(extra).forEach(function (k) { q.set(k, extra[k]); });
+    return q;
+  }
+  var reqId = 0;
+  function loadList() {
+    var id = ++reqId;
+    $("rows").innerHTML = new Array(4).join('<tr class="skel" aria-hidden="true"><td><i style="width:60%"></i></td><td><i></i></td><td><i></i></td><td class="stagecol"><i></i></td><td><i></i></td><td><i></i></td><td><i></i></td></tr>') ;
+    $("listState").hidden = true; $("results").textContent = "جارٍ التحميل…";
+    return api("GET", "auth/admin/users?" + query(state.sort ? { page: state.page, per: state.per, sort: state.sort, dir: state.dir } : { page: state.page, per: state.per })).then(function (r) {
+      if (id !== reqId) return;
+      if (r.status !== 200) {
+        $("rows").innerHTML = ""; $("pages").innerHTML = ""; $("results").textContent = "";
+        showState("error", errText(r), "إعادة المحاولة", loadList);
+        return;
       }
-      var toggle = el("button", "btn btn-secondary btn-sm", u.active ? "إيقاف" : "تفعيل");
-      toggle.type = "button";
-      toggle.addEventListener("click", function () {
-        MSAuth.api("POST", "auth/user", { id: u.id, active: !u.active }).then(function (r) {
-          if (r.status === 200) { msg("تم التحديث.", true); load(); } else msg("تعذّر التحديث.");
-        });
-      });
-      acts.appendChild(toggle);
-
-      row.appendChild(acts);
-      box.appendChild(row);
+      list = r.data; state.page = r.data.page;
+      renderRows();
     });
   }
-  load();
+  function showState(kind, text, btn, fn) {
+    var s = $("listState"); s.hidden = false; s.className = "state" + (kind === "error" ? " error" : "");
+    s.innerHTML = esc(text) + (btn ? '<br><button type="button" class="btn">' + esc(btn) + "</button>" : "");
+    if (btn) s.querySelector("button").addEventListener("click", fn);
+  }
+  function renderRows() {
+    var rows = list.users || [];
+    $("rows").innerHTML = rows.map(function (u) {
+      var self = u.id === list.me, r = ROLES[u.role] || ROLES.student;
+      var lockStatus = self ? "حسابك أنت محمي من الإيقاف هنا" : (u.role === "admin" && u.active && list.activeAdmins <= 1 ? "آخر مشرف فعّال محمي" : "");
+      return '<tr><td class="c-person"><button type="button" class="person personbtn" data-action="detail" data-id="' + u.id + '"><span class="avatar ' + r.color + '">' + esc(initials(u.name)) + "</span><span><strong>" + esc(u.name) + (self ? ' <span class="you">(أنت)</span>' : "") + '</strong><span class="email">' + (u.fullName && u.fullName !== u.name ? esc(u.fullName) + " · " : "") + esc(u.email) + "</span></span></button></td>" +
+        '<td class="c-last">' + ago(u.lastActive || u.lastLogin) + "</td>" +
+        '<td class="hourscol"><span class="num">' + hrs(u.siteSec) + "</span>" + (u.studySec ? ' <small class="muted">· ' + hrs(u.studySec) + " دراسة</small>" : "") + "</td>" +
+        '<td class="stagecol"><span class="muted">' + esc(u.semester ? SEM[u.semester] : "غير محدد") + "</span></td>" +
+        "<td>" + roleBadge(u.role) + "</td><td>" + statusBadge(u) + "</td>" +
+        '<td class="c-actions"><div class="rowactions">' +
+        '<button type="button" class="iconbtn" data-action="detail" data-id="' + u.id + '" aria-label="تفاصيل ' + esc(u.name) + '" title="تفاصيل الحساب">' + icon("eye") + "</button>" +
+        '<button type="button" class="iconbtn" data-action="edit" data-id="' + u.id + '" aria-label="تعديل ' + esc(u.name) + '" title="تعديل الحساب">' + icon("edit") + "</button>" +
+        '<button type="button" class="iconbtn ' + (u.active ? "stop" : "go") + '" data-action="status" data-id="' + u.id + '"' + (lockStatus ? " disabled" : "") +
+        ' aria-label="' + (u.active ? "إيقاف " : "إعادة تفعيل ") + esc(u.name) + '" title="' + esc(lockStatus || (u.active ? "إيقاف الحساب" : "إعادة التفعيل")) + '">' + icon(u.active ? "stop" : "check") + "</button>" +
+        "</div></td></tr>";
+    }).join("");
+    var filtered = query().toString() !== "";
+    if (!rows.length) {
+      if (filtered) showState("empty", "لا توجد حسابات تطابق البحث.", "مسح الفلاتر وإظهار الجميع", resetFilters);
+      else showState("empty", "لا توجد حسابات بعد. تُنشأ الحسابات عند أول دخول بحساب Google.");
+    } else $("listState").hidden = true;
+    var from = (list.page - 1) * list.per + 1, to = Math.min(list.page * list.per, list.count);
+    $("results").textContent = list.count ? "عرض " + NUM.format(from) + "–" + NUM.format(to) + " من " + NUM.format(list.count) + " حساباً" + (filtered ? " (بعد التصفية)" : "") : "لا توجد نتائج";
+    renderPages($("pages"), list.page, list.pages, function (p) { state.page = p; loadList(); });
+  }
+  function renderPages(box, page, pages, go) {
+    if (pages <= 1) { box.innerHTML = ""; return; }
+    var nums = [];
+    for (var i = 1; i <= pages; i++) if (i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i); else if (nums[nums.length - 1] !== "…") nums.push("…");
+    box.innerHTML = '<button type="button" data-p="' + (page - 1) + '"' + (page === 1 ? " disabled" : "") + ' aria-label="الصفحة السابقة">›</button>' +
+      nums.map(function (n) { return n === "…" ? '<span class="gap" aria-hidden="true">…</span>' : '<button type="button" data-p="' + n + '"' + (n === page ? ' class="current" aria-current="page"' : "") + ' aria-label="الصفحة ' + n + '">' + n + "</button>"; }).join("") +
+      '<button type="button" data-p="' + (page + 1) + '"' + (page >= pages ? " disabled" : "") + ' aria-label="الصفحة التالية">‹</button>';
+    box.onclick = function (e) { var b = e.target.closest("button[data-p]"); if (b && !b.disabled) go(Number(b.getAttribute("data-p"))); };
+  }
+  function resetFilters() { ["search", "roleFilter", "statusFilter", "semFilter"].forEach(function (id) { $(id).value = ""; }); state.page = 1; loadList(); loadStats(); }
+  var debounce;
+  $("search").addEventListener("input", function () { clearTimeout(debounce); debounce = setTimeout(function () { state.page = 1; loadList(); }, 250); });
+  ["roleFilter", "statusFilter", "semFilter"].forEach(function (id) { $(id).addEventListener("change", function () { state.page = 1; loadList(); if (id === "statusFilter") loadStats(); }); });
+  $("resetFilters").addEventListener("click", resetFilters);
+  $("stats").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-stat]"); if (!b) return;
+    ["search", "roleFilter", "semFilter"].forEach(function (id) { $(id).value = ""; });
+    $("statusFilter").value = b.getAttribute("data-stat"); state.page = 1; loadList(); loadStats();
+  });
+
+  function findUser(id) { return (list.users || []).filter(function (u) { return u.id === id; })[0]; }
+  $("rows").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-action]"); if (!b || b.disabled) return;
+    var id = Number(b.getAttribute("data-id"));
+    ({ detail: detail, edit: edit, status: askStatus })[b.getAttribute("data-action")](id, b);
+  });
+
+  /* ---------- التفاصيل ---------- */
+  var detailId = null;
+  var LOGS = { user_login: "تسجيل دخول", user_logout: "تسجيل خروج", role_change: "تغيير الدور", status_change: "إيقاف أو تفعيل", semester_change: "تغيير الكورس", push_group: "إشعار من المشرف", signout_all: "إنهاء كل الجلسات", push_test: "اختبار إشعار" };
+  function kv(rows) { return rows.map(function (x) { return '<div class="info-row"><span class="muted">' + x[0] + "</span><span>" + x[1] + "</span></div>"; }).join(""); }
+  function listBy(items) {
+    if (!items || !items.length) return '<p class="muted">لا شيء بعد</p>';
+    return '<ul class="chips">' + items.map(function (x) { return '<li><strong>' + esc(courseName(x.id)) + '</strong><span class="num">' + NUM.format(x.n) + "</span>" + (x.items ? ' <small class="muted num">' + esc(x.items.join("، ")) + "</small>" : "") + "</li>"; }).join("") + "</ul>";
+  }
+  function chart(days) {
+    if (!days || !days.length) return '<p class="muted">لا نشاط مسجَّل بعد. تُحسب الساعات من الآن فصاعداً.</p>';
+    var by = {}; days.forEach(function (d) { by[d.day] = d; });
+    var bars = [], max = 60, i, d;
+    for (i = 29; i >= 0; i--) { d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); var x = by[d] || { site: 0, study: 0 }; max = Math.max(max, x.site); bars.push([d, x]); }
+    return '<div class="bars" role="img" aria-label="الاستخدام خلال آخر 30 يوماً">' + bars.map(function (b) {
+      var h = Math.round(b[1].site / max * 100), hs = Math.round(b[1].study / max * 100);
+      return '<span class="bar" title="' + esc(b[0]) + " · " + hrs(b[1].site) + '"><i class="bsite" style="height:' + h + '%"></i><i class="bstudy" style="height:' + hs + '%"></i></span>';
+    }).join("") + '</div><p class="legend"><span class="lg site"></span> الموقع <span class="lg study"></span> منها دراسة</p>';
+  }
+  function gradesHtml(u) {
+    if (!u.gradesLinked) return '<p class="muted">لم يربط الطالب «درجاتي الجامعية» بعد (يكتب رقم جوازه في ملفه الشخصي).</p>';
+    if (!u.grades || !u.grades.length) return '<p class="muted">الحساب مربوط لكن لا درجات مرفوعة له بعد.</p>';
+    var terms = {}, order = [];
+    u.grades.forEach(function (g) { if (!terms[g.term]) { terms[g.term] = []; order.push(g.term); } terms[g.term].push(g); });
+    return order.map(function (t) {
+      var nums = terms[t].map(function (g) { return parseFloat(g.grade); }).filter(function (x) { return isFinite(x); });
+      var avg = nums.length === terms[t].length && nums.length ? (nums.reduce(function (a, b) { return a + b; }, 0) / nums.length) : null;
+      return '<h4 class="subhead">' + esc(t) + (avg !== null ? ' <span class="pill green">المعدل ' + NUM.format(Math.round(avg * 100) / 100) + "</span>" : "") + '</h4><table class="mini"><tbody>' +
+        terms[t].map(function (g) { return '<tr><td dir="auto">' + esc(g.course) + '</td><td class="num">' + esc(g.grade) + "</td></tr>"; }).join("") + "</tbody></table>";
+    }).join("");
+  }
+  function devicesHtml(u) {
+    var d = (u.deviceList || []).map(function (x) { return '<div class="info-row"><span class="muted">جهاز بإشعارات منذ ' + esc(DT.format(x.since)) + "</span><span>" + (x.lastOk ? "آخر إرسال ناجح " + esc(DTT.format(x.lastOk)) : '<span class="muted">لم يصل إشعار بعد</span>') + "</span></div>"; }).join("") || '<p class="muted">لا أجهزة مفعّل عليها الإشعارات.</p>';
+    var ss = (u.sessionList || []).map(function (x) { return '<div class="info-row"><span class="muted">جلسة قائمة، دخل في تقريباً</span><span class="num">' + esc(DTT.format(x.signedIn)) + ' · تنتهي ' + esc(DT.format(x.expires)) + "</span></div>"; }).join("") || '<p class="muted">لا جلسات قائمة.</p>';
+    return '<h4 class="subhead">أجهزة الإشعارات</h4>' + d + '<h4 class="subhead">الجلسات القائمة</h4>' + ss;
+  }
+  function logHtml(u) {
+    if (!u.log || !u.log.length) return '<p class="muted">لا سجل لهذا الحساب بعد. يبدأ تسجيل الدخول والخروج من الآن.</p>';
+    return '<ul class="timeline">' + u.log.map(function (x) {
+      var label = LOGS[x.action] || x.action, by = x.self ? "" : " · بواسطة " + esc(x.by || "");
+      return "<li><span class=\"num\">" + esc(DTT.format(x.at)) + "</span><strong>" + esc(label) + "</strong><small class=\"muted\">" + by + "</small></li>";
+    }).join("") + "</ul>";
+  }
+  function detail(id, from) {
+    detailId = id;
+    $("detailBody").innerHTML = '<p class="state">جارٍ التحميل…</p>';
+    openDialog("detail", from);
+    api("GET", "auth/admin/user?id=" + id).then(function (r) {
+      if (detailId !== id) return;
+      if (r.status !== 200) { $("detailBody").innerHTML = '<p class="state error">' + esc(errText(r)) + "</p>"; return; }
+      var u = r.data.user, c = (ROLES[u.role] || ROLES.student).color;
+      detailUser = u;
+      var over = kv([
+        ["البريد الإلكتروني", '<bdi class="ltr num">' + esc(u.email) + "</bdi>"],
+        ["رمز الطالب", '<bdi class="ltr num">' + esc(u.studentCode || "") + "</bdi>"],
+        ["الاسم الكامل (الملف الشخصي)", u.fullName ? esc(u.fullName) : '<span class="muted">لم يكمله</span>'],
+        ["الدور", roleBadge(u.role)], ["الحالة", statusBadge(u)],
+        ["الكورس", esc(u.semester ? SEM[u.semester] : "غير محدد")],
+        ["تاريخ الإنشاء", '<span class="num">' + esc(DT.format(u.created)) + "</span>"],
+        ["آخر دخول", u.lastLogin ? '<span class="num">' + esc(DTT.format(u.lastLogin)) + "</span>" : "لم يُسجَّل"],
+        ["آخر نشاط", u.lastActive ? '<span class="num">' + esc(DTT.format(u.lastActive)) + "</span>" : '<span class="muted">—</span>'],
+        ["إجمالي الوقت على الموقع", '<span class="num">' + hrs(u.siteSec) + "</span>"],
+        ["منه في القراءة والدراسة", '<span class="num">' + hrs(u.studySecTotal) + "</span>"],
+        ["درجاتي الجامعية", u.gradesLinked ? pill("green", "مربوط · " + NUM.format(u.gradeRows) + " مادة", true) : '<span class="muted">غير مربوط</span>'],
+        ["آخر مزامنة لبياناته", u.syncedAt ? '<span class="num">' + esc(DTT.format(u.syncedAt)) + "</span>" : '<span class="muted">لا شيء</span>']
+      ]);
+      var study = '<h4 class="subhead">الاستخدام آخر 30 يوماً</h4>' + chart(u.activityDays) + kv([
+        ["المفضلة", '<span class="num">' + NUM.format(u.favorites) + "</span>"],
+        ["مهام المخطط (المنجزة / الكل)", '<span class="num">' + NUM.format(u.tasksDone || 0) + " / " + NUM.format(u.tasks || 0) + "</span>"],
+        ["آخر مادة فتحها", u.lastCourse ? esc(courseName(u.lastCourse)) : '<span class="muted">—</span>'],
+        ["كتابته على PDF", u.pdf ? '<span class="num">' + NUM.format(u.pdf.pages) + " صفحة · " + NUM.format(u.pdf.files) + " ملف · " + NUM.format(u.pdf.images || 0) + " صورة</span>" + (u.pdf.last ? ' <small class="muted">آخر كتابة ' + esc(DTT.format(u.pdf.last)) + "</small>" : "") : '<span class="muted">لا شيء</span>']
+      ]) + '<h4 class="subhead">محاضرات قرأها</h4>' + listBy(u.readBy) + '<h4 class="subhead">في قائمة المراجعة</h4>' + listBy(u.reviewBy) + '<h4 class="subhead">درسها خطوة بخطوة</h4>' + listBy(u.studyBy);
+      var tabs = [["over", "نظرة عامة", over], ["study", "الدراسة", study], ["grades", "الدرجات", gradesHtml(u)], ["devices", "الأجهزة والجلسات", devicesHtml(u)], ["log", "سجل الحساب", logHtml(u)]];
+      $("detailBody").innerHTML = '<div class="person headcard"><span class="avatar ' + c + '">' + esc(initials(u.name)) + "</span><div><strong>" + esc(u.name) + "</strong><small>" + (u.id === list.me ? "حسابك" : "حساب Medixa") + " · " + esc(u.studentCode || "") + "</small></div></div>" +
+        '<div class="tabbar" role="tablist">' + tabs.map(function (t, i) { return '<button type="button" role="tab" class="tabbtn' + (i === 0 ? " on" : "") + '" data-tab="' + t[0] + '" aria-selected="' + (i === 0) + '">' + t[1] + "</button>"; }).join("") + "</div>" +
+        tabs.map(function (t, i) { return '<div class="tabpanel" role="tabpanel" data-panel="' + t[0] + '"' + (i === 0 ? "" : " hidden") + ">" + t[2] + "</div>"; }).join("");
+    });
+  }
+  var detailUser = null;
+  $("detailBody").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tab]"); if (!b) return;
+    var box = $("detailBody");
+    [].forEach.call(box.querySelectorAll(".tabbtn"), function (x) { var on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-selected", String(on)); });
+    [].forEach.call(box.querySelectorAll(".tabpanel"), function (p) { p.hidden = p.getAttribute("data-panel") !== b.getAttribute("data-tab"); });
+  });
+  /* ---------- الفرز ---------- */
+  document.querySelector("thead").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sort]"); if (!b) return;
+    var k = b.getAttribute("data-sort");
+    if (state.sort === k) state.dir = state.dir === "desc" ? "asc" : "desc"; else { state.sort = k; state.dir = k === "name" ? "asc" : "desc"; }
+    state.page = 1; paintSort(); loadList();
+  });
+  function paintSort() {
+    [].forEach.call(document.querySelectorAll(".sortbtn"), function (b) {
+      var on = b.getAttribute("data-sort") === state.sort;
+      b.parentNode.setAttribute("aria-sort", on ? (state.dir === "asc" ? "ascending" : "descending") : "none");
+      b.classList.toggle("on", on); b.setAttribute("data-dir", on ? (state.dir === "asc" ? "▲" : "▼") : "");
+    });
+  }
+
+  /* ---------- إشعار لطالب أو مجموعة ---------- */
+  var notifyIds = null;
+  var TARGETS = { all: {}, sem3: { semester: 3 }, sem2: { semester: 2 }, sem1: { semester: 1 }, away7: { inactiveDays: 7 }, away14: { inactiveDays: 14 } };
+  function notifyPayload(preview) {
+    var b = { title: $("notifyTitleIn").value.trim(), body: $("notifyText").value.trim() };
+    if (notifyIds) b.ids = notifyIds; else b.target = TARGETS[$("notifyTarget").value] || {};
+    if (preview) b.preview = true;
+    return b;
+  }
+  function openNotify(ids, name, from) {
+    notifyIds = ids; $("notifyInfo").textContent = "";
+    $("notifyTargetRow").hidden = !!ids; $("notifyOne").hidden = !ids;
+    if (ids) $("notifyOne").textContent = "الإشعار إلى: " + name + " (يصل إلى أجهزته المفعّلة فقط)";
+    $("notifyTitleIn").value = ""; $("notifyText").value = "";
+    openDialog("notifyDlg", from);
+  }
+  var NERR = { not_configured: "خدمة الإشعارات غير مفعّلة بعد (مفاتيح VAPID).", title_required: "اكتب عنوان الإشعار.", forbidden: "هذه العملية للمشرف فقط." };
+  $("groupNotify").addEventListener("click", function (e) { openNotify(null, "", e.currentTarget); });
+  $("detailNotify").addEventListener("click", function (e) { if (!detailUser) return; $("detail").close(); openNotify([detailUser.id], detailUser.name, e.currentTarget); });
+  $("notifyCount").addEventListener("click", function () {
+    $("notifyInfo").textContent = "جارٍ العدّ…";
+    api("POST", "auth/admin/notify", Object.assign(notifyPayload(true), { title: $("notifyTitleIn").value.trim() || "x" })).then(function (r) {
+      $("notifyInfo").textContent = r.status === 200 ? "المستلمون: " + NUM.format(r.data.users) + " حساباً، " + NUM.format(r.data.devices) + " جهازاً مفعّلاً" : (NERR[r.data && r.data.error] || "تعذّر العدّ.");
+    });
+  });
+  $("notifySend").addEventListener("click", function () {
+    var b = notifyPayload(false);
+    if (!b.title) { $("notifyInfo").textContent = NERR.title_required; return; }
+    if (!window.confirm("إرسال هذا الإشعار الآن؟")) return;
+    busy($("notifySend"), true); $("notifyInfo").textContent = "جارٍ الإرسال…";
+    api("POST", "auth/admin/notify", b).then(function (r) {
+      busy($("notifySend"), false);
+      $("notifyInfo").textContent = r.status === 200 ? "وصل إلى " + NUM.format(r.data.sent) + " جهاز من " + NUM.format(r.data.devices) + " (" + NUM.format(r.data.users) + " حساباً)" : (NERR[r.data && r.data.error] || "تعذّر الإرسال.");
+    });
+  });
+  $("detailSignout").addEventListener("click", function () {
+    if (!detailUser || !window.confirm("إنهاء كل جلسات " + detailUser.name + "؟ سيُطلب منه تسجيل الدخول من جديد على كل أجهزته.")) return;
+    api("POST", "auth/admin/signout", { id: detailUser.id }).then(function (r) {
+      window.alert(r.status === 200 ? "أُنهيت " + NUM.format(r.data.ended) + " جلسة." : "تعذّر إنهاء الجلسات.");
+      if (r.status === 200) detail(detailUser.id);
+    });
+  });
+  $("detailEdit").addEventListener("click", function () { var id = detailId; $("detail").close(); if (id) edit(id, document.querySelector('[data-action="edit"][data-id="' + id + '"]')); });
+
+  /* ---------- التعديل ---------- */
+  var editing = null;
+  function edit(id, from) {
+    var u = findUser(id); if (!u) return;
+    editing = u;
+    $("editorTitle").textContent = "تعديل حساب " + u.name;
+    $("nameInput").value = u.name; $("emailInput").value = u.email;
+    var admin = u.role === "admin";
+    $("roleInput").value = u.role; $("roleInput").disabled = admin; $("roleHint").hidden = !admin;
+    $("semInput").value = u.semester ? String(u.semester) : "";
+    ["roleErr", "semErr", "formError"].forEach(function (k) { $(k).textContent = ""; });
+    $("semInput").removeAttribute("aria-invalid");
+    busy($("saveBtn"), false);
+    openDialog("editor", from);
+  }
+  $("userForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var u = editing; if (!u) return;
+    var body = { id: u.id }, role = $("roleInput").value, sem = $("semInput").value;
+    $("semErr").textContent = ""; $("formError").textContent = "";
+    if (u.role !== "admin" && role !== u.role) body.role = role;
+    if (sem && Number(sem) !== u.semester) body.semester = Number(sem);
+    if (!sem && u.semester) { $("semErr").textContent = "اختر كورساً."; $("semInput").setAttribute("aria-invalid", "true"); $("semInput").focus(); return; }
+    if (Object.keys(body).length === 1) { $("formError").textContent = "لم تغيّر شيئاً."; return; }
+    var send = function () { save(body, $("saveBtn"), $("formError"), function () { $("editor").close(); }); };
+    if (body.role) {
+      var from = ROLES[u.role].name, to = ROLES[body.role].name;
+      var note = body.role === "student" ? "سيفقد صلاحيات الرفع" + (u.role === "rep" ? " والتبليغات" : "") + "." : body.role === "rep" ? "سيستطيع رفع الملفات ونشر التبليغات لكل الطلاب." : "سيستطيع رفع الملفات من صفحة الرفع.";
+      confirmBox("تغيير الدور", "تغيير دور " + u.name + " من «" + from + "» إلى «" + to + "». " + note, "نعم، غيّر الدور", "primary", function (btn, err, done) {
+        save(body, btn, err, function () { done(); $("editor").close(); });
+      });
+      return;
+    }
+    send();
+  });
+  function save(body, btn, errBox, onOk) {
+    busy(btn, true); errBox.textContent = "";
+    clearTimeout(toastTimer); $("toast").hidden = true; // لا تبقى رسالة نجاح سابقة أثناء طلب جديد
+    return api("POST", "auth/user", body).then(function (r) {
+      busy(btn, false);
+      if (r.status !== 200) { errBox.textContent = errText(r); return; } // المدخلات تبقى كما هي لإعادة المحاولة
+      onOk();
+      toast("تم الحفظ في الخادم.");
+      loadList(); loadStats(); loadLatest();
+    });
+  }
+
+  /* ---------- الإيقاف وإعادة التفعيل ---------- */
+  function askStatus(id, from) {
+    var u = findUser(id); if (!u) return;
+    opener = from;
+    if (u.active) confirmBox("إيقاف الحساب", "إيقاف حساب " + u.name + " يُخرجه من كل أجهزته فوراً ويمنعه من الدخول. تبقى بياناته وتقدّمه محفوظة، ويمكن إعادة تفعيله لاحقاً.", "نعم، أوقف الحساب", "danger", run);
+    else confirmBox("إعادة تفعيل الحساب", "إعادة تفعيل حساب " + u.name + "؟ سيستطيع الدخول من جديد ويجد بياناته كما هي.", "نعم، أعد التفعيل", "primary", run);
+    function run(btn, err, done) { save({ id: u.id, active: !u.active }, btn, err, done); }
+  }
+  var confirmFn = null;
+  function confirmBox(title, text, okText, kind, fn) {
+    $("confirmTitle").textContent = title; $("confirmText").textContent = text; $("confirmError").textContent = "";
+    $("confirmBtn").textContent = okText; $("confirmBtn").className = "btn " + kind; busy($("confirmBtn"), false);
+    confirmFn = fn;
+    var keep = opener; $("confirm").showModal(); opener = keep;
+  }
+  $("confirmBtn").addEventListener("click", function () { if (confirmFn) confirmFn($("confirmBtn"), $("confirmError"), function () { $("confirm").close(); }); });
+  document.addEventListener("click", function (e) { var b = e.target.closest("[data-close]"); if (b) b.closest("dialog").close(); });
+
+  /* ---------- التصدير ---------- */
+  $("export").addEventListener("click", function () {
+    var btn = $("export"); busy(btn, true);
+    fetch("api/auth/admin/export?" + query(), { credentials: "same-origin" }).then(function (r) {
+      if (r.status !== 200) return r.json().catch(function () { return {}; }).then(function (d) { throw { status: r.status, data: d }; });
+      var name = ((r.headers.get("content-disposition") || "").match(/filename="([^"]+)"/) || [])[1] || "medixa-accounts.csv";
+      return r.blob().then(function (b) {
+        var url = URL.createObjectURL(b), a = document.createElement("a");
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+        toast("جُهّز ملف CSV لنتائج التصفية الحالية."); loadLatest();
+      });
+    }).catch(function (r) { toast(errText(r && r.status !== undefined ? r : { status: 0, data: {} }), true); }).then(function () { busy(btn, false); });
+  });
+
+  /* ---------- إضافة مستخدم: غير مدعومة يدوياً (Google فقط) ---------- */
+  $("add").addEventListener("click", function () {
+    $("loginLink").value = new URL("login.html", location.href).href; $("copyResult").textContent = "";
+    openDialog("addInfo", $("add"));
+  });
+  $("copyLink").addEventListener("click", function () {
+    var v = $("loginLink").value;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { $("copyResult").textContent = "نُسخ الرابط."; $("copyResult").className = "result ok"; },
+      function () { $("loginLink").select(); $("copyResult").textContent = "حدّدتُ الرابط؛ انسخه يدوياً."; $("copyResult").className = "result"; });
+  });
+
+  /* ---------- الأدوار ---------- */
+  function renderRoles() {
+    $("roleCards").innerHTML = ["admin", "student", "uploader", "rep"].map(function (k) {
+      var r = ROLES[k], n = stats ? stats.byRole[k] : null;
+      return '<article class="panel rolecard"><div class="panelhead"><h3>' + icon(r.icon) + esc(r.name) + "</h3>" + pill(r.color, n == null ? "…" : NUM.format(n) + " حساب") + '</div><p class="desc">' + esc(r.desc) + ' · <code class="ltr">' + esc(r.from) + "</code></p><ul>" +
+        r.can.map(function (p) { return "<li>" + icon("check") + esc(p) + "</li>"; }).join("") +
+        r.cannot.map(function (p) { return '<li class="no">' + icon("x") + esc(p) + "</li>"; }).join("") + "</ul></article>";
+    }).join("");
+  }
+
+  /* ---------- الإشعارات ---------- */
+  var push = null;
+  function loadPush() {
+    $("pushConfigured").textContent = "…";
+    api("GET", "auth/admin/push").then(function (r) {
+      if (r.status !== 200) { $("pushConfigured").className = "pill red"; $("pushConfigured").textContent = "تعذّر التحقق"; return; }
+      push = r.data;
+      $("pushConfigured").className = "pill " + (push.configured ? "green" : "amber");
+      $("pushConfigured").innerHTML = '<span class="dot"></span>' + (push.configured ? "مضبوطة" : "غير مضبوطة");
+      $("pushTotal").textContent = push.table ? NUM.format(push.total) + " جهاز" : "الجدول غير موجود";
+      $("pushPrefs").className = "pill " + (push.prefs ? "green" : "amber");
+      $("pushPrefs").textContent = push.prefs ? "مفعّلة" : "تحتاج migrations/0004";
+      $("pushBySem").innerHTML = [1, 2, 3].map(function (s) { return "<div><strong>" + NUM.format(push.bySemester[s] || 0) + "</strong><small>" + SEM[s] + "</small></div>"; }).join("");
+      $("mineLine").textContent = push.mine ? "أجهزتك المشتركة: " + NUM.format(push.mine) + "." : "لا يوجد جهاز مشترك لحسابك. فعّل الإشعارات من القائمة الجانبية في الموقع وأنت مسجّل الدخول، ثم ارجع هنا.";
+      $("pushTest").disabled = !push.configured || !push.mine;
+      $("keysState").textContent = push.configured ? "المفاتيح مضبوطة على الخادم وتعمل. لا تحتاج إلى توليد مفاتيح." : "الإشعارات غير مضبوطة بعد: ولّد زوج مفاتيح وضعه في Cloudflare.";
+      if (!push.configured) $("keysBox").open = true;
+    });
+  }
+  $("pushTest").addEventListener("click", function () {
+    var b = $("pushTest"), out = $("pushResult"); busy(b, true); out.textContent = ""; out.className = "result";
+    api("POST", "auth/admin/push-test", {}).then(function (r) {
+      busy(b, false);
+      if (r.status !== 200) { out.className = "result err"; out.textContent = errText(r); return; }
+      var d = r.data;
+      if (d.sent > 0) { out.className = "result ok"; out.textContent = "قبلته خدمة الإشعارات لـ " + NUM.format(d.sent) + " من " + NUM.format(d.devices) + " من أجهزتك. يظهر عادة خلال ثوانٍ."; }
+      else { out.className = "result err"; out.textContent = d.devices ? "لم تقبله خدمة الإشعارات لأي جهاز (فشل " + NUM.format(d.failed) + "، اشتراكات منتهية حُذفت " + NUM.format(d.removed) + ")." : "لا يوجد جهاز مشترك لحسابك."; }
+      loadPush(); loadLatest();
+    });
+  });
+  var SAMPLES = {
+    lecture: { t: "محاضرة جديدة · المناعة الطبية", b: "المحاضرة 4: Innate immunity", a: ["افتح المحاضرة", "افتح الملف"] },
+    group: { t: "محاضرات جديدة · المناعة الطبية", b: "المحاضرات 4، 5 و6", a: ["افتح المادة"] },
+    announcement: { t: "تبليغ · موعد امتحان المناعة", b: "يوم الأحد القادم الساعة 9 صباحاً", a: ["اقرأ التبليغ"] }
+  };
+  function sample(k) {
+    var s = SAMPLES[k]; $("pvTitle").textContent = s.t; $("pvBody").textContent = s.b;
+    $("pvActs").innerHTML = s.a.map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("");
+    document.querySelectorAll("[data-sample]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sample") === k)); });
+  }
+  document.querySelectorAll("[data-sample]").forEach(function (b) { b.addEventListener("click", function () { sample(b.getAttribute("data-sample")); }); });
+  sample("lecture");
+  // مفاتيح VAPID: بضغطة صريحة فقط، على الجهاز، ولا تُرسل لأي مكان
+  function b64u(buf) { var s = "", a = new Uint8Array(buf); for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  $("pushMake").addEventListener("click", function () {
+    if (!window.crypto || !crypto.subtle) { $("keysState").textContent = "هذا المتصفح لا يدعم توليد المفاتيح."; return; }
+    crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]).then(function (kp) {
+      return Promise.all([crypto.subtle.exportKey("raw", kp.publicKey), crypto.subtle.exportKey("jwk", kp.privateKey)]);
+    }).then(function (k) { $("pushPub").value = b64u(k[0]); $("pushPriv").value = k[1].d; $("pushOut").hidden = false; });
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-copy]"); if (!b) return;
+    var input = $(b.getAttribute("data-copy"));
+    (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject()).then(function () { toast("نُسخ."); }, function () { input.select(); });
+  });
+
+  /* ---------- السجل ---------- */
+  function describe(i) {
+    var d = i.detail || {}, who = i.target_name ? "«" + i.target_name + "»" : "";
+    if (i.action === "role") return ACTION.role + " " + who + (d.to ? " إلى " + ((ROLES[d.to] || {}).name || d.to) : "");
+    if (i.action === "status") return (d.to === "suspended" ? "إيقاف" : "إعادة تفعيل") + " حساب " + who;
+    if (i.action === "semester") return "تغيير كورس " + who + " إلى " + (SEM[d.to] || "—");
+    if (i.action === "export") return "تصدير " + NUM.format(d.rows || 0) + " حساباً بصيغة CSV";
+    if (i.action === "push_test") return "إشعار اختبار إلى أجهزة المشرف (" + NUM.format(d.sent || 0) + "/" + NUM.format(d.devices || 0) + ")";
+    if (/^timetable_/.test(i.action)) return (ACTION[i.action] || i.action) + (d.subject ? " «" + d.subject + "»" : "") + (d.date ? " " + d.date : "") + (d.count != null ? " (" + NUM.format(d.count) + ")" : "");
+    return i.action;
+  }
+  var RESULT = { ok: ["green", "تم"], refused: ["red", "مرفوض"], no_delivery: ["amber", "لم يُسلَّم"] };
+  function loadAudit(p) {
+    logPage = p || 1; $("logs").innerHTML = '<p class="state">جارٍ التحميل…</p>';
+    api("GET", "auth/admin/audit?page=" + logPage).then(function (r) {
+      if (r.status !== 200) { $("logs").innerHTML = ""; var s = document.createElement("div"); s.className = "state error"; s.textContent = errText(r); $("logs").appendChild(s); return; }
+      var d = r.data; $("auditMissing").hidden = d.available;
+      if (!d.items.length) { $("logs").innerHTML = '<p class="state">' + (d.available ? "لا توجد تغييرات مسجّلة بعد." : "السجل غير متاح.") + "</p>"; $("logResults").textContent = ""; $("logPages").innerHTML = ""; return; }
+      $("logs").innerHTML = d.items.map(function (i) {
+        var res = RESULT[i.result] || ["", i.result];
+        return '<div class="log"><span class="avatar ' + (i.result === "ok" ? "" : "red") + '">' + icon(i.result === "ok" ? "clock" : "stop") + "</span><div><p>" + esc(describe(i)) + " " + pill(res[0], res[1]) + "</p><small>" + esc(i.actor_name) + ' · <span class="num">' + esc(DTT.format(i.at)) + "</span></small></div></div>";
+      }).join("");
+      $("logResults").textContent = NUM.format(d.total) + " تغييراً";
+      renderPages($("logPages"), d.page, Math.max(1, Math.ceil(d.total / d.per)), loadAudit);
+    });
+  }
+  function loadLatest() {
+    api("GET", "auth/admin/audit?page=1").then(function (r) {
+      var box = $("latestActivity");
+      if (r.status !== 200) { box.textContent = "تعذّر التحميل."; return; }
+      if (!r.data.available) { box.textContent = "السجل يحتاج تطبيق migrations/0005 على الخادم."; return; }
+      var i = r.data.items[0];
+      box.innerHTML = i ? '<span class="dot" style="color:var(--accent)"></span><strong>' + esc(describe(i)) + '</strong><span class="num" style="margin-right:auto;white-space:nowrap">' + esc(DTT.format(i.at)) + "</span>" : "لا توجد تغييرات مسجّلة بعد.";
+    });
+  }
+
+  /* ---------- البداية: التحقق من المشرف في الخادم ---------- */
+  function gate(title, text, btn, href) {
+    document.querySelectorAll(".view").forEach(function (v) { v.hidden = true; });
+    $("gate").hidden = false; $("gateTitle").textContent = title; $("gateText").textContent = text;
+    $("gateBtn").textContent = btn; $("gateBtn").href = href;
+  }
+  document.querySelectorAll("[data-view]").forEach(function (b) { b.addEventListener("click", function () { if (me) view(b.getAttribute("data-view")); }); });
+  api("GET", "auth/me").then(function (r) {
+    if (r.status === 401) return gate("سجّل الدخول أولاً", "مركز الإدارة للمشرفين فقط.", "تسجيل الدخول", "login.html?next=admin.html");
+    if (r.status !== 200) return gate("تعذّر التحقق", errText(r), "إعادة المحاولة", "admin.html");
+    if (r.data.user.role !== "admin") return gate("هذه الصفحة للمشرفين فقط", "حسابك لا يملك صلاحية الإدارة.", "العودة إلى الموقع", "index.html");
+    me = r.data.user;
+    $("meName").textContent = me.name; $("meAvatar").textContent = initials(me.name);
+    view(location.hash.slice(1) || "accounts", false);
+    loadStats(); loadList(); loadLatest();
+  });
 })();

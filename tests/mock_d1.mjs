@@ -2,10 +2,17 @@
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 
-export function createMockD1() {
+export function createMockD1({ without = [] } = {}) {
   const db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("../migrations/0001_init.sql", import.meta.url), "utf8"));
   db.exec(readFileSync(new URL("../migrations/0002_announcements.sql", import.meta.url), "utf8"));
+  db.exec(readFileSync(new URL("../migrations/0003_push.sql", import.meta.url), "utf8"));
+  if (!without.includes("0004")) db.exec(readFileSync(new URL("../migrations/0004_push_prefs.sql", import.meta.url), "utf8"));
+  if (!without.includes("0005")) db.exec(readFileSync(new URL("../migrations/0005_admin.sql", import.meta.url), "utf8"));
+  if (!without.includes("0006")) db.exec(readFileSync(new URL("../migrations/0006_timetable.sql", import.meta.url), "utf8"));
+  if (!without.includes("0007")) db.exec(readFileSync(new URL("../migrations/0007_grades.sql", import.meta.url), "utf8"));
+  if (!without.includes("0008")) db.exec(readFileSync(new URL("../migrations/0008_profile.sql", import.meta.url), "utf8"));
+  if (!without.includes("0009")) db.exec(readFileSync(new URL("../migrations/0009_pdf_notes.sql", import.meta.url), "utf8"));
   const stmt = (sql, args = []) => ({
     bind: (...a) => stmt(sql, a),
     async first() { return db.prepare(sql).get(...args) || null; },
