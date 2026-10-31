@@ -140,7 +140,30 @@ async function detail(env, q) {
   const sessions = (await env.DB.prepare("SELECT COUNT(*) AS c FROM sessions WHERE user_id = ? AND expires_at > ?").bind(id, Date.now()).first()).c;
   const rows = (await env.DB.prepare("SELECT k, v FROM user_data WHERE user_id = ? AND k IN ('ms.fav', 'ms.read')").bind(id).all()).results || [];
   const count = (k) => { const r = rows.find((x) => x.k === k); try { const v = r ? JSON.parse(r.v) : null; return Array.isArray(v) ? v.length : v && typeof v === "object" ? Object.keys(v).length : 0; } catch { return 0; } };
-  return json({ ok: true, user: { ...u, sessions, favorites: count("ms.fav"), read: count("ms.read"), linked: "google" } });
+  /* معلومات إضافية للمشرف: كل شيء أعداد وتواريخ فقط (لا رقم جواز ولا درجات ولا نص كتبه الطالب). غياب جدول لا يُفشل الطلب. */
+  const safe = async (fn, d) => { try { return await fn(); } catch { return d; } };
+  const keys = await safe(async () => (await env.DB.prepare("SELECT k, v, t FROM user_data WHERE user_id = ?").bind(id).all()).results || [], []);
+  const val = (k) => { const r = keys.find((x) => x.k === k); try { return r ? JSON.parse(r.v) : null; } catch { return null; } };
+  const size = (v) => (Array.isArray(v) ? v.length : v && typeof v === "object" ? Object.keys(v).length : 0);
+  const tasks = val("ms.tasks"), taskList = Array.isArray(tasks) ? tasks : [];
+  const syncedAt = keys.reduce((m, r) => Math.max(m, Number(r.t) || 0), 0) || null;
+  const profile = await safe(() => env.DB.prepare("SELECT full_name FROM profiles WHERE user_id = ?").bind(id).first(), null);
+  const person = await safe(() => env.DB.prepare("SELECT id, linked_at FROM grade_people WHERE user_id = ?").bind(id).first(), null);
+  const gradeRows = person ? await safe(async () => (await env.DB.prepare("SELECT COUNT(*) AS c FROM grade_entries WHERE person_id = ?").bind(person.id).first()).c, 0) : 0;
+  const notes = await safe(async () => (await env.DB.prepare("SELECT COUNT(*) AS c, COUNT(DISTINCT doc) AS f, MAX(t) AS last, COALESCE(SUM(LENGTH(d)), 0) AS bytes FROM pdf_notes WHERE user_id = ?").bind(id).first()), null);
+  const images = await safe(async () => (await env.DB.prepare("SELECT COUNT(DISTINCT id) AS c FROM pdf_assets WHERE user_id = ?").bind(id).first()).c, 0);
+  const lastCourse = val("ms.last");
+  return json({ ok: true, user: {
+    ...u, sessions, favorites: count("ms.fav"), read: count("ms.read"), linked: "google",
+    studentCode: "M" + id,
+    review: size(val("ms.review")), studied: size(val("ms.study")),
+    tasks: taskList.length, tasksDone: taskList.filter((x) => x && (x.done || x.completed)).length,
+    lastCourse: typeof lastCourse === "string" ? lastCourse.slice(0, 80) : null,
+    syncedAt,
+    fullName: profile && profile.full_name ? profile.full_name : null,
+    gradesLinked: !!person, gradeRows,
+    pdf: notes ? { pages: Number(notes.c) || 0, files: Number(notes.f) || 0, last: notes.last || null, bytes: Number(notes.bytes) || 0, images } : null
+  } });
 }
 
 /* ---------- CSV ---------- */

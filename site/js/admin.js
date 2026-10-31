@@ -208,7 +208,15 @@
         ["آخر دخول", u.lastLogin ? '<span class="num">' + esc(DTT.format(u.lastLogin)) + "</span>" : "لم يُسجَّل"],
         ["جلسات قائمة", '<span class="num">' + NUM.format(u.sessions) + "</span>"],
         ["أجهزة مفعّل عليها الإشعارات", '<span class="num">' + NUM.format(u.devices) + "</span>"],
-        ["المفضلة / المحاضرات المقروءة", '<span class="num">' + NUM.format(u.favorites) + " / " + NUM.format(u.read) + "</span>"]
+        ["المفضلة / المحاضرات المقروءة", '<span class="num">' + NUM.format(u.favorites) + " / " + NUM.format(u.read) + "</span>"],
+        ["رمز الطالب", '<bdi class="ltr num">' + esc(u.studentCode || "") + "</bdi>"],
+        ["الاسم الكامل (الملف الشخصي)", u.fullName ? esc(u.fullName) : '<span class="muted">لم يكمله</span>'],
+        ["درجاتي الجامعية", u.gradesLinked ? pill("green", "مربوط · " + NUM.format(u.gradeRows) + " مادة", true) : '<span class="muted">غير مربوط</span>'],
+        ["مواد في المراجعة / محاضرات درسها", '<span class="num">' + NUM.format(u.review || 0) + " / " + NUM.format(u.studied || 0) + "</span>"],
+        ["مهام المخطط (المنجزة / الكل)", '<span class="num">' + NUM.format(u.tasksDone || 0) + " / " + NUM.format(u.tasks || 0) + "</span>"],
+        ["آخر مادة فتحها", u.lastCourse ? '<bdi class="ltr">' + esc(u.lastCourse) + "</bdi>" : '<span class="muted">—</span>'],
+        ["آخر مزامنة لبياناته", u.syncedAt ? '<span class="num">' + esc(DTT.format(u.syncedAt)) + "</span>" : '<span class="muted">لا شيء</span>'],
+        ["كتابته على ملفات PDF", u.pdf ? '<span class="num">' + NUM.format(u.pdf.pages) + " صفحة · " + NUM.format(u.pdf.files) + " ملف · " + NUM.format(u.pdf.images || 0) + " صورة · " + (u.pdf.bytes / 1024 < 1024 ? Math.round(u.pdf.bytes / 1024) + " ك.ب" : (u.pdf.bytes / 1048576).toFixed(1) + " م.ب") + "</span>" + (u.pdf.last ? ' <small class="muted">آخر كتابة ' + esc(DTT.format(u.pdf.last)) + "</small>" : "") : '<span class="muted">لا شيء</span>']
       ];
       $("detailBody").innerHTML = '<div class="person" style="margin-bottom:16px"><span class="avatar ' + c + '">' + esc(initials(u.name)) + "</span><div><strong>" + esc(u.name) + "</strong><small>" + (u.id === list.me ? "حسابك" : "حساب Medixa") + "</small></div></div>" +
         rows.map(function (x) { return '<div class="info-row"><span class="muted">' + x[0] + "</span><span>" + x[1] + "</span></div>"; }).join("");
