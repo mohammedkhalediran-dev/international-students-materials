@@ -1,7 +1,6 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-off97";
+var V = "medixa-off98";
 var SHELL = [
-  "js/offline-save.js?v=off96",
   "js/offline-auto.js?v=off97",
   "./assets/logo.png",
   "./css/studio-annotations.css?v=ink2",
@@ -59,7 +58,7 @@ var SHELL = [
   "css/medical-banner.css?v=step58",
   "css/motion.css?v=side66c",
   "css/semester.css?v=step58",
-  "css/style.css?v=off92",
+  "css/style.css?v=off98",
   "css/timetable.css?v=tt87",
   "css/workspace.css?v=step58",
   "data/courses.js?v=step67",
@@ -81,7 +80,7 @@ var SHELL = [
   "js/medical-banner.js?v=step58",
   "js/motion.js?v=mv82",
   "js/my-course.js?v=step58",
-  "js/nav.js?v=off92",
+  "js/nav.js?v=off98",
   "js/pdf-viewer.js?v=step68",
   "js/planner.js?v=step58",
   "js/profile-form.js?v=step63",
@@ -89,7 +88,7 @@ var SHELL = [
   "js/questions.js?v=step58",
   "js/study-summary.js?v=step58",
   "js/timetable.js?v=tt87",
-  "js/workspace.js?v=ex91",
+  "js/workspace.js?v=off98",
   "login.html",
   "manifest.webmanifest",
   "pdf-notes.html",

@@ -1542,6 +1542,3 @@ html[lang="fa"] .cc-ar, html[lang="fa"] .w-ar, html[lang="fa"] .t-ar, html[lang=
 .ann-title { font-size: var(--text-md); font-weight: 700; }
 .ann-body { margin-top: var(--space-2); white-space: pre-line; overflow-wrap: anywhere; }
 .ann-meta { margin-top: var(--space-2); color: var(--color-muted); font-size: var(--text-xs); }
-
-/* شريط الاتصال (يظهر عند انقطاع الإنترنت) */
-.offline-bar { position: fixed; inset-inline: var(--space-4); bottom: var(--space-4); z-index: 90; padding: var(--space-2) var(--space-4); border-radius: 999px; background: var(--color-primary); color: #fff; font-size: var(--text-sm); font-weight: 600; text-align: center; box-shadow: var(--shadow-md); pointer-events: none; }
