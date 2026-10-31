@@ -252,6 +252,25 @@ export async function handleTimetable(req, env, opts = {}) {
     const b = await readJson(req);
     if (!b) return fail("bad_request", 400);
 
+    if (action === "copyweek") {                      // نسخ محاضرات أسبوع (تواريخ محددة) إلى الأسبوع التالي
+      if (!validDate(b.from)) return fail("bad_date", 400);
+      const to = addDays(b.from, 6);
+      const src = ((await env.DB.prepare("SELECT * FROM timetable_lectures WHERE semester = ? AND date >= ? AND date <= ? ORDER BY date, start_time").bind(SEM, b.from, to).all()).results || []);
+      if (!src.length) return fail("nothing_to_copy", 400);
+      const exist = ((await env.DB.prepare("SELECT subject, date, start_time FROM timetable_lectures WHERE semester = ? AND date >= ? AND date <= ?").bind(SEM, addDays(b.from, 7), addDays(to, 7)).all()).results || [])
+        .map((r) => r.date + "|" + r.start_time + "|" + r.subject);
+      let copied = 0, skipped = 0;
+      for (const r of src) {
+        const d = addDays(r.date, 7);
+        if (exist.includes(d + "|" + r.start_time + "|" + r.subject)) { skipped++; continue; }
+        await env.DB.prepare("INSERT INTO timetable_lectures (semester, subject, topic, lecturer, room, weekday, date, start_time, end_time, valid_from, valid_to, status, source, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, NULL, ?, 'manual', ?, ?, ?)")
+          .bind(SEM, r.subject, r.topic, r.lecturer, r.room, d, r.start_time, r.end_time, b.publish === true ? "published" : "draft", me.id, now, now).run();
+        copied++;
+      }
+      await audit(env, me, null, "timetable_copyweek", { from: b.from, copied, skipped }, "ok", now);
+      return json({ ok: true, copied, skipped, status: b.publish === true ? "published" : "draft" });
+    }
+
     if (action === "save") {
       const c = cleanLecture(b);
       if (c.error) return fail(c.error, 400);

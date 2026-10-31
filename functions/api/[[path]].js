@@ -15,7 +15,7 @@ export async function onRequest({ request, env, waitUntil }) {
   if (authRes) return authRes;
   const ttRes = await handleTimetable(request, env); // الجدول الجامعي: الكورس الثالث والمشرف فقط
   if (ttRes) return ttRes;
-  const exRes = await handleExams(request, env); // التقويم والامتحانات: الكورس الثالث والمشرف فقط
+  const exRes = await handleExams(request, env, { waitUntil }); // التقويم والامتحانات: الكورس الثالث والمشرف فقط
   if (exRes) return exRes;
   const grRes = await handleGrades(request, env); // درجاتي الجامعية: كل طالب درجاته فقط، والرفع للمشرف (رقم الجواز لا يُخزَّن)
   if (grRes) return grRes;

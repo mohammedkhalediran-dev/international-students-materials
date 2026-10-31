@@ -198,6 +198,16 @@
   /* ---------- الاستيراد ---------- */
   var rows = [], issues = { errors: [], conflicts: [] }, checked = false;
   var imp = $("ttImport"), status = $("ttImpStatus");
+  /* نسخ محاضرات الأسبوع الحالي (المحددة بتاريخ) إلى الأسبوع التالي؛ تُنسخ كمسودات ما لم يُختر النشر المباشر */
+  $("ttCopyWeek").onclick = function () {
+    var d = new Date(), start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 1) % 7));
+    if (!window.confirm(t("نسخ محاضرات هذا الأسبوع إلى الأسبوع القادم؟"))) return;
+    var publish = window.confirm(t("نشرها مباشرة للطلاب؟ (إلغاء = تبقى مسودات للمراجعة)"));
+    post("copyweek", { from: M.iso(start), publish: publish }).then(function (r) {
+      if (r.__status === 200 && r.ok) { toast(t("تم النسخ:") + " " + r.copied + (r.skipped ? " (" + t("موجودة سابقاً") + " " + r.skipped + ")" : "")); if (typeof load === "function") load(); }
+      else toast(r.error === "nothing_to_copy" ? t("لا محاضرات بتاريخ محدد في هذا الأسبوع.") : errText(r));
+    });
+  };
   $("ttImportBtn").onclick = function () { imp.hidden = false; imp.scrollIntoView({ behavior: "smooth", block: "start" }); };
   $("ttImpClose").onclick = function () { imp.hidden = true; };
   function setStatus(s) { status.textContent = t(s); }

@@ -10,6 +10,7 @@
 import { currentUser } from "./auth.js";
 import { audit } from "./admin.js";
 import { validDate, normTime, TIMETABLE_SEMESTERS } from "./timetable.js";
+import { notify, audience } from "./push.js";
 
 export const EXAM_KINDS = ["theory", "practical", "quiz", "other"];
 const SEM = TIMETABLE_SEMESTERS[0];
@@ -39,6 +40,20 @@ export function cleanExam(b) {
   const room = String(b.room || "").trim().slice(0, 80);
   const note = String(b.note || "").trim().slice(0, 200);
   return { value: { subject, kind, date: b.date, start, room, note } };
+}
+const KIND_AR = { theory: "نظري", practical: "عملي", quiz: "اختبار قصير", other: "امتحان" };
+const daysUntil = (date, now) => Math.round((new Date(date + "T00:00:00Z") - new Date(new Date(now).toISOString().slice(0, 10) + "T00:00:00Z")) / 864e5);
+/* إشعار الامتحان لطلاب الكورس الثالث (فئة «تبليغ»؛ يحترم تفضيلات كل جهاز) */
+export function examMessage(x, now, reminder) {
+  const n = daysUntil(x.date, now);
+  const when = n <= 0 ? "اليوم" : n === 1 ? "غداً" : "بعد " + n + " أيام";
+  return {
+    semester: SEM, category: "announcement",
+    title: (reminder ? "تذكير · " : "امتحان جديد · ") + x.subject,
+    body: (KIND_AR[x.kind] || "امتحان") + " — " + x.date + (x.start ? " " + x.start : "") + (reminder ? " (" + when + ")" : ""),
+    url: "exams.html", tag: "exam-" + (x.id || x.date),
+    actions: [{ action: "open", title: "افتح الامتحانات", url: "exams.html" }]
+  };
 }
 const rowOut = (r) => ({ id: r.id, subject: r.subject, kind: r.kind, date: r.date, start: r.start_time, room: r.room, note: r.note });
 
@@ -86,7 +101,25 @@ export async function handleExams(req, env, opts = {}) {
         .bind(SEM, v.subject, v.kind, v.date, v.start, v.room, v.note, me.id, now).run();
       const nid = r.meta && r.meta.last_row_id;
       await audit(env, me, null, "exam_create", { id: nid, subject: v.subject, date: v.date }, "ok", now);
-      return json({ ok: true, id: nid });
+      let reach = null;
+      if (b.notify === true) {                       // إشعار الطلاب بالامتحان الجديد (اختياري، عند الإضافة فقط)
+        const msg = examMessage({ id: nid, ...v }, now, false);
+        reach = await audience(env, msg).catch(() => 0);
+        const task = notify(env, msg, opts.pushFetch || fetch).catch(() => null);
+        if (opts.waitUntil) opts.waitUntil(task); else await task;
+      }
+      return json({ ok: true, id: nid, reach });
+    }
+    if (action === "remind") {                       // تذكير يدوي بامتحان قائم (لا مجدول تلقائي في Pages)
+      if (!Number.isInteger(b.id)) return fail("bad_request", 400);
+      const r = await env.DB.prepare("SELECT * FROM exams WHERE id = ? AND semester = ?").bind(b.id, SEM).first();
+      if (!r) return fail("not_found", 404);
+      const msg = examMessage({ id: r.id, subject: r.subject, kind: r.kind, date: r.date, start: r.start_time }, now, true);
+      const reach = await audience(env, msg).catch(() => 0);
+      const task = notify(env, msg, opts.pushFetch || fetch).catch(() => null);
+      if (opts.waitUntil) opts.waitUntil(task); else await task;
+      await audit(env, me, null, "exam_remind", { id: r.id, reach }, "ok", now);
+      return json({ ok: true, reach });
     }
     if (action === "delete") {
       if (!Number.isInteger(b.id)) return fail("bad_request", 400);

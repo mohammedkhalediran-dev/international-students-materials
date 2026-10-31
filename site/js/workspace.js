@@ -53,9 +53,17 @@
         var faculty=MS.professors().filter(function(p){return matches(p.name)&&p.courses.some(function(c){return courses.includes(c);});});
         if(faculty.length){results.appendChild(text("h2","study-sub","الأساتذة","Professors","استادان"));results.appendChild(facultyGrid(faculty));n+=faculty.length;}
       }
+      if(q&&cat.value==="all"){
+        var exs=extra.ex.filter(function(x){return MS.norm([x.subject,x.room,x.note,x.date].join(" ")).includes(q);});
+        if(exs.length){results.appendChild(text("h2","study-sub","الامتحانات","Exams","امتحانات"));var xl=el("div","latest-stack");exs.forEach(function(x){var a=el("a","latest-item");a.href="exams.html";a.appendChild(el("strong","",x.subject));a.appendChild(el("span","subtle"," · "+x.date));xl.appendChild(a);});results.appendChild(xl);n+=exs.length;}
+        var ans=extra.an.filter(function(x){return MS.norm([x.title,x.body].join(" ")).includes(q);});
+        if(ans.length){results.appendChild(text("h2","study-sub","التبليغات","Announcements","اطلاعیه‌ها"));var al=el("div","latest-stack");ans.forEach(function(x){var a=el("a","latest-item");a.href="index.html#announcements";a.appendChild(el("strong","",x.title));al.appendChild(a);});results.appendChild(al);n+=ans.length;}
+      }
       count.textContent=t("النتائج: ","Results: ","نتایج: ")+n;
       if(!n)empty(t("لا توجد نتائج","No results","نتیجه‌ای یافت نشد"),t("جرّب كلمة أخرى أو غيّر التصفية.","Try another term or change your filters.","عبارت یا فیلتر دیگری را امتحان کنید."),results);
     }
+    var extra={ex:[],an:[]};
+    if(!isLectures)Promise.all(["api/exams","api/announcements"].map(function(u){return fetch(u,{credentials:"same-origin"}).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};});})).then(function(a){extra.ex=a[0].items||[];extra.an=a[1].items||[];if(input.value)draw();});
     input.addEventListener("input",draw);sem.addEventListener("change",draw);cat.addEventListener("change",draw);draw();
   }
   function favorites(){
