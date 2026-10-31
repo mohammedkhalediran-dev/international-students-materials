@@ -1,13 +1,114 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-ex91";
-var SHELL = ["index.html", "course.html", "semester.html", "study.html", "workspace.html", "timetable.html", "exams.html", "css/exams.css?v=ex91", "js/exams.js?v=ex91", "assets/medical-thorax.webp", "assets/brain-pearl.webp", "css/medical-banner.css?v=step58", "css/timetable.css?v=step58", "js/medical-banner.js?v=step58", "js/timetable.js?v=step58", "assets/icon-192.png", "assets/notify-badge.png", "css/style.css?v=side66e", "css/motion.css?v=side66c", "js/motion.js?v=step60", "css/semester.css?v=step58", "css/workspace.css?v=step58", "js/app.js?v=side66", "js/nav.js?v=side66", "js/home.js?v=step58", "js/workspace.js?v=step58", "js/planner.js?v=step58", "js/questions.js?v=step58", "js/i18n.js?v=exam70", "js/pdf-viewer.js?v=step68", "data/courses.js?v=step67", "data/study/medical-immunology-1.js?v=step58", "data/study/nutrition-principles-1.js?v=step58", "data/study/biochemistry-hormones-1.js?v=step58", "data/study/physiology-kidney-1.js?v=kidney72"];
+var V = "medixa-off92";
+var SHELL = [
+  "./assets/logo.png",
+  "./css/studio-annotations.css?v=ink2",
+  "./css/studio-compact.css?v=fg67",
+  "./css/studio-extras.css?v=nw65b",
+  "./css/studio-objects.css?v=ink2",
+  "./css/studio-search.css?v=ink2",
+  "./css/studio-settings.css?v=nw65b",
+  "./css/studio-textactions.css?v=nw65c",
+  "./css/studio.css?v=hl70",
+  "./css/study-mode-v5.css",
+  "./css/study-suite-v85.css",
+  "./js/anki-scheduler.js",
+  "./js/pdf-raster-manifest.js",
+  "./js/pdf-sync-core.js?v=step63",
+  "./js/pdf-sync.js?v=img66",
+  "./js/studio-assets.js?v=img66",
+  "./js/studio-compact.js?v=nw65b",
+  "./js/studio-core.js?v=compact2",
+  "./js/studio-ink.js?v=bk81",
+  "./js/studio-laser.js?v=nw65b",
+  "./js/studio-panels.js?v=compact1",
+  "./js/studio-reader.js?v=bk81",
+  "./js/studio-search.js?v=ink2",
+  "./js/studio-shell.js?v=nw65b",
+  "./js/studio-smart.js?v=tr78",
+  "./js/studio-split.js?v=studio4",
+  "./js/studio-tabs.js?v=ink3",
+  "./js/studio-timer.js?v=nw65b",
+  "./js/studio-toolbar.js?v=nw65b",
+  "./js/studio-tools.js?v=compact2",
+  "./js/study-backup-v87.js?v=step40",
+  "./js/study-dock-v91.js?v=step58",
+  "./js/study-enhancements.js",
+  "./js/study-ink-backup-v89.js",
+  "./js/study-mode-v5.js",
+  "./js/study-mode-v82.js",
+  "./js/study-occlusion-v90.js?v=step58",
+  "./js/study-planner-v84.js?v=step42",
+  "./js/study-recovery-diagnostics.js",
+  "./js/study-recovery-v88.js",
+  "./js/study-storage-guard.js?v=step42",
+  "./js/study-suite-v85.js?v=step58",
+  "./js/study-text-cards-v92.js?v=step46",
+  "./js/study-timer-v83.js",
+  "./js/study-workspace-v86.js?v=step42",
+  "assets/apple-touch-icon.png",
+  "assets/brain-pearl.webp",
+  "assets/icon-192.png",
+  "assets/logo.png",
+  "assets/medical-thorax.webp",
+  "course.html",
+  "css/exams.css?v=ex91",
+  "css/grades.css?v=step66",
+  "css/medical-banner.css?v=step58",
+  "css/motion.css?v=side66c",
+  "css/semester.css?v=step58",
+  "css/style.css?v=off92",
+  "css/timetable.css?v=tt87",
+  "css/workspace.css?v=step58",
+  "data/courses.js?v=step67",
+  "data/study/biochemistry-hormones-1.js?v=step58",
+  "data/study/medical-immunology-1.js?v=step58",
+  "data/study/nutrition-principles-1.js?v=step58",
+  "data/study/physiology-kidney-1.js?v=kidney72",
+  "exams.html",
+  "grades.html",
+  "index.html",
+  "js/ai-chat.js?v=step58",
+  "js/app.js?v=side66",
+  "js/auth.js?v=plan66",
+  "js/exams-home.js?v=ex91",
+  "js/exams.js?v=ex91",
+  "js/grades.js?v=step66",
+  "js/home.js?v=step58",
+  "js/i18n.js?v=ex91",
+  "js/medical-banner.js?v=step58",
+  "js/motion.js?v=mv82",
+  "js/my-course.js?v=step58",
+  "js/nav.js?v=off92",
+  "js/pdf-viewer.js?v=step68",
+  "js/planner.js?v=step58",
+  "js/profile-form.js?v=step63",
+  "js/profile.js?v=step62",
+  "js/questions.js?v=step58",
+  "js/study-summary.js?v=step58",
+  "js/timetable.js?v=tt87",
+  "js/workspace.js?v=ex91",
+  "login.html",
+  "manifest.webmanifest",
+  "pdf-notes.html",
+  "profile.html",
+  "semester.html",
+  "study.html",
+  "timetable-admin.html",
+  "timetable.html",
+  "upload.html",
+  "workspace.html"
+];
 var CDN = [
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"
 ];
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(V).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
+  // كل ملف يُحفظ على حدة: غياب ملف واحد لا يُفشل التثبيت كله (الصفحات والسكربتات الأساسية متاحة بلا إنترنت من أول مرة)
+  e.waitUntil(caches.open(V).then(function (c) {
+    return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); }));
+  }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener("activate", function (e) {
   e.waitUntil(caches.keys().then(function (ks) {
@@ -29,6 +130,11 @@ self.addEventListener("fetch", function (e) {
     return;
   }
   if (url.origin !== location.origin) return;
+  // بيانات للقراءة فقط تُحفظ آخر نسخة منها لتظهر بلا إنترنت (الجدول، الامتحانات، التبليغات، قائمة الملفات المرفوعة)
+  if (/^\/api\/(exams|timetable|announcements|uploads\.js)$/.test(url.pathname)) {
+    e.respondWith(fetchAndStore(req).catch(function () { return caches.match(req).then(function (hit) { return hit || Response.error(); }); }));
+    return;
+  }
   if (/^\/api\/(auth\/|sync|announcements)/.test(url.pathname)) return; // الحساب والمزامنة: دائماً من الشبكة
   if (/\/api\//.test(url.pathname)) return;
   var isPdf = /\.pdf$/i.test(url.pathname);

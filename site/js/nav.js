@@ -386,3 +386,19 @@
 
   build();
 })();
+
+/* شريط «أنت بلا اتصال» (بطلب محمد): يظهر عند انقطاع الإنترنت ويختفي عند عودته؛ الصفحات والملفات المحفوظة تعمل (sw.js) */
+(function () {
+  var MSG = { ar: "أنت بلا اتصال — الصفحات والملفات المحفوظة تعمل", en: "You are offline — saved pages and files still work", fa: "آفلاین هستید — صفحه‌ها و فایل‌های ذخیره‌شده کار می‌کنند" };
+  var bar = null;
+  function paint() {
+    var off = navigator.onLine === false;
+    if (off && !bar) {
+      var l = (document.documentElement.lang || "ar").slice(0, 2);
+      bar = document.createElement("div"); bar.className = "offline-bar"; bar.setAttribute("role", "status");
+      bar.setAttribute("data-i18n-skip", ""); bar.textContent = MSG[l] || MSG.ar; document.body.appendChild(bar);
+    } else if (!off && bar) { bar.remove(); bar = null; }
+  }
+  window.addEventListener("online", paint); window.addEventListener("offline", paint);
+  if (document.body) paint(); else document.addEventListener("DOMContentLoaded", paint);
+})();
