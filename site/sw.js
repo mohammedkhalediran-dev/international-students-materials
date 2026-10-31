@@ -1,6 +1,7 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-off93";
+var V = "medixa-off95";
 var SHELL = [
+  "js/offline-save.js?v=off95",
   "./assets/logo.png",
   "./css/studio-annotations.css?v=ink2",
   "./css/studio-compact.css?v=fg67",
@@ -70,7 +71,7 @@ var SHELL = [
   "index.html",
   "js/ai-chat.js?v=step58",
   "js/app.js?v=side66",
-  "js/auth.js?v=plan66",
+  "js/auth.js?v=off94",
   "js/exams-home.js?v=ex91",
   "js/exams.js?v=ex91",
   "js/grades.js?v=step66",
@@ -99,6 +100,24 @@ var SHELL = [
   "upload.html",
   "workspace.html"
 ];
+var FONTS = [
+  "vendor/pdfjs/standard_fonts/FoxitDingbats.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitFixed.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitFixedBold.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitFixedBoldItalic.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitFixedItalic.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitSerif.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitSerifBold.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitSerifBoldItalic.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitSerifItalic.pfb",
+  "vendor/pdfjs/standard_fonts/FoxitSymbol.pfb",
+  "vendor/pdfjs/standard_fonts/LICENSE_FOXIT",
+  "vendor/pdfjs/standard_fonts/LICENSE_LIBERATION",
+  "vendor/pdfjs/standard_fonts/LiberationSans-Bold.ttf",
+  "vendor/pdfjs/standard_fonts/LiberationSans-BoldItalic.ttf",
+  "vendor/pdfjs/standard_fonts/LiberationSans-Italic.ttf",
+  "vendor/pdfjs/standard_fonts/LiberationSans-Regular.ttf"
+];
 var CDN = [
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
@@ -107,6 +126,9 @@ var CDN = [
 self.addEventListener("install", function (e) {
   // كل ملف يُحفظ على حدة: غياب ملف واحد لا يُفشل التثبيت كله (الصفحات والسكربتات الأساسية متاحة بلا إنترنت من أول مرة)
   e.waitUntil(caches.open(V).then(function (c) {
+    // مكتبات القارئ (pdf.js وpdf-lib) وخطوطه تُحفظ مسبقاً ليعمل «اكتب وظلّل» بلا إنترنت من أول مرة
+    CDN.forEach(function (u) { fetch(u, { mode: "no-cors" }).then(function (r) { return c.put(u, r); }).catch(function () {}); });
+    FONTS.forEach(function (u) { fetch(u).then(function (r) { return r.status === 200 ? c.put(u, r) : null; }).catch(function () {}); });
     return Promise.all(SHELL.map(function (u) {
       return fetch(u, { cache: "reload" }).then(function (res) { return res.status === 200 ? clean(res).then(function (r) { return c.put(u, r); }) : null; }).catch(function () {});
     }));
@@ -133,6 +155,8 @@ self.addEventListener("fetch", function (e) {
   }
   if (url.origin !== location.origin) return;
   // بيانات للقراءة فقط تُحفظ آخر نسخة منها لتظهر بلا إنترنت (الجدول، الامتحانات، التبليغات، قائمة الملفات المرفوعة)
+  // ملفات المحاضرات المرفوعة (api/file/<id>): تُحفظ عند أول فتح وتعمل بلا إنترنت
+  if (/^\/api\/file\//.test(url.pathname)) { e.respondWith(pdfFetch(req)); return; }
   if (/^\/api\/(exams|timetable|announcements|uploads\.js)$/.test(url.pathname)) {
     e.respondWith(fetchAndStore(req).catch(function () { return caches.match(req).then(function (hit) { return hit || Response.error(); }); }));
     return;
@@ -141,7 +165,7 @@ self.addEventListener("fetch", function (e) {
   if (/\/api\//.test(url.pathname)) return;
   var isPdf = /\.pdf$/i.test(url.pathname);
   e.respondWith(
-    (isPdf ? caches.match(req).then(function (hit) { return hit || fetchAndStore(req); })
+    (isPdf ? pdfFetch(req)
            : fetchAndStore(req).catch(function () { return offlineHit(req); }))
   );
 });
@@ -149,6 +173,16 @@ self.addEventListener("fetch", function (e) {
 function clean(res) {
   if (!res.redirected) return Promise.resolve(res);
   return res.clone().blob().then(function (b) { return new Response(b, { status: 200, statusText: "OK", headers: { "content-type": res.headers.get("content-type") || "text/html; charset=utf-8" } }); });
+}
+/* ملف PDF: من الحفظ أولاً، وإلا يُجلب كاملاً (حتى لو طلب القارئ جزءاً منه) ويُحفظ، فيعمل بعدها بلا إنترنت */
+function pdfFetch(req) {
+  return caches.match(req.url).then(function (hit) {
+    if (hit) return hit;
+    return fetch(req.url, { credentials: "same-origin" }).then(function (res) {
+      if (res && res.status === 200) { var copy = res.clone(); caches.open(V).then(function (c) { c.put(req.url, copy); }); }
+      return res;
+    });
+  });
 }
 function fetchAndStore(req) {
   return fetch(req, { cache: "no-cache" }).then(function (res) {

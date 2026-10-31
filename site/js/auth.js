@@ -147,16 +147,23 @@
     if (window.I18N && I18N.apply) I18N.apply();
   }
 
+  var meStatus = 200;
   window.MSAuth = {
     api: api,
     user: function () { return user; },
     me: function () {
-      return api("GET", "auth/me").then(function (r) { user = r.status === 200 ? r.data.user : null; return user; });
+      return api("GET", "auth/me").then(function (r) {
+        meStatus = r.status;
+        if (r.status === 200) { user = r.data.user; try { localStorage.setItem("ms.userCache", JSON.stringify(user)); } catch (e) {} }
+        else if (r.status === 0) { try { user = JSON.parse(localStorage.getItem("ms.userCache") || "null"); } catch (e) { user = null; } } // بلا إنترنت: آخر حساب معروف على هذا الجهاز
+        else { user = null; try { localStorage.removeItem("ms.userCache"); } catch (e) {} }
+        return user;
+      });
     },
     afterLogin: function (u) { user = u; },
     logout: function () {
       return flush().then(function () { return api("POST", "auth/logout"); }).then(function () {
-        SYNC.concat([TKEY, "ms.authed", "ms.guest"]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
+        SYNC.concat([TKEY, "ms.authed", "ms.guest", "ms.userCache"]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
         user = null;
       });
     }
@@ -168,6 +175,7 @@
   MSAuth.me().then(function () {
     // صفحة الدخول أولاً (بطلب محمد 2026-10-19): من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يذهب إليها
     if (user) lsSet("ms.authed", "1");
+    else if (meStatus === 0 && lsGet("ms.authed")) { /* بلا إنترنت: لا نحوّله إلى صفحة الدخول ولا نمسح دخوله */ }
     else {
       lsDel("ms.authed");
       if (!lsGet("ms.guest") && !/\/(login|privacy|terms)(\.html)?$/.test(location.pathname)) {
