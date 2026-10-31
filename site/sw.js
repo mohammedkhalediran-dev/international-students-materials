@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-off92";
+var V = "medixa-off93";
 var SHELL = [
   "./assets/logo.png",
   "./css/studio-annotations.css?v=ink2",
@@ -107,7 +107,9 @@ var CDN = [
 self.addEventListener("install", function (e) {
   // كل ملف يُحفظ على حدة: غياب ملف واحد لا يُفشل التثبيت كله (الصفحات والسكربتات الأساسية متاحة بلا إنترنت من أول مرة)
   e.waitUntil(caches.open(V).then(function (c) {
-    return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); }));
+    return Promise.all(SHELL.map(function (u) {
+      return fetch(u, { cache: "reload" }).then(function (res) { return res.status === 200 ? clean(res).then(function (r) { return c.put(u, r); }) : null; }).catch(function () {});
+    }));
   }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener("activate", function (e) {
@@ -140,14 +142,31 @@ self.addEventListener("fetch", function (e) {
   var isPdf = /\.pdf$/i.test(url.pathname);
   e.respondWith(
     (isPdf ? caches.match(req).then(function (hit) { return hit || fetchAndStore(req); })
-           : fetchAndStore(req).catch(function () { return caches.match(req, { ignoreSearch: true }); }))
+           : fetchAndStore(req).catch(function () { return offlineHit(req); }))
   );
 });
+/* الرد بعد تحويل (مثل /index.html ← /) لا يصلح كجواب لصفحة بلا إنترنت (المتصفح يرفضه: ERR_FAILED)؛ نحفظ نسخة نظيفة منه */
+function clean(res) {
+  if (!res.redirected) return Promise.resolve(res);
+  return res.clone().blob().then(function (b) { return new Response(b, { status: 200, statusText: "OK", headers: { "content-type": res.headers.get("content-type") || "text/html; charset=utf-8" } }); });
+}
 function fetchAndStore(req) {
   return fetch(req, { cache: "no-cache" }).then(function (res) {
-    if (res && res.status === 200 && !res.redirected) { var copy = res.clone(); caches.open(V).then(function (c) { c.put(req, copy); }); }
+    if (res && res.status === 200) { var copy = res.clone(); clean(copy).then(function (r) { return caches.open(V).then(function (c) { return c.put(req, r); }); }).catch(function () {}); }
     return res;
   });
+}
+/* نسخة محفوظة لطلب لا اتصال فيه: الرابط نفسه، أو بلا .html، أو مع .html، أو الرئيسية لصفحات التنقل */
+function offlineHit(req) {
+  var u = new URL(req.url), p = u.pathname, alts = [p];
+  if (/\.html$/.test(p)) alts.push(p.replace(/\.html$/, "")); else if (!/\.[a-z0-9]+$/i.test(p)) alts.push(p.replace(/\/$/, "") + ".html");
+  if (p === "/" || p === "") alts.push("/index.html");
+  var i = 0;
+  function next() {
+    if (i >= alts.length) return req.mode === "navigate" ? caches.match("/index.html", { ignoreSearch: true }).then(function (h) { return h || Response.error(); }) : Promise.resolve(Response.error());
+    return caches.match(new Request(u.origin + alts[i++]), { ignoreSearch: true }).then(function (hit) { return hit || next(); });
+  }
+  return next();
 }
 
 /* Step 49: إشعارات الموقع (Web Push) — الرسالة مشفّرة من الخادم: {title, body, url, tag}
