@@ -117,9 +117,17 @@
   }
   function initHome(box) {
     var timer = null;
+    /* زر «إخفاء الجدول»: يُحفظ على هذا الجهاز فقط، ويظهر رابط صغير لإعادته */
+    var showBtn = el("button", "tt-btn tt-restore", t("إظهار الجدول الجامعي")); showBtn.type = "button"; showBtn.hidden = true; box.after(showBtn);
+    var hideBtn = box.querySelector("#ttHide");
+    function stored() { try { return localStorage.getItem("ms.ttHide") === "1"; } catch (e) { return false; } }
+    function setStored(on) { try { if (on) localStorage.setItem("ms.ttHide", "1"); else localStorage.removeItem("ms.ttHide"); } catch (e) {} }
+    function paintHidden() { var h = stored(); box.hidden = h; showBtn.hidden = !h; }
+    if (hideBtn) hideBtn.onclick = function () { setStored(true); paintHidden(); };
+    showBtn.onclick = function () { setStored(false); paintHidden(); };
     access().then(function (a) {
       if (!a.allowed) return; // الزائر وطلاب الكورسات الأخرى: لا يظهر القسم إطلاقاً
-      box.hidden = false;
+      paintHidden();
       if (a.admin) { var m = box.querySelector("#ttManage"); if (m) m.hidden = false; }
       load(true);
     });

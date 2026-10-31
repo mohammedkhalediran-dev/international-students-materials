@@ -5,6 +5,7 @@ import { kvStore } from "../_lib/kvstore.js";
 import { handleAuth, uploadAccount, currentUser } from "../_lib/auth.js";
 import { handlePush, notify, lectureNotice } from "../_lib/push.js";
 import { handleTimetable } from "../_lib/timetable.js";
+import { handleExams } from "../_lib/exams.js";
 import { handleGrades } from "../_lib/grades.js";
 import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
@@ -14,6 +15,8 @@ export async function onRequest({ request, env, waitUntil }) {
   if (authRes) return authRes;
   const ttRes = await handleTimetable(request, env); // الجدول الجامعي: الكورس الثالث والمشرف فقط
   if (ttRes) return ttRes;
+  const exRes = await handleExams(request, env); // التقويم والامتحانات: الكورس الثالث والمشرف فقط
+  if (exRes) return exRes;
   const grRes = await handleGrades(request, env); // درجاتي الجامعية: كل طالب درجاته فقط، والرفع للمشرف (رقم الجواز لا يُخزَّن)
   if (grRes) return grRes;
   const pnRes = await handlePdfNotes(request, env); // كتابة الطالب وتظليله على ملفات PDF: صفوفه هو فقط (Step 63)

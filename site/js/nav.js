@@ -25,7 +25,7 @@
     { title: "تنظيم الدراسة", items: [
       { id: "tools", label: "أدوات الطالب", icon: "tools", href: "index.html#tools", enabled: true },
       { id: "plan", label: "مخطط الدراسة", icon: "list", href: "workspace.html?view=planner", enabled: true },        // لا صفحة بعد
-      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", href: "workspace.html?view=planner", enabled: true } // لا صفحة بعد
+      { id: "calendar", label: "التقويم والامتحانات", icon: "calendar", href: "exams.html", enabled: true }
     ] },
     { title: "التدريب", items: [
       { id: "qbank", label: "بنك الأسئلة", icon: "help", href: "workspace.html?view=questions", enabled: true },      // «قريباً»
