@@ -1,8 +1,8 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-off96";
+var V = "medixa-off97";
 var SHELL = [
   "js/offline-save.js?v=off96",
-  "js/offline-auto.js?v=off96",
+  "js/offline-auto.js?v=off97",
   "./assets/logo.png",
   "./css/studio-annotations.css?v=ink2",
   "./css/studio-compact.css?v=fg67",

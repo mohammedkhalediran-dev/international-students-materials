@@ -1,6 +1,6 @@
 /* js/offline-auto.js — تحميل تلقائي لملفات PDF لمواد كورس الطالب ليعمل الموقع بلا إنترنت (بطلب محمد 2026-10-31).
    يعمل بصمت في الخلفية بعد فتح الصفحة: ملفاً ملفاً، الأحدث أولاً، ويتجاوز ما حُفظ. sw.js يخزّن كل ملف يصل.
-   لا يعمل على بيانات الجوال أو مع «توفير البيانات»، ويتوقف إن امتلأ التخزين (80٪) أو انقطع الإنترنت.
+   يعمل على أي اتصال (بطلب محمد: لا استثناء لبيانات الجوال)، ويتوقف فقط إن انقطع الإنترنت أو قارب التخزين الامتلاء (80٪).
    الإيقاف: localStorage ms.autoOffline = "0". الحالة في ms.offlineStat. */
 (function () {
   "use strict";
@@ -9,10 +9,6 @@
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   if (get("ms.autoOffline") === "0") return;
 
-  function cheap() {
-    var c = navigator.connection;
-    return !(c && (c.saveData || c.type === "cellular"));
-  }
   function files() {
     var base = (window.SITE && SITE.filesBase) || "files/", seen = {}, out = [];
     function add(f, courseOk) {
@@ -35,7 +31,7 @@
   }
 
   function run() {
-    if (!navigator.serviceWorker.controller || navigator.onLine === false || !cheap()) return;
+    if (!navigator.serviceWorker.controller || navigator.onLine === false) return;
     var list = files(), total = list.length, done = 0, i = 0;
     if (!total) return;
     // آخر تشغيل كامل: لا نكرره أكثر من مرة كل 6 ساعات ما دام لا جديد
