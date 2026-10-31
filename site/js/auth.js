@@ -172,6 +172,16 @@
   // صفحة الدخول تدير نفسها (js/login.js)
   if (/\/(login|admin|announce)(\.html)?$/.test(location.pathname)) return; // Cloudflare يختصر login.html إلى /login
 
+  /* نبضة نشاط كل دقيقة والصفحة ظاهرة ومتصلة: يعرف المشرف كم ساعة استعمل الطالب الموقع وكم منها في القراءة والدراسة */
+  var pingTimer = null;
+  function startPing() {
+    if (pingTimer || !user) return;
+    var study = /\/(pdf-notes|study)(\.html)?$/.test(location.pathname);
+    pingTimer = setInterval(function () {
+      if (document.visibilityState === "visible" && navigator.onLine !== false) api("POST", "auth/ping", { mode: study ? "study" : "site" });
+    }, 60000);
+  }
+
   MSAuth.me().then(function () {
     // صفحة الدخول أولاً (بطلب محمد 2026-10-19): من لم يسجّل الدخول ولم يختر «المتابعة كزائر» يذهب إليها
     if (user) lsSet("ms.authed", "1");
@@ -183,6 +193,7 @@
         return;
       }
     }
+    startPing();
     try { document.dispatchEvent(new CustomEvent("ms:user", { detail: user })); } catch (e) { /* متصفح قديم */ } // يقرؤه بانر الرئيسية للترحيب بالاسم
     paintHeader();
     paintSidebar();

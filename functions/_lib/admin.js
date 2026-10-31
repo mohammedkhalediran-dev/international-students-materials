@@ -20,6 +20,7 @@ export const ASSIGNABLE = ["student", "uploader", "rep"]; // admin من ADMIN_EM
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const RECENT_MS = 7 * 24 * 3600 * 1000;
 const MAX_PER = 100;
+const now0 = () => Date.now();
 
 function json(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers } });
@@ -41,7 +42,11 @@ async function allUsers(env) {
   const base = "SELECT u.id, u.email, u.name, u.role, u.active, u.created_at, " +
     "(SELECT MAX(expires_at) FROM sessions s WHERE s.user_id = u.id) AS last_exp, " +
     "(SELECT v FROM user_data d WHERE d.user_id = u.id AND d.k = 'ms.sem') AS sem_v";
+  const act = ", (SELECT COALESCE(SUM(site_s), 0) FROM user_activity a WHERE a.user_id = u.id) AS site_s, (SELECT COALESCE(SUM(study_s), 0) FROM user_activity a WHERE a.user_id = u.id) AS study_s, " +
+    "(SELECT MAX(last_at) FROM user_activity a WHERE a.user_id = u.id) AS act_at, (SELECT full_name FROM profiles f WHERE f.user_id = u.id) AS full_name, " +
+    "(SELECT MAX(t) FROM user_data d2 WHERE d2.user_id = u.id) AS synced_at";
   const tries = [
+    base + act + ", u.last_login_at, (SELECT COUNT(*) FROM push_subs p WHERE p.user_id = u.id) AS push FROM users u ORDER BY u.id",
     base + ", u.last_login_at, (SELECT COUNT(*) FROM push_subs p WHERE p.user_id = u.id) AS push FROM users u ORDER BY u.id",
     base + ", NULL AS last_login_at, (SELECT COUNT(*) FROM push_subs p WHERE p.user_id = u.id) AS push FROM users u ORDER BY u.id",
     base + ", NULL AS last_login_at, 0 AS push FROM users u ORDER BY u.id"
@@ -55,7 +60,8 @@ function shape(r) {
   let sem = null; try { const v = JSON.parse(r.sem_v); if ([1, 2, 3].includes(v)) sem = v; } catch { sem = null; }
   const fromSession = r.last_exp ? r.last_exp - SESSION_MS : null;
   const last = Math.max(r.last_login_at || 0, fromSession || 0) || null;
-  return { id: r.id, name: r.name, email: r.email, role: ROLES_ALL.includes(r.role) ? r.role : "student", active: !!r.active, created: r.created_at, lastLogin: last, semester: sem, devices: Number(r.push) || 0 };
+  const lastActive = Math.max(last || 0, r.act_at || 0, r.synced_at || 0) || null;
+  return { id: r.id, name: r.name, email: r.email, role: ROLES_ALL.includes(r.role) ? r.role : "student", active: !!r.active, created: r.created_at, lastLogin: last, semester: sem, devices: Number(r.push) || 0, fullName: r.full_name || null, siteSec: Number(r.site_s) || 0, studySec: Number(r.study_s) || 0, lastActive };
 }
 export function filterUsers(list, q) {
   const text = norm(q.get("q"));
@@ -73,6 +79,11 @@ function stats(list, now) {
   return {
     total, active, suspended: total - active,
     recent: list.filter((u) => u.lastLogin && now - u.lastLogin < RECENT_MS).length,
+    activeWeek: list.filter((u) => u.lastActive && now - u.lastActive < RECENT_MS).length,
+    away14: list.filter((u) => u.active && (!u.lastActive || now - u.lastActive > 14 * 864e5)).length,
+    hours: Math.round(list.reduce((s, u) => s + u.siteSec, 0) / 360) / 10,
+    studyHours: Math.round(list.reduce((s, u) => s + u.studySec, 0) / 360) / 10,
+    withDevices: list.filter((u) => u.devices > 0).length,
     byRole: Object.fromEntries(ROLES_ALL.map((r) => [r, list.filter((u) => u.role === r).length])),
     bySemester: { 1: 0, 2: 0, 3: 0, ...Object.fromEntries([1, 2, 3].map((s) => [s, list.filter((u) => u.semester === s).length])), none: list.filter((u) => !u.semester).length }
   };
@@ -90,8 +101,8 @@ export async function audit(env, actor, target, action, detail, result, now = Da
 async function auditList(env, q) {
   const page = Math.max(1, parseInt(q.get("page"), 10) || 1), per = 30;
   try {
-    const total = (await env.DB.prepare("SELECT COUNT(*) AS c FROM audit_log").first()).c;
-    const rows = (await env.DB.prepare("SELECT id, at, actor_id, actor_name, target_id, target_name, action, detail, result FROM audit_log ORDER BY at DESC, id DESC LIMIT ? OFFSET ?").bind(per, (page - 1) * per).all()).results || [];
+    const total = (await env.DB.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action NOT IN ('user_login', 'user_logout')").first()).c;
+    const rows = (await env.DB.prepare("SELECT id, at, actor_id, actor_name, target_id, target_name, action, detail, result FROM audit_log WHERE action NOT IN ('user_login', 'user_logout') ORDER BY at DESC, id DESC LIMIT ? OFFSET ?").bind(per, (page - 1) * per).all()).results || [];
     return json({ ok: true, available: true, total, page, per, items: rows.map((r) => ({ ...r, detail: safeParse(r.detail) })) });
   } catch { return json({ ok: true, available: false, total: 0, page: 1, per, items: [] }); }
 }
@@ -152,6 +163,17 @@ async function detail(env, q) {
   const gradeRows = person ? await safe(async () => (await env.DB.prepare("SELECT COUNT(*) AS c FROM grade_entries WHERE person_id = ?").bind(person.id).first()).c, 0) : 0;
   const notes = await safe(async () => (await env.DB.prepare("SELECT COUNT(*) AS c, COUNT(DISTINCT doc) AS f, MAX(t) AS last, COALESCE(SUM(LENGTH(d)), 0) AS bytes FROM pdf_notes WHERE user_id = ?").bind(id).first()), null);
   const images = await safe(async () => (await env.DB.prepare("SELECT COUNT(DISTINCT id) AS c FROM pdf_assets WHERE user_id = ?").bind(id).first()).c, 0);
+  /* الدرجات الكاملة (المشرف مأذون برؤيتها؛ رقم الجواز غير مخزّن أصلاً) */
+  const grades = person ? await safe(async () => ((await env.DB.prepare("SELECT b.title, e.course, e.grade FROM grade_entries e JOIN grade_batches b ON b.id = e.batch_id WHERE e.person_id = ? ORDER BY b.id, e.ord, e.id").bind(person.id).all()).results || []).map((r) => ({ term: r.title, course: r.course, grade: r.grade })), []) : [];
+  /* نشاط آخر 30 يوماً */
+  const since = new Date(now0() - 29 * 864e5).toISOString().slice(0, 10);
+  const days = await safe(async () => ((await env.DB.prepare("SELECT day, site_s, study_s FROM user_activity WHERE user_id = ? AND day >= ? ORDER BY day").bind(id, since).all()).results || []).map((r) => ({ day: r.day, site: r.site_s, study: r.study_s })), []);
+  /* الأجهزة (إشعارات) والجلسات */
+  const devs = await safe(async () => ((await env.DB.prepare("SELECT semester, created_at, last_ok FROM push_subs WHERE user_id = ? ORDER BY created_at DESC LIMIT 20").bind(id).all()).results || []).map((r) => ({ semester: r.semester, since: r.created_at, lastOk: r.last_ok || null })), []);
+  const sess = await safe(async () => ((await env.DB.prepare("SELECT expires_at FROM sessions WHERE user_id = ? AND expires_at > ? ORDER BY expires_at DESC LIMIT 20").bind(id, now0()).all()).results || []).map((r) => ({ signedIn: r.expires_at - SESSION_MS, expires: r.expires_at })), []);
+  /* سجل الحساب: دخوله وخروجه وما فعله المشرف عليه */
+  const log = await safe(async () => ((await env.DB.prepare("SELECT at, actor_id, actor_name, action, detail FROM audit_log WHERE target_id = ? OR actor_id = ? ORDER BY at DESC, id DESC LIMIT 40").bind(id, id).all()).results || []).map((r) => ({ at: r.at, by: r.actor_name, self: r.actor_id === id, action: r.action, detail: safeParse(r.detail) })), []);
+  const names = (v) => (v && typeof v === "object" && !Array.isArray(v)) ? Object.entries(v).slice(0, 60).map(([k, x]) => ({ id: k, n: Array.isArray(x) ? x.length : (x && typeof x === "object" ? Object.keys(x).length : 1), items: Array.isArray(x) ? x.slice(0, 40) : null })) : [];
   const lastCourse = val("ms.last");
   return json({ ok: true, user: {
     ...u, sessions, favorites: count("ms.fav"), read: count("ms.read"), linked: "google",
@@ -162,6 +184,9 @@ async function detail(env, q) {
     syncedAt,
     fullName: profile && profile.full_name ? profile.full_name : null,
     gradesLinked: !!person, gradeRows,
+    grades, activityDays: days, deviceList: devs, sessionList: sess, log,
+    readBy: names(val("ms.read")), reviewBy: names(val("ms.review")), studyBy: names(val("ms.study")),
+    siteSec: u.siteSec, studySecTotal: u.studySec,
     pdf: notes ? { pages: Number(notes.c) || 0, files: Number(notes.f) || 0, last: notes.last || null, bytes: Number(notes.bytes) || 0, images } : null
   } });
 }
@@ -204,17 +229,69 @@ async function pushTest(env, me, now, fetchImpl) {
   return json({ ok: true, ...r });
 }
 
+/* ---------- إشعار لطالب أو مجموعة ---------- */
+async function readBody(req) {
+  if (!(req.headers.get("content-type") || "").includes("application/json")) return null;
+  try { return await req.json(); } catch { return null; }
+}
+export function pickRecipients(all, b, now) {
+  const ids = Array.isArray(b.ids) ? b.ids.filter((x) => Number.isInteger(x)) : null;
+  if (ids && ids.length) return all.filter((u) => ids.includes(u.id) && u.active);
+  const t = b.target || {};
+  return all.filter((u) => u.active &&
+    (!t.semester || (t.semester === "none" ? !u.semester : u.semester === Number(t.semester))) &&
+    (!t.role || u.role === t.role) &&
+    (!t.inactiveDays || !u.lastActive || now - u.lastActive > Number(t.inactiveDays) * 864e5) &&
+    (!t.withDevicesOnly || u.devices > 0));
+}
+async function notifyGroup(req, env, me, now, opts) {
+  if (!vapidReady(env)) return fail("not_configured", 503);
+  const b = await readBody(req);
+  if (!b) return fail("bad_request", 400);
+  const title = String(b.title || "").trim().slice(0, 100), body = String(b.body || "").trim().slice(0, 240);
+  if (!title) return fail("title_required", 400);
+  const who = pickRecipients(await allUsers(env), b, now).slice(0, 500);
+  if (b.preview === true) return json({ ok: true, preview: true, users: who.length, devices: who.reduce((s, u) => s + u.devices, 0) });
+  let sent = 0, failed = 0, devices = 0;
+  for (const u of who) {
+    if (!u.devices) continue;
+    const r = await notifyUser(env, u.id, { title, body, url: "index.html", tag: "admin-" + now }, opts.pushFetch).catch(() => null);
+    if (r) { sent += r.sent || 0; failed += r.failed || 0; devices += r.devices || 0; }
+  }
+  await audit(env, me, who.length === 1 ? who[0] : null, "push_group", { users: who.length, devices, sent, failed, title }, sent > 0 ? "ok" : "no_delivery", now);
+  return json({ ok: true, users: who.length, devices, sent, failed });
+}
+/* إنهاء كل جلسات حساب (يخرج من كل أجهزته) */
+async function signoutUser(req, env, me, now) {
+  const b = await readBody(req);
+  if (!b || !Number.isInteger(b.id)) return fail("bad_request", 400);
+  const t = await env.DB.prepare("SELECT id, name FROM users WHERE id = ?").bind(b.id).first();
+  if (!t) return fail("not_found", 404);
+  const r = await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(t.id).run();
+  await audit(env, me, t, "signout_all", { sessions: r.meta ? r.meta.changes : 0 }, "ok", now);
+  return json({ ok: true, ended: r.meta ? r.meta.changes : 0 });
+}
+
 /* ---------- نقطة الدخول (المستخدم مشرف مؤكَّد مسبقاً) ---------- */
 export async function handleAdmin(req, env, me, p, opts = {}) {
   const now = (opts.now || Date.now)();
   const q = new URL(req.url).searchParams;
   if (p === "/api/auth/user" && req.method === "POST") return update(req, env, me, now);
   if (req.method === "GET") {
-    if (p === "/api/auth/admin/stats") return json({ ok: true, me: me.id, stats: stats(await allUsers(env), now) });
+    if (p === "/api/auth/admin/stats") {
+      const st = stats(await allUsers(env), now);
+      st.topCourses = [];
+      try { st.topCourses = ((await env.DB.prepare("SELECT v, COUNT(*) AS c FROM user_data WHERE k = 'ms.last' GROUP BY v ORDER BY c DESC LIMIT 5").all()).results || []).map((r) => ({ id: safeParse(r.v), n: r.c })).filter((x) => typeof x.id === "string"); } catch { /* لا شيء */ }
+      return json({ ok: true, me: me.id, stats: st });
+    }
     if (p === "/api/auth/admin/users") {
       const all = await allUsers(env);
       // المشرف الحالي أولاً، ثم المشرفون، ثم الأحدث تسجيلاً
-      const rows = filterUsers(all, q).sort((a, b) => (b.id === me.id) - (a.id === me.id) || (b.role === "admin") - (a.role === "admin") || b.id - a.id);
+      const sortKey = q.get("sort"), dir = q.get("dir") === "asc" ? 1 : -1;
+      const SORTS = { name: (u) => String(u.fullName || u.name || "").toLowerCase(), created: (u) => u.created || 0, active: (u) => u.lastActive || 0, hours: (u) => u.siteSec, study: (u) => u.studySec, role: (u) => ROLES_ALL.indexOf(u.role) };
+      const byKey = SORTS[sortKey] ? (a, b) => { const x = SORTS[sortKey](a), y = SORTS[sortKey](b); return (x < y ? -1 : x > y ? 1 : 0) * dir; }
+        : (a, b) => (b.id === me.id) - (a.id === me.id) || (b.role === "admin") - (a.role === "admin") || b.id - a.id;
+      const rows = filterUsers(all, q).sort(byKey);
       const per = Math.min(MAX_PER, Math.max(1, parseInt(q.get("per"), 10) || 20));
       const pages = Math.max(1, Math.ceil(rows.length / per));
       const page = Math.min(pages, Math.max(1, parseInt(q.get("page"), 10) || 1));
@@ -226,5 +303,7 @@ export async function handleAdmin(req, env, me, p, opts = {}) {
     if (p === "/api/auth/admin/push") return pushStatus(env, me);
   }
   if (p === "/api/auth/admin/push-test" && req.method === "POST") return pushTest(env, me, now, opts.pushFetch);
+  if (p === "/api/auth/admin/notify" && req.method === "POST") return notifyGroup(req, env, me, now, opts);
+  if (p === "/api/auth/admin/signout" && req.method === "POST") return signoutUser(req, env, me, now);
   return null;
 }

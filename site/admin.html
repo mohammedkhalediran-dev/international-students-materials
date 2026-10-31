@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/icon-192.png">
   <meta name="theme-color" content="#0b1019">
-  <link rel="stylesheet" href="css/admin.css?v=step58">
+  <link rel="stylesheet" href="css/admin.css?v=adm100">
   <script>
     /* تفضيل المظهر فقط (ليس صلاحيات ولا بيانات حسابات) */
     try { if (localStorage.getItem("ms.admin.theme") === "light") document.documentElement.setAttribute("data-admin-theme", "light"); } catch (e) {}
@@ -89,10 +89,11 @@
           <select class="field" id="roleFilter" aria-label="تصفية حسب الدور"><option value="">كل الأدوار</option><option value="admin">مشرف</option><option value="student">طالب</option><option value="uploader">رافع ملفات</option><option value="rep">ممثل الدفعة</option></select>
           <select class="field" id="statusFilter" aria-label="تصفية حسب الحالة"><option value="">كل الحالات</option><option value="active">نشط</option><option value="suspended">موقوف</option></select>
           <select class="field" id="semFilter" aria-label="تصفية حسب الكورس"><option value="">كل الكورسات</option><option value="1">الكورس الأول</option><option value="2">الكورس الثاني</option><option value="3">الكورس الثالث</option><option value="none">غير محدد</option></select>
+          <button class="btn" id="groupNotify" type="button"><svg aria-hidden="true"><use href="#i-bell"/></svg>إشعار لمجموعة</button>
           <button class="iconbtn resetfilter" id="resetFilters" type="button" title="مسح الفلاتر" aria-label="مسح الفلاتر"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
         </div>
         <table aria-describedby="results">
-          <thead><tr><th scope="col">المستخدم</th><th scope="col">آخر دخول</th><th scope="col" class="stagecol">الكورس</th><th scope="col">الدور</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th></tr></thead>
+          <thead><tr><th scope="col"><button type="button" class="sortbtn" data-sort="name">المستخدم</button></th><th scope="col"><button type="button" class="sortbtn" data-sort="active">آخر نشاط</button></th><th scope="col" class="hourscol"><button type="button" class="sortbtn" data-sort="hours">ساعات الاستخدام</button></th><th scope="col" class="stagecol">الكورس</th><th scope="col">الدور</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
         <div id="listState" class="state" hidden></div>
@@ -195,9 +196,20 @@
 <dialog id="detail" aria-labelledby="detailTitle">
   <div class="dialoghead"><h2 id="detailTitle">تفاصيل الحساب</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <div class="dialogbody" id="detailBody"></div>
-  <div class="dialogfoot"><button type="button" class="btn" id="detailEdit"><svg aria-hidden="true"><use href="#i-edit"/></svg>تعديل</button><button type="button" class="btn" data-close>إغلاق</button></div>
+  <div class="dialogfoot"><button type="button" class="btn" id="detailNotify">إشعار لهذا الطالب</button><button type="button" class="btn danger" id="detailSignout">إنهاء كل جلساته</button><button type="button" class="btn" id="detailEdit"><svg aria-hidden="true"><use href="#i-edit"/></svg>تعديل</button><button type="button" class="btn" data-close>إغلاق</button></div>
 </dialog>
 
+<dialog id="notifyDlg" aria-labelledby="notifyTitle">
+  <div class="dialoghead"><h2 id="notifyTitle">إرسال إشعار</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="dialogbody" id="notifyBody">
+    <label class="fieldlabel" id="notifyTargetRow">إلى من؟<select class="field" id="notifyTarget"><option value="all">كل الطلاب الفعّالين</option><option value="sem3">طلاب الكورس الثالث</option><option value="sem2">طلاب الكورس الثاني</option><option value="sem1">طلاب الكورس الأول</option><option value="away7">من لم يدخل منذ 7 أيام</option><option value="away14">من لم يدخل منذ 14 يوماً</option></select></label>
+    <p class="subtle" id="notifyOne" hidden></p>
+    <label class="fieldlabel">العنوان<input class="field" id="notifyTitleIn" maxlength="100" autocomplete="off"></label>
+    <label class="fieldlabel">النص<textarea class="field" id="notifyText" rows="3" maxlength="240"></textarea></label>
+    <p class="state" id="notifyInfo" role="status"></p>
+  </div>
+  <div class="dialogfoot"><button type="button" class="btn" id="notifyCount">عدد المستلمين</button><button type="button" class="btn primary" id="notifySend">إرسال</button><button type="button" class="btn" data-close>إلغاء</button></div>
+</dialog>
 <dialog id="addInfo" aria-labelledby="addTitle">
   <div class="dialoghead"><h2 id="addTitle">إضافة مستخدم</h2><button type="button" class="iconbtn" data-close aria-label="إغلاق"><svg aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <div class="dialogbody">
@@ -212,7 +224,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/auth.js?v=off94"></script>
-<script src="js/admin.js?v=adm99"></script>
+<script src="data/courses.js?v=step67"></script>
+<script src="js/auth.js?v=adm100"></script>
+<script src="js/admin.js?v=adm100"></script>
 </body>
 </html>

@@ -281,3 +281,37 @@ dialog form { display: contents; }
   .log { padding: 14px 16px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* ---- تفاصيل الطالب بتبويبات، وفرز الأعمدة، ونافذة الإشعار (بطلب محمد 2026-10-31) ---- */
+.sortbtn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; }
+.sortbtn:hover, .sortbtn.on { color: var(--accent); }
+.sortbtn.on::after { content: attr(data-dir); font-size: 10px; }
+.sortbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+.hourscol { white-space: nowrap; }
+@media (max-width: 900px) { .hourscol { display: none; } }
+.headcard { margin-bottom: 14px; }
+.tabbar { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.tabbtn { all: unset; cursor: pointer; padding: 9px 14px; font: inherit; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabbtn.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tabbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tabpanel[hidden] { display: none; }
+.subhead { margin: 18px 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.chips { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.chips li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
+.chips li small { flex-basis: 100%; }
+.bars { display: flex; align-items: flex-end; gap: 3px; height: 90px; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
+.bar { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.bar i { position: absolute; bottom: 0; width: 100%; border-radius: 2px 2px 0 0; min-height: 0; }
+.bar .bsite { background: var(--blue); opacity: .55; }
+.bar .bstudy { background: var(--green); }
+.legend { margin: 6px 0 0; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.lg.site { background: var(--blue); opacity: .55; } .lg.study { background: var(--green); }
+.mini { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mini td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.mini td:last-child { text-align: end; font-weight: 600; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-inline-start: 2px solid var(--line); }
+.timeline li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 12px; position: relative; }
+.timeline li::before { content: ""; position: absolute; inset-inline-start: -6px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.fieldlabel { display: grid; gap: 6px; margin-bottom: 12px; font-size: 13px; }
+textarea.field { resize: vertical; min-height: 84px; }

@@ -141,11 +141,34 @@ async function googleLogin(req, env, now, opts) {
   const cookie = await startSession(env, u.id, req, now);
   // وقت آخر دخول للوحة الإدارة (العمود من migrations/0005؛ قبله يُتجاهل بلا خطأ)
   try { await env.DB.prepare("UPDATE users SET last_login_at = ? WHERE id = ?").bind(now, u.id).run(); } catch { /* لا شيء */ }
+  await userEvent(env, u, "user_login", now);
   return json({ ok: true, user: publicUser(u) }, 200, { "set-cookie": cookie });
+}
+
+/* حدث في سجل الحساب (يظهر للمشرف في تفاصيل الطالب فقط، لا في السجل العام). قبل 0005 يُتجاهل بلا خطأ. */
+async function userEvent(env, u, action, now) {
+  try {
+    await env.DB.prepare("INSERT INTO audit_log (at, actor_id, actor_name, target_id, target_name, action, detail, result) VALUES (?, ?, ?, ?, ?, ?, NULL, 'ok')")
+      .bind(now, u.id, String(u.name || u.email || "").slice(0, 80), u.id, String(u.name || "").slice(0, 80), action).run();
+  } catch { /* لا شيء */ }
+}
+
+/* نبضة نشاط كل دقيقة من الصفحة المفتوحة: تزيد 60 ثانية على الموقع (وفي وضع الدراسة إن كانت الصفحة قارئاً أو دراسة). */
+async function ping(req, user, env, now) {
+  const b = await readJson(req);
+  const study = !!b && b.mode === "study";
+  const day = new Date(now).toISOString().slice(0, 10);
+  try {
+    await env.DB.prepare("INSERT INTO user_activity (user_id, day, site_s, study_s, last_at) VALUES (?, ?, 60, ?, ?) " +
+      "ON CONFLICT(user_id, day) DO UPDATE SET site_s = site_s + 60, study_s = study_s + excluded.study_s, last_at = excluded.last_at WHERE excluded.last_at - user_activity.last_at >= 50000")
+      .bind(user.id, day, study ? 60 : 0, now).run();
+  } catch (e) { if (/no such table/i.test(String(e && e.message))) return fail("not_migrated", 503); }
+  return json({ ok: true });
 }
 
 async function logout(req, env) {
   const token = readCookie(req);
+  try { const u = await currentUser(req, env, Date.now()); if (u) await userEvent(env, u, "user_logout", Date.now()); } catch { /* لا شيء */ }
   if (token) await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha(token)).run();
   return json({ ok: true }, 200, { "set-cookie": cookieHeader("", req, 0) });
 }
@@ -248,6 +271,7 @@ export async function handleAuth(req, env, opts = {}) {
   if (p === "/api/auth/me" && req.method === "GET") return user ? json({ ok: true, user: publicUser(user) }) : fail("unauthorized", 401);
   if (!user) return fail("unauthorized", 401);
 
+  if (p === "/api/auth/ping" && req.method === "POST") return ping(req, user, env, now);
   if (p === "/api/sync" && req.method === "GET") return syncGet(user, env);
   if (p === "/api/sync" && req.method === "PUT") return syncPut(req, user, env);
 

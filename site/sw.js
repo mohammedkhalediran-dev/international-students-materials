@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-off98";
+var V = "medixa-adm100";
 var SHELL = [
   "js/offline-auto.js?v=off97",
   "./assets/logo.png",
@@ -71,7 +71,7 @@ var SHELL = [
   "index.html",
   "js/ai-chat.js?v=step58",
   "js/app.js?v=side66",
-  "js/auth.js?v=off94",
+  "js/auth.js?v=adm100",
   "js/exams-home.js?v=ex91",
   "js/exams.js?v=ex91",
   "js/grades.js?v=step66",

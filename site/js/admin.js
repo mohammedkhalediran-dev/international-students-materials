@@ -31,7 +31,7 @@
   };
   function errText(r) { var e = (r && r.data && r.data.error) || (r && r.status === 0 ? "network" : ""); return ERR[e] || "تعذّر تنفيذ الطلب (" + (r ? r.status : "?") + "). أعد المحاولة."; }
 
-  var me = null, stats = null, state = { page: 1, per: matchMedia("(max-width: 620px)").matches ? 10 : 20 }, list = { users: [], pages: 1, count: 0 }, logPage = 1;
+  var me = null, stats = null, state = { sort: "", dir: "desc", page: 1, per: matchMedia("(max-width: 620px)").matches ? 10 : 20 }, list = { users: [], pages: 1, count: 0 }, logPage = 1;
   var opener = null;
 
   /* ---------- أدوات عامة ---------- */
@@ -51,6 +51,8 @@
     if (d < 7 * day) return "قبل " + NUM.format(Math.floor(d / day)) + " أيام";
     return '<span class="num">' + esc(DT.format(ms)) + "</span>";
   }
+  function hrs(sec) { sec = Number(sec) || 0; return sec < 3600 ? NUM.format(Math.round(sec / 60)) + " د" : NUM.format(Math.round(sec / 360) / 10) + " س"; }
+  function courseName(id) { try { var c = (typeof COURSES !== "undefined" ? COURSES : []).filter(function (x) { return x.id === id; })[0]; return c ? c.name : String(id).replace(/-/g, " "); } catch (e) { return String(id); } }
   function openDialog(id, from) { opener = from || document.activeElement; $(id).showModal(); }
   document.addEventListener("close", function (e) { if (e.target.tagName === "DIALOG" && opener && document.contains(opener)) { opener.focus(); } }, true);
 
@@ -97,10 +99,14 @@
         ["إجمالي الحسابات", stats.total, "كل الأدوار والكورسات", "users", "", ""],
         ["الحسابات النشطة", stats.active, Math.round(stats.active / t * 100) + "% مفعّلة، لا تعني متصلة", "check", "green", "active"],
         ["دخلوا خلال 7 أيام", stats.recent, "حسب آخر تسجيل دخول", "login", "amber", null],
-        ["الحسابات الموقوفة", stats.suspended, stats.suspended ? "يمكن إعادة تفعيلها" : "لا يوجد حساب موقوف", "stop", "red", "suspended"]
+        ["الحسابات الموقوفة", stats.suspended, stats.suspended ? "يمكن إعادة تفعيلها" : "لا يوجد حساب موقوف", "stop", "red", "suspended"],
+        ["نشطون هذا الأسبوع", stats.activeWeek || 0, "دخلوا أو استعملوا الموقع خلال 7 أيام", "login", "green", null],
+        ["غائبون أكثر من 14 يوماً", stats.away14 || 0, "حسابات فعّالة لم تُستعمل", "stop", "amber", null],
+        ["ساعات الاستخدام", Math.round(stats.hours || 0), (stats.studyHours ? NUM.format(stats.studyHours) + " ساعة منها في الدراسة" : "لا بيانات بعد (تُحسب من الآن)"), "eye", "blue", null],
+        ["أجهزة بإشعارات", stats.withDevices || 0, (stats.topCourses && stats.topCourses[0] ? "الأكثر فتحاً: " + courseName(stats.topCourses[0].id) + " (" + stats.topCourses[0].n + ")" : "حسابات فعّلت الإشعارات"), "users", "", null]
       ];
       $("stats").innerHTML = cards.map(function (c) {
-        var inner = '<div class="stat-top"><span>' + esc(c[0]) + '</span><span class="stat-icon">' + icon(c[3]) + "</span></div><strong>" + NUM.format(c[1]) + "</strong><small>" + esc(c[2]) + '</small><div class="track"><i style="width:' + Math.round(c[1] / t * 100) + '%"></i></div>';
+        var inner = '<div class="stat-top"><span>' + esc(c[0]) + '</span><span class="stat-icon">' + icon(c[3]) + "</span></div><strong>" + NUM.format(c[1]) + "</strong><small>" + esc(c[2]) + '</small><div class="track"><i style="width:' + Math.min(100, Math.round(c[1] / t * 100)) + '%"></i></div>';
         return c[5] === null ? '<div class="stat ' + c[4] + '">' + inner + "</div>"
           : '<button type="button" class="stat ' + c[4] + '" data-stat="' + c[5] + '" aria-pressed="' + (cur === c[5] && c[5] !== "" ? "true" : "false") + '" aria-label="عرض ' + esc(c[0]) + '">' + inner + "</button>";
       }).join("");
@@ -119,9 +125,9 @@
   var reqId = 0;
   function loadList() {
     var id = ++reqId;
-    $("rows").innerHTML = new Array(4).join('<tr class="skel" aria-hidden="true"><td><i style="width:60%"></i></td><td><i></i></td><td class="stagecol"><i></i></td><td><i></i></td><td><i></i></td><td><i></i></td></tr>') ;
+    $("rows").innerHTML = new Array(4).join('<tr class="skel" aria-hidden="true"><td><i style="width:60%"></i></td><td><i></i></td><td><i></i></td><td class="stagecol"><i></i></td><td><i></i></td><td><i></i></td><td><i></i></td></tr>') ;
     $("listState").hidden = true; $("results").textContent = "جارٍ التحميل…";
-    return api("GET", "auth/admin/users?" + query({ page: state.page, per: state.per })).then(function (r) {
+    return api("GET", "auth/admin/users?" + query(state.sort ? { page: state.page, per: state.per, sort: state.sort, dir: state.dir } : { page: state.page, per: state.per })).then(function (r) {
       if (id !== reqId) return;
       if (r.status !== 200) {
         $("rows").innerHTML = ""; $("pages").innerHTML = ""; $("results").textContent = "";
@@ -142,8 +148,9 @@
     $("rows").innerHTML = rows.map(function (u) {
       var self = u.id === list.me, r = ROLES[u.role] || ROLES.student;
       var lockStatus = self ? "حسابك أنت محمي من الإيقاف هنا" : (u.role === "admin" && u.active && list.activeAdmins <= 1 ? "آخر مشرف فعّال محمي" : "");
-      return '<tr><td class="c-person"><button type="button" class="person personbtn" data-action="detail" data-id="' + u.id + '"><span class="avatar ' + r.color + '">' + esc(initials(u.name)) + "</span><span><strong>" + esc(u.name) + (self ? ' <span class="you">(أنت)</span>' : "") + '</strong><span class="email">' + esc(u.email) + "</span></span></button></td>" +
-        '<td class="c-last">' + ago(u.lastLogin) + "</td>" +
+      return '<tr><td class="c-person"><button type="button" class="person personbtn" data-action="detail" data-id="' + u.id + '"><span class="avatar ' + r.color + '">' + esc(initials(u.name)) + "</span><span><strong>" + esc(u.name) + (self ? ' <span class="you">(أنت)</span>' : "") + '</strong><span class="email">' + (u.fullName && u.fullName !== u.name ? esc(u.fullName) + " · " : "") + esc(u.email) + "</span></span></button></td>" +
+        '<td class="c-last">' + ago(u.lastActive || u.lastLogin) + "</td>" +
+        '<td class="hourscol"><span class="num">' + hrs(u.siteSec) + "</span>" + (u.studySec ? ' <small class="muted">· ' + hrs(u.studySec) + " دراسة</small>" : "") + "</td>" +
         '<td class="stagecol"><span class="muted">' + esc(u.semester ? SEM[u.semester] : "غير محدد") + "</span></td>" +
         "<td>" + roleBadge(u.role) + "</td><td>" + statusBadge(u) + "</td>" +
         '<td class="c-actions"><div class="rowactions">' +
@@ -191,6 +198,46 @@
 
   /* ---------- التفاصيل ---------- */
   var detailId = null;
+  var LOGS = { user_login: "تسجيل دخول", user_logout: "تسجيل خروج", role_change: "تغيير الدور", status_change: "إيقاف أو تفعيل", semester_change: "تغيير الكورس", push_group: "إشعار من المشرف", signout_all: "إنهاء كل الجلسات", push_test: "اختبار إشعار" };
+  function kv(rows) { return rows.map(function (x) { return '<div class="info-row"><span class="muted">' + x[0] + "</span><span>" + x[1] + "</span></div>"; }).join(""); }
+  function listBy(items) {
+    if (!items || !items.length) return '<p class="muted">لا شيء بعد</p>';
+    return '<ul class="chips">' + items.map(function (x) { return '<li><strong>' + esc(courseName(x.id)) + '</strong><span class="num">' + NUM.format(x.n) + "</span>" + (x.items ? ' <small class="muted num">' + esc(x.items.join("، ")) + "</small>" : "") + "</li>"; }).join("") + "</ul>";
+  }
+  function chart(days) {
+    if (!days || !days.length) return '<p class="muted">لا نشاط مسجَّل بعد. تُحسب الساعات من الآن فصاعداً.</p>';
+    var by = {}; days.forEach(function (d) { by[d.day] = d; });
+    var bars = [], max = 60, i, d;
+    for (i = 29; i >= 0; i--) { d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); var x = by[d] || { site: 0, study: 0 }; max = Math.max(max, x.site); bars.push([d, x]); }
+    return '<div class="bars" role="img" aria-label="الاستخدام خلال آخر 30 يوماً">' + bars.map(function (b) {
+      var h = Math.round(b[1].site / max * 100), hs = Math.round(b[1].study / max * 100);
+      return '<span class="bar" title="' + esc(b[0]) + " · " + hrs(b[1].site) + '"><i class="bsite" style="height:' + h + '%"></i><i class="bstudy" style="height:' + hs + '%"></i></span>';
+    }).join("") + '</div><p class="legend"><span class="lg site"></span> الموقع <span class="lg study"></span> منها دراسة</p>';
+  }
+  function gradesHtml(u) {
+    if (!u.gradesLinked) return '<p class="muted">لم يربط الطالب «درجاتي الجامعية» بعد (يكتب رقم جوازه في ملفه الشخصي).</p>';
+    if (!u.grades || !u.grades.length) return '<p class="muted">الحساب مربوط لكن لا درجات مرفوعة له بعد.</p>';
+    var terms = {}, order = [];
+    u.grades.forEach(function (g) { if (!terms[g.term]) { terms[g.term] = []; order.push(g.term); } terms[g.term].push(g); });
+    return order.map(function (t) {
+      var nums = terms[t].map(function (g) { return parseFloat(g.grade); }).filter(function (x) { return isFinite(x); });
+      var avg = nums.length === terms[t].length && nums.length ? (nums.reduce(function (a, b) { return a + b; }, 0) / nums.length) : null;
+      return '<h4 class="subhead">' + esc(t) + (avg !== null ? ' <span class="pill green">المعدل ' + NUM.format(Math.round(avg * 100) / 100) + "</span>" : "") + '</h4><table class="mini"><tbody>' +
+        terms[t].map(function (g) { return '<tr><td dir="auto">' + esc(g.course) + '</td><td class="num">' + esc(g.grade) + "</td></tr>"; }).join("") + "</tbody></table>";
+    }).join("");
+  }
+  function devicesHtml(u) {
+    var d = (u.deviceList || []).map(function (x) { return '<div class="info-row"><span class="muted">جهاز بإشعارات منذ ' + esc(DT.format(x.since)) + "</span><span>" + (x.lastOk ? "آخر إرسال ناجح " + esc(DTT.format(x.lastOk)) : '<span class="muted">لم يصل إشعار بعد</span>') + "</span></div>"; }).join("") || '<p class="muted">لا أجهزة مفعّل عليها الإشعارات.</p>';
+    var ss = (u.sessionList || []).map(function (x) { return '<div class="info-row"><span class="muted">جلسة قائمة، دخل في تقريباً</span><span class="num">' + esc(DTT.format(x.signedIn)) + ' · تنتهي ' + esc(DT.format(x.expires)) + "</span></div>"; }).join("") || '<p class="muted">لا جلسات قائمة.</p>';
+    return '<h4 class="subhead">أجهزة الإشعارات</h4>' + d + '<h4 class="subhead">الجلسات القائمة</h4>' + ss;
+  }
+  function logHtml(u) {
+    if (!u.log || !u.log.length) return '<p class="muted">لا سجل لهذا الحساب بعد. يبدأ تسجيل الدخول والخروج من الآن.</p>';
+    return '<ul class="timeline">' + u.log.map(function (x) {
+      var label = LOGS[x.action] || x.action, by = x.self ? "" : " · بواسطة " + esc(x.by || "");
+      return "<li><span class=\"num\">" + esc(DTT.format(x.at)) + "</span><strong>" + esc(label) + "</strong><small class=\"muted\">" + by + "</small></li>";
+    }).join("") + "</ul>";
+  }
   function detail(id, from) {
     detailId = id;
     $("detailBody").innerHTML = '<p class="state">جارٍ التحميل…</p>';
@@ -199,29 +246,97 @@
       if (detailId !== id) return;
       if (r.status !== 200) { $("detailBody").innerHTML = '<p class="state error">' + esc(errText(r)) + "</p>"; return; }
       var u = r.data.user, c = (ROLES[u.role] || ROLES.student).color;
-      var rows = [
+      detailUser = u;
+      var over = kv([
         ["البريد الإلكتروني", '<bdi class="ltr num">' + esc(u.email) + "</bdi>"],
-        ["ربط الحساب", pill("green", "Google", true)],
+        ["رمز الطالب", '<bdi class="ltr num">' + esc(u.studentCode || "") + "</bdi>"],
+        ["الاسم الكامل (الملف الشخصي)", u.fullName ? esc(u.fullName) : '<span class="muted">لم يكمله</span>'],
         ["الدور", roleBadge(u.role)], ["الحالة", statusBadge(u)],
         ["الكورس", esc(u.semester ? SEM[u.semester] : "غير محدد")],
         ["تاريخ الإنشاء", '<span class="num">' + esc(DT.format(u.created)) + "</span>"],
         ["آخر دخول", u.lastLogin ? '<span class="num">' + esc(DTT.format(u.lastLogin)) + "</span>" : "لم يُسجَّل"],
-        ["جلسات قائمة", '<span class="num">' + NUM.format(u.sessions) + "</span>"],
-        ["أجهزة مفعّل عليها الإشعارات", '<span class="num">' + NUM.format(u.devices) + "</span>"],
-        ["المفضلة / المحاضرات المقروءة", '<span class="num">' + NUM.format(u.favorites) + " / " + NUM.format(u.read) + "</span>"],
-        ["رمز الطالب", '<bdi class="ltr num">' + esc(u.studentCode || "") + "</bdi>"],
-        ["الاسم الكامل (الملف الشخصي)", u.fullName ? esc(u.fullName) : '<span class="muted">لم يكمله</span>'],
+        ["آخر نشاط", u.lastActive ? '<span class="num">' + esc(DTT.format(u.lastActive)) + "</span>" : '<span class="muted">—</span>'],
+        ["إجمالي الوقت على الموقع", '<span class="num">' + hrs(u.siteSec) + "</span>"],
+        ["منه في القراءة والدراسة", '<span class="num">' + hrs(u.studySecTotal) + "</span>"],
         ["درجاتي الجامعية", u.gradesLinked ? pill("green", "مربوط · " + NUM.format(u.gradeRows) + " مادة", true) : '<span class="muted">غير مربوط</span>'],
-        ["مواد في المراجعة / محاضرات درسها", '<span class="num">' + NUM.format(u.review || 0) + " / " + NUM.format(u.studied || 0) + "</span>"],
+        ["آخر مزامنة لبياناته", u.syncedAt ? '<span class="num">' + esc(DTT.format(u.syncedAt)) + "</span>" : '<span class="muted">لا شيء</span>']
+      ]);
+      var study = '<h4 class="subhead">الاستخدام آخر 30 يوماً</h4>' + chart(u.activityDays) + kv([
+        ["المفضلة", '<span class="num">' + NUM.format(u.favorites) + "</span>"],
         ["مهام المخطط (المنجزة / الكل)", '<span class="num">' + NUM.format(u.tasksDone || 0) + " / " + NUM.format(u.tasks || 0) + "</span>"],
-        ["آخر مادة فتحها", u.lastCourse ? '<bdi class="ltr">' + esc(u.lastCourse) + "</bdi>" : '<span class="muted">—</span>'],
-        ["آخر مزامنة لبياناته", u.syncedAt ? '<span class="num">' + esc(DTT.format(u.syncedAt)) + "</span>" : '<span class="muted">لا شيء</span>'],
-        ["كتابته على ملفات PDF", u.pdf ? '<span class="num">' + NUM.format(u.pdf.pages) + " صفحة · " + NUM.format(u.pdf.files) + " ملف · " + NUM.format(u.pdf.images || 0) + " صورة · " + (u.pdf.bytes / 1024 < 1024 ? Math.round(u.pdf.bytes / 1024) + " ك.ب" : (u.pdf.bytes / 1048576).toFixed(1) + " م.ب") + "</span>" + (u.pdf.last ? ' <small class="muted">آخر كتابة ' + esc(DTT.format(u.pdf.last)) + "</small>" : "") : '<span class="muted">لا شيء</span>']
-      ];
-      $("detailBody").innerHTML = '<div class="person" style="margin-bottom:16px"><span class="avatar ' + c + '">' + esc(initials(u.name)) + "</span><div><strong>" + esc(u.name) + "</strong><small>" + (u.id === list.me ? "حسابك" : "حساب Medixa") + "</small></div></div>" +
-        rows.map(function (x) { return '<div class="info-row"><span class="muted">' + x[0] + "</span><span>" + x[1] + "</span></div>"; }).join("");
+        ["آخر مادة فتحها", u.lastCourse ? esc(courseName(u.lastCourse)) : '<span class="muted">—</span>'],
+        ["كتابته على PDF", u.pdf ? '<span class="num">' + NUM.format(u.pdf.pages) + " صفحة · " + NUM.format(u.pdf.files) + " ملف · " + NUM.format(u.pdf.images || 0) + " صورة</span>" + (u.pdf.last ? ' <small class="muted">آخر كتابة ' + esc(DTT.format(u.pdf.last)) + "</small>" : "") : '<span class="muted">لا شيء</span>']
+      ]) + '<h4 class="subhead">محاضرات قرأها</h4>' + listBy(u.readBy) + '<h4 class="subhead">في قائمة المراجعة</h4>' + listBy(u.reviewBy) + '<h4 class="subhead">درسها خطوة بخطوة</h4>' + listBy(u.studyBy);
+      var tabs = [["over", "نظرة عامة", over], ["study", "الدراسة", study], ["grades", "الدرجات", gradesHtml(u)], ["devices", "الأجهزة والجلسات", devicesHtml(u)], ["log", "سجل الحساب", logHtml(u)]];
+      $("detailBody").innerHTML = '<div class="person headcard"><span class="avatar ' + c + '">' + esc(initials(u.name)) + "</span><div><strong>" + esc(u.name) + "</strong><small>" + (u.id === list.me ? "حسابك" : "حساب Medixa") + " · " + esc(u.studentCode || "") + "</small></div></div>" +
+        '<div class="tabbar" role="tablist">' + tabs.map(function (t, i) { return '<button type="button" role="tab" class="tabbtn' + (i === 0 ? " on" : "") + '" data-tab="' + t[0] + '" aria-selected="' + (i === 0) + '">' + t[1] + "</button>"; }).join("") + "</div>" +
+        tabs.map(function (t, i) { return '<div class="tabpanel" role="tabpanel" data-panel="' + t[0] + '"' + (i === 0 ? "" : " hidden") + ">" + t[2] + "</div>"; }).join("");
     });
   }
+  var detailUser = null;
+  $("detailBody").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tab]"); if (!b) return;
+    var box = $("detailBody");
+    [].forEach.call(box.querySelectorAll(".tabbtn"), function (x) { var on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-selected", String(on)); });
+    [].forEach.call(box.querySelectorAll(".tabpanel"), function (p) { p.hidden = p.getAttribute("data-panel") !== b.getAttribute("data-tab"); });
+  });
+  /* ---------- الفرز ---------- */
+  document.querySelector("thead").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sort]"); if (!b) return;
+    var k = b.getAttribute("data-sort");
+    if (state.sort === k) state.dir = state.dir === "desc" ? "asc" : "desc"; else { state.sort = k; state.dir = k === "name" ? "asc" : "desc"; }
+    state.page = 1; paintSort(); loadList();
+  });
+  function paintSort() {
+    [].forEach.call(document.querySelectorAll(".sortbtn"), function (b) {
+      var on = b.getAttribute("data-sort") === state.sort;
+      b.parentNode.setAttribute("aria-sort", on ? (state.dir === "asc" ? "ascending" : "descending") : "none");
+      b.classList.toggle("on", on); b.setAttribute("data-dir", on ? (state.dir === "asc" ? "▲" : "▼") : "");
+    });
+  }
+
+  /* ---------- إشعار لطالب أو مجموعة ---------- */
+  var notifyIds = null;
+  var TARGETS = { all: {}, sem3: { semester: 3 }, sem2: { semester: 2 }, sem1: { semester: 1 }, away7: { inactiveDays: 7 }, away14: { inactiveDays: 14 } };
+  function notifyPayload(preview) {
+    var b = { title: $("notifyTitleIn").value.trim(), body: $("notifyText").value.trim() };
+    if (notifyIds) b.ids = notifyIds; else b.target = TARGETS[$("notifyTarget").value] || {};
+    if (preview) b.preview = true;
+    return b;
+  }
+  function openNotify(ids, name, from) {
+    notifyIds = ids; $("notifyInfo").textContent = "";
+    $("notifyTargetRow").hidden = !!ids; $("notifyOne").hidden = !ids;
+    if (ids) $("notifyOne").textContent = "الإشعار إلى: " + name + " (يصل إلى أجهزته المفعّلة فقط)";
+    $("notifyTitleIn").value = ""; $("notifyText").value = "";
+    openDialog("notifyDlg", from);
+  }
+  var NERR = { not_configured: "خدمة الإشعارات غير مفعّلة بعد (مفاتيح VAPID).", title_required: "اكتب عنوان الإشعار.", forbidden: "هذه العملية للمشرف فقط." };
+  $("groupNotify").addEventListener("click", function (e) { openNotify(null, "", e.currentTarget); });
+  $("detailNotify").addEventListener("click", function (e) { if (!detailUser) return; $("detail").close(); openNotify([detailUser.id], detailUser.name, e.currentTarget); });
+  $("notifyCount").addEventListener("click", function () {
+    $("notifyInfo").textContent = "جارٍ العدّ…";
+    api("POST", "auth/admin/notify", Object.assign(notifyPayload(true), { title: $("notifyTitleIn").value.trim() || "x" })).then(function (r) {
+      $("notifyInfo").textContent = r.status === 200 ? "المستلمون: " + NUM.format(r.data.users) + " حساباً، " + NUM.format(r.data.devices) + " جهازاً مفعّلاً" : (NERR[r.data && r.data.error] || "تعذّر العدّ.");
+    });
+  });
+  $("notifySend").addEventListener("click", function () {
+    var b = notifyPayload(false);
+    if (!b.title) { $("notifyInfo").textContent = NERR.title_required; return; }
+    if (!window.confirm("إرسال هذا الإشعار الآن؟")) return;
+    busy($("notifySend"), true); $("notifyInfo").textContent = "جارٍ الإرسال…";
+    api("POST", "auth/admin/notify", b).then(function (r) {
+      busy($("notifySend"), false);
+      $("notifyInfo").textContent = r.status === 200 ? "وصل إلى " + NUM.format(r.data.sent) + " جهاز من " + NUM.format(r.data.devices) + " (" + NUM.format(r.data.users) + " حساباً)" : (NERR[r.data && r.data.error] || "تعذّر الإرسال.");
+    });
+  });
+  $("detailSignout").addEventListener("click", function () {
+    if (!detailUser || !window.confirm("إنهاء كل جلسات " + detailUser.name + "؟ سيُطلب منه تسجيل الدخول من جديد على كل أجهزته.")) return;
+    api("POST", "auth/admin/signout", { id: detailUser.id }).then(function (r) {
+      window.alert(r.status === 200 ? "أُنهيت " + NUM.format(r.data.ended) + " جلسة." : "تعذّر إنهاء الجلسات.");
+      if (r.status === 200) detail(detailUser.id);
+    });
+  });
   $("detailEdit").addEventListener("click", function () { var id = detailId; $("detail").close(); if (id) edit(id, document.querySelector('[data-action="edit"][data-id="' + id + '"]')); });
 
   /* ---------- التعديل ---------- */
