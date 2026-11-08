@@ -152,7 +152,9 @@ app.whenReady().then(() =>
     await click('[data-testid=form-submit]');
     await until(async () => ctx.svc.listProfiles({ businessId: biz.id }).length === 1, 'إنشاء ملف من الواجهة');
     await until(noDialog, 'إغلاق');
-    await click('button[aria-label="تشغيل ملف واجهة"]');
+    // على أجهزة أبطأ (ويندوز) قد لا يكون الجدول أُعيد رسمه بعد؛ ننتظر ظهور الزر بدل النقر الفوري
+    await until(() => ev<boolean>(`!!document.querySelector('button[aria-label="تشغيل ملف واجهة"]')`), 'ظهور زر التشغيل');
+    check(await click('button[aria-label="تشغيل ملف واجهة"]'), 'زر تشغيل الملف موجود وقابل للنقر');
     await until(async () => ctx.browser.runningIds().length === 1, 'نافذة الملف');
     await until(() => ev<boolean>(`document.querySelector('tr[data-profile="ملف واجهة"] [data-status]')?.dataset.status === 'running'`), 'عرض «يعمل»');
     check(ctx.svc.listProfiles({ businessId: biz.id })[0].lastOpenedAt !== null, 'زر التشغيل فتح نافذة حقيقية وسجّل آخر فتح');
