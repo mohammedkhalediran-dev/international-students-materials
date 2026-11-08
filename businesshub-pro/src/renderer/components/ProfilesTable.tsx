@@ -24,7 +24,7 @@ export function ProfilesTable({ profiles, showBusiness = true, emptyAction }: { 
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-slate-800">
+      <div className="overflow-x-auto rounded-xl border border-slate-800">
         <table className="w-full text-sm" data-testid="profiles-table">
           <thead className="bg-slate-900 text-xs text-slate-400">
             <tr>

@@ -22,7 +22,8 @@
     "test:metaui": "node scripts/run-test.mjs metaui",
     "test:smoke": "node scripts/run-test.mjs smoke",
     "test": "npm run build:electron && npm run test:unit && npm run test:meta && npm run test:isolation && npm run test:smoke && npm run test:metaui",
-    "dist": "npm run build && electron-builder --win nsis && node scripts/native.mjs"
+    "dist": "npm run build && electron-builder --win nsis && node scripts/native.mjs",
+    "dist:linux-check": "npm run build && electron-builder --win nsis -c.win.signAndEditExecutable=false && node scripts/native.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
@@ -79,8 +80,15 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1025",
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "BusinessHub Pro"
+    },
+    "artifactName": "BusinessHub-Pro-Setup-${version}.exe",
+    "publish": null,
+    "asar": true
   },
   "author": "BusinessHub"
 }

@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { copyFileSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { AppError } from './errors';
 
@@ -268,6 +268,21 @@ export class Store {
       throw new AppError(`فشل التحقق من النسخة الاحتياطية: ${v.reason}`);
     }
     return statSync(dest).size;
+  }
+
+  /**
+   * نسخة احتياطية تلقائية إن مضى أكثر من maxAgeMs على آخر نسخة تلقائية، مع الاحتفاظ بآخر `keep` نسخ.
+   * تعيد المسار أو null إن لم تلزم نسخة جديدة.
+   */
+  async autoBackup(maxAgeMs = 86_400_000, keep = 7, now = Date.now()): Promise<string | null> {
+    mkdirSync(this.backupsDir, { recursive: true });
+    const autos = readdirSync(this.backupsDir).filter((f) => /^auto-.*\.sqlite$/.test(f)).map((f) => ({ f, t: statSync(join(this.backupsDir, f)).mtimeMs })).sort((a, b) => b.t - a.t);
+    if (autos[0] && now - autos[0].t < maxAgeMs) return null;
+    const dest = this.defaultBackupPath('auto');
+    await this.backupTo(dest);
+    const all = [{ f: basename(dest), t: now }, ...autos].sort((a, b) => b.t - a.t);
+    for (const old of all.slice(keep)) rmSync(join(this.backupsDir, old.f), { force: true });
+    return dest;
   }
 
   defaultBackupPath(prefix = 'businesshub'): string {

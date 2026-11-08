@@ -3,7 +3,7 @@ import type { AdAccount } from '../../shared/contract';
 import { useApp, useCall, useLoad } from '../ctx';
 import { IconEdit, IconPlus, IconTrash } from '../components/icons';
 import { AdFormModal } from '../components/forms';
-import { Badge, Confirm, Empty, Notice, PageHeader } from '../components/ui';
+import { Badge, Confirm, Empty, Notice, PageHeader, Skeleton } from '../components/ui';
 import { CONNECTION_LABEL, PROVIDER_LABEL } from '../labels';
 
 export function AdAccounts() {
@@ -16,8 +16,8 @@ export function AdAccounts() {
       <PageHeader title="الحسابات الإعلانية" subtitle={`${list?.length ?? 0} حساب`} actions={<><button className="btn btn-ghost" onClick={() => go({ name: 'integrations' })}>ربط مزوّد (التكاملات)</button><button className="btn btn-primary" onClick={() => setDlg({ t: 'form' })}><IconPlus /> حساب جديد</button></>} />
       <div className="space-y-5 p-8">
         <Notice tone="indigo">السجلات اليدوية تبقى «غير متصل». الحسابات المربوطة عبر Meta تظهر «متصل» فقط بتفويض صالح وتُدار من صفحة التكاملات. TikTok غير منفّذ بعد.</Notice>
-        {!list ? null : list.length === 0 ? <Empty title="لا توجد حسابات إعلانية." /> : (
-          <div className="overflow-hidden rounded-xl border border-slate-800">
+        {!list ? <Skeleton rows={5} /> : list.length === 0 ? <Empty title="لا توجد حسابات إعلانية." /> : (
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-sm" data-testid="ads-table">
               <thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="px-4 py-3 text-start font-medium">الحساب</th><th className="px-4 py-3 text-start font-medium">النشاط</th><th className="px-4 py-3 text-start font-medium">المزوّد</th><th className="px-4 py-3 text-start font-medium">المعرّف</th><th className="px-4 py-3 text-start font-medium">الاتصال</th><th className="px-4 py-3 text-start font-medium">إجراءات</th></tr></thead>
               <tbody className="divide-y divide-slate-800">

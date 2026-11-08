@@ -78,7 +78,7 @@ export function Businesses() {
             ))}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-sm" data-testid="businesses-list">
               <thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="px-4 py-3 text-start font-medium">النشاط</th><th className="px-4 py-3 text-start font-medium">الفئة</th><th className="px-4 py-3 text-start font-medium">الحسابات</th><th className="px-4 py-3 text-start font-medium">الملفات</th><th className="px-4 py-3 text-start font-medium">الحالة</th><th className="px-4 py-3 text-start font-medium">إجراءات</th></tr></thead>
               <tbody className="divide-y divide-slate-800">

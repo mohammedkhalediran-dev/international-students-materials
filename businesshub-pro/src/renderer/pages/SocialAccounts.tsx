@@ -4,7 +4,7 @@ import { PLATFORMS } from '../../shared/contract';
 import { useApp, useCall, useLoad } from '../ctx';
 import { IconEdit, IconPlus, IconSearch, IconTrash } from '../components/icons';
 import { SocialFormModal } from '../components/forms';
-import { Badge, Confirm, Empty, PageHeader } from '../components/ui';
+import { Badge, Confirm, Empty, PageHeader, Skeleton } from '../components/ui';
 import { ACCOUNT_STATUS_LABEL, PLATFORM_COLOR, PLATFORM_LABEL } from '../labels';
 
 export function SocialAccounts() {
@@ -27,8 +27,8 @@ export function SocialAccounts() {
           <select className="input w-44" aria-label="المنصة" value={platform} onChange={(e) => setPlatform(e.target.value as Platform | '')}><option value="">كل المنصات</option>{PLATFORMS.map((p) => <option key={p} value={p}>{PLATFORM_LABEL[p]}</option>)}</select>
           <select className="input w-52" aria-label="النشاط" value={businessId} onChange={(e) => setBusinessId(e.target.value)}><option value="">كل الأنشطة</option>{(businesses ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
         </div>
-        {!list ? null : list.length === 0 ? <Empty title="لا توجد حسابات مطابقة." hint="أضف حساباً يدوياً؛ هذا سجل محلي ولا يتصل بالمنصة." /> : (
-          <div className="overflow-hidden rounded-xl border border-slate-800">
+        {!list ? <Skeleton rows={5} /> : list.length === 0 ? <Empty title="لا توجد حسابات مطابقة." hint="أضف حساباً يدوياً؛ هذا سجل محلي ولا يتصل بالمنصة." /> : (
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-sm" data-testid="social-table">
               <thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="px-4 py-3 text-start font-medium">الحساب</th><th className="px-4 py-3 text-start font-medium">المنصة</th><th className="px-4 py-3 text-start font-medium">النشاط</th><th className="px-4 py-3 text-start font-medium">المعرّف / الرقم</th><th className="px-4 py-3 text-start font-medium">الحالة</th><th className="px-4 py-3 text-start font-medium">إجراءات</th></tr></thead>
               <tbody className="divide-y divide-slate-800">

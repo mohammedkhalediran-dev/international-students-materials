@@ -34,7 +34,7 @@ export function BrowserProfiles() {
         ) : !proxies || proxies.length === 0 ? (
           <Empty title="لا توجد بروكسيات." hint="البروكسي اختياري. يمكن ربط نفس البروكسي بعدة ملفات؛ كلمة المرور تُحفظ مشفّرة في جدول منفصل." action={<button className="btn btn-primary" onClick={() => setDlg({ t: 'proxy' })}><IconPlus /> بروكسي جديد</button>} />
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-sm" data-testid="proxies-table">
               <thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="px-4 py-3 text-start font-medium">الاسم</th><th className="px-4 py-3 text-start font-medium">العنوان</th><th className="px-4 py-3 text-start font-medium">المصادقة</th><th className="px-4 py-3 text-start font-medium">الملفات</th><th className="px-4 py-3 text-start font-medium">إجراءات</th></tr></thead>
               <tbody className="divide-y divide-slate-800">

@@ -8,7 +8,7 @@ import { AuditLog, sanitize } from '../audit';
 import { AppError } from '../errors';
 import { listIntegrations } from '../integrations';
 import { Services } from '../services';
-import { SCHEMA_VERSION, Store } from '../store';
+import { MIGRATIONS, SCHEMA_VERSION, Store } from '../store';
 import { check, run, testSecretBox } from './harness';
 
 const rejects = async (fn: () => unknown, label: string, match?: RegExp) => {
@@ -155,11 +155,26 @@ run('طبقة البيانات: المخطط، القيود، السياسات،
   check(!Store.validate(corrupt).ok, 'رفض نسخة تالفة (فشل فحص السلامة)');
   check(svc.overview().counts.businesses === countBefore, 'البيانات الحالية سليمة بعد محاولات الاستعادة الفاشلة');
 
-  // ───── هجرة مع نسخة احتياطية قبل تغيير المخطط ─────
-  const old = join(dir, 'old.sqlite');
-  const o = new Database(old); o.exec('CREATE TABLE legacy(a)'); o.pragma('user_version = 0'); o.close();
+  // ───── نسخ تلقائية ─────
+  const t0 = Date.now();
+  const a1 = await store.autoBackup(86_400_000, 3, t0);
+  check(a1 !== null && Store.validate(a1).ok, 'نسخة تلقائية أولى سليمة');
+  check((await store.autoBackup(86_400_000, 3, t0 + 1000)) === null, 'لا نسخة تلقائية جديدة خلال 24 ساعة');
+  for (let i = 1; i <= 4; i++) { await new Promise((r) => setTimeout(r, 15)); await store.autoBackup(0, 3, t0 + i * 2 * 86_400_000); }
+  check(readdirSync(join(dir, 'backups')).filter((f) => f.startsWith('auto-')).length === 3, 'الاحتفاظ بآخر 3 نسخ تلقائية فقط');
+
+  // ───── استعادة نسخة بمخطط قديم (v1) ← هجرة تلقائية مع نسخة احتياطية ─────
+  const v1 = join(dir, 'v1.sqlite');
+  const o = new Database(v1); o.exec(MIGRATIONS[0]); o.pragma('user_version = 1');
+  o.prepare("INSERT INTO businesses (id,name,category,color,status,created_at,updated_at) VALUES ('11111111-1111-4111-8111-111111111111','نشاط قديم','x','#000000','active',1,1)").run(); o.close();
+  check(Store.validate(v1).ok, 'نسخة v1 تجتاز التحقق');
+  await store.restoreFrom(v1);
+  check(store.schemaVersion() === SCHEMA_VERSION && svc.getBusiness('11111111-1111-4111-8111-111111111111')?.name === 'نشاط قديم', 'استعادة v1 رُقّيت تلقائياً إلى المخطط الحالي مع بقاء البيانات');
+  check(readdirSync(join(dir, 'backups')).some((f) => f.startsWith('pre-migration-v1-')), 'نسخة احتياطية تلقائية قبل الهجرة');
+  check(store.integrity() === 'ok' && (store.db.prepare('SELECT COUNT(*) c FROM meta_connections').get() as { c: number }).c === 0, 'القاعدة المرقّاة سليمة وجداول Meta موجودة');
+  store.db.prepare("DELETE FROM businesses WHERE id='11111111-1111-4111-8111-111111111111'").run();
   store.close();
   const store2 = new Store(join(dir, 'bh.sqlite'), join(dir, 'backups'));
-  check(new Services(store2, testSecretBox(), new AuditLog(store2)).overview().counts.businesses === countBefore, 'إعادة فتح القاعدة تحفظ البيانات');
+  check(new Services(store2, testSecretBox(), new AuditLog(store2)).overview().counts.businesses === 0, 'إعادة فتح القاعدة تحفظ الحالة (بعد استعادة v1 الفارغة)');
   store2.close();
 });

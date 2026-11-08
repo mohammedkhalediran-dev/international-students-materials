@@ -147,7 +147,7 @@ export function Integrations() {
 
           <h3 className="mb-2 mt-5 text-sm font-semibold text-slate-200">الحسابات الإعلانية المكتشفة وربطها بالأنشطة</h3>
           {(accounts ?? []).length === 0 ? <Empty title="لم تُكتشف حسابات بعد." hint="سجّل الدخول ثم اضغط «اكتشاف الحسابات الإعلانية»." /> : (
-            <div className="overflow-hidden rounded-lg border border-slate-800">
+            <div className="overflow-x-auto rounded-lg border border-slate-800">
               <table className="w-full text-sm" data-testid="meta-accounts">
                 <thead className="bg-slate-900 text-xs text-slate-400"><tr><th className="px-3 py-2 text-start font-medium">الحساب</th><th className="px-3 py-2 text-start font-medium">العملة</th><th className="px-3 py-2 text-start font-medium">النشاط المرتبط</th></tr></thead>
                 <tbody className="divide-y divide-slate-800">

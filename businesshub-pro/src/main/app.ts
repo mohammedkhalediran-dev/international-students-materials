@@ -38,6 +38,8 @@ export async function startApp(opts: StartOptions): Promise<AppContext> {
   const store = new Store(join(opts.dataDir, 'businesshub.sqlite'), join(opts.dataDir, 'backups'));
   const secrets = opts.secrets ?? electronSecretBox;
   const audit = new AuditLog(store);
+  // نسخة تلقائية يومية (احتفاظ بآخر 7) دون تعطيل الإقلاع
+  void store.autoBackup().then((p) => p && audit.log('backup.auto', 'system', null)).catch((e) => console.error('[backup.auto]', e instanceof Error ? e.message : e));
   const svc = new Services(store, secrets, audit);
   const metaConfig: Partial<MetaConfig> = { ...(process.env.META_API_VERSION ? { version: process.env.META_API_VERSION } : {}), ...opts.metaConfig };
   const meta = new MetaService({ store, secrets, audit, svc, config: metaConfig, openExternal: opts.openExternal ?? ((url) => shell.openExternal(url)) });
@@ -68,6 +70,14 @@ export async function startApp(opts: StartOptions): Promise<AppContext> {
     webPreferences: { preload: join(distDir, 'preload-app.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   const win = mainWindow;
+  // لا webviews ولا نوافذ إضافية في أي WebContents
+  app.on('web-contents-created', (_e, wc) => {
+    wc.on('will-attach-webview', (e) => e.preventDefault());
+  });
+  win.webContents.on('render-process-gone', (_e, d) => {
+    console.error('[renderer-gone]', d.reason);
+    if (d.reason !== 'clean-exit' && !win.isDestroyed()) win.webContents.reload();
+  });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith(mainIndex)) e.preventDefault();
