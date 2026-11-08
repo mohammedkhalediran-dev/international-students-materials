@@ -98,8 +98,8 @@ export function BusinessDetail({ id }: { id: string }) {
         <section>
           <h2 className="mb-3 font-semibold text-slate-200">الحملات</h2>
           {(campaigns ?? []).length === 0 ? (
-            <Notice tone="indigo">غير متصل: لا توجد حملات أو أرقام إنفاق لأن أي مزوّد إعلانات لم يُربط (غير متاح في المرحلة 1). لن تُعرض بيانات إلا بعد مزامنة حقيقية.</Notice>
-          ) : <p className="text-sm text-slate-400">{campaigns!.length} حملة</p>}
+            <Notice tone="indigo">لا توجد حملات مخزّنة لهذا النشاط. لا تُعرض أرقام إلا من مزامنة حقيقية مع Meta بعد ربط حساب إعلاني بهذا النشاط (صفحة التكاملات).</Notice>
+          ) : <p className="text-sm text-slate-400">{campaigns!.length} حملة مخزّنة. <button className="text-indigo-300 hover:underline" onClick={() => go({ name: 'campaigns' })}>عرض التحليلات</button></p>}
         </section>
       </div>
 

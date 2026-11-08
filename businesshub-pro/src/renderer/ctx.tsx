@@ -4,7 +4,7 @@ import { inputs } from '../shared/contract';
 import type { z } from 'zod';
 
 export type Page =
-  | { name: 'overview' | 'businesses' | 'social' | 'profiles' | 'ads' | 'campaigns' | 'reports' | 'settings' }
+  | { name: 'overview' | 'businesses' | 'social' | 'profiles' | 'ads' | 'campaigns' | 'integrations' | 'reports' | 'settings' }
   | { name: 'business'; id: string };
 
 export interface AppCtx {

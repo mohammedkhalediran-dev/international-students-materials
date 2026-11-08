@@ -8,6 +8,7 @@ import { BrowserProfiles } from './pages/BrowserProfiles';
 import { BusinessDetail } from './pages/BusinessDetail';
 import { Businesses } from './pages/Businesses';
 import { Campaigns } from './pages/Campaigns';
+import { Integrations } from './pages/Integrations';
 import { Overview } from './pages/Overview';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
@@ -19,7 +20,8 @@ const NAV: { name: Exclude<Page['name'], 'business'>; label: string }[] = [
   { name: 'social', label: 'الحسابات الاجتماعية' },
   { name: 'profiles', label: 'ملفات المتصفح' },
   { name: 'ads', label: 'الحسابات الإعلانية' },
-  { name: 'campaigns', label: 'الحملات' },
+  { name: 'campaigns', label: 'الحملات والتحليلات' },
+  { name: 'integrations', label: 'التكاملات' },
   { name: 'reports', label: 'التقارير' },
   { name: 'settings', label: 'الإعدادات' },
 ];
@@ -81,6 +83,7 @@ export function App() {
             {page.name === 'profiles' && <BrowserProfiles />}
             {page.name === 'ads' && <AdAccounts />}
             {page.name === 'campaigns' && <Campaigns />}
+            {page.name === 'integrations' && <Integrations />}
             {page.name === 'reports' && <Reports />}
             {page.name === 'settings' && <Settings />}
           </ErrorBoundary>

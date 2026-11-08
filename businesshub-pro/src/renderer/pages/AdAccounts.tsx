@@ -7,15 +7,15 @@ import { Badge, Confirm, Empty, Notice, PageHeader } from '../components/ui';
 import { CONNECTION_LABEL, PROVIDER_LABEL } from '../labels';
 
 export function AdAccounts() {
-  const { bump, toast } = useApp();
+  const { bump, toast, go } = useApp();
   const call = useCall();
   const [dlg, setDlg] = useState<{ t: 'form'; a?: AdAccount } | { t: 'del'; a: AdAccount } | null>(null);
   const { data: list } = useLoad('ads:list', [{}]);
   return (
     <>
-      <PageHeader title="الحسابات الإعلانية" subtitle={`${list?.length ?? 0} حساب`} actions={<><button className="btn btn-ghost" disabled title="ربط المزوّدين غير متاح في المرحلة 1">ربط مزوّد (غير متاح)</button><button className="btn btn-primary" onClick={() => setDlg({ t: 'form' })}><IconPlus /> حساب جديد</button></>} />
+      <PageHeader title="الحسابات الإعلانية" subtitle={`${list?.length ?? 0} حساب`} actions={<><button className="btn btn-ghost" onClick={() => go({ name: 'integrations' })}>ربط مزوّد (التكاملات)</button><button className="btn btn-primary" onClick={() => setDlg({ t: 'form' })}><IconPlus /> حساب جديد</button></>} />
       <div className="space-y-5 p-8">
-        <Notice tone="indigo">هذه سجلات محلية يدوية. لا يوجد ربط فعلي بـ Meta أو TikTok في المرحلة 1، فكل الحسابات «غير متصل» ولا تُعرض أرقام إنفاق.</Notice>
+        <Notice tone="indigo">السجلات اليدوية تبقى «غير متصل». الحسابات المربوطة عبر Meta تظهر «متصل» فقط بتفويض صالح وتُدار من صفحة التكاملات. TikTok غير منفّذ بعد.</Notice>
         {!list ? null : list.length === 0 ? <Empty title="لا توجد حسابات إعلانية." /> : (
           <div className="overflow-hidden rounded-xl border border-slate-800">
             <table className="w-full text-sm" data-testid="ads-table">
@@ -25,7 +25,7 @@ export function AdAccounts() {
                   <tr key={a.id} className="hover:bg-slate-900/60">
                     <td className="px-4 py-3 text-slate-100">{a.displayName}</td><td className="px-4 py-3 text-slate-400">{a.businessName}</td>
                     <td className="px-4 py-3 text-xs">{PROVIDER_LABEL[a.provider]}</td><td className="px-4 py-3 text-xs text-slate-400" dir="ltr"><span className="block text-start">{a.externalId ?? '—'}</span></td>
-                    <td className="px-4 py-3"><Badge tone="amber">{CONNECTION_LABEL[a.connectionStatus]}</Badge></td>
+                    <td className="px-4 py-3"><Badge tone={a.connectionStatus === 'connected' ? 'green' : a.connectionStatus === 'error' ? 'rose' : 'amber'}>{CONNECTION_LABEL[a.connectionStatus]}</Badge>{a.connectionId && <span className="ms-2 text-[11px] text-slate-500">عبر Meta</span>}</td>
                     <td className="px-4 py-3"><div className="flex gap-1"><button className="icon-btn" aria-label={`تعديل ${a.displayName}`} onClick={() => setDlg({ t: 'form', a })}><IconEdit /></button><button className="icon-btn hover:!text-rose-400" aria-label={`حذف ${a.displayName}`} onClick={() => setDlg({ t: 'del', a })}><IconTrash /></button></div></td>
                   </tr>
                 ))}

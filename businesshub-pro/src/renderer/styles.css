@@ -24,3 +24,7 @@
   .input { @apply w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500; }
   .label { @apply mb-1.5 block text-xs font-medium text-slate-400; }
 }
+
+@layer base {
+  input[type='date'] { color-scheme: dark; }
+}

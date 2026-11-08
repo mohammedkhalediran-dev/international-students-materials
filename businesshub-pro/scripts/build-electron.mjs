@@ -11,6 +11,7 @@ await build({
     'test-unit': 'src/main/tests/unit.test.ts',
     'test-isolation': 'src/main/tests/isolation.test.ts',
     'test-meta': 'src/main/tests/meta.test.ts',
+    'test-metaui': 'src/main/tests/meta-ui.test.ts',
     'test-smoke': 'src/main/tests/smoke.test.ts',
   },
   outdir: 'dist-electron',

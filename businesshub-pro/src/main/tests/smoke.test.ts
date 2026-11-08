@@ -172,9 +172,11 @@ app.whenReady().then(() =>
     check(true, 'صفحات الحسابات والملفات والتقارير تُرسم ببيانات SQLite');
     await shot('profiles.png');
     await nav('ads');
-    check((await ev<boolean>(`[...document.querySelectorAll('button')].find(b => b.textContent.includes('ربط مزوّد')).disabled`)), 'زر ربط المزوّد معطّل مع توضيح');
+    await clickText('ربط مزوّد');
+    await until(() => ev<boolean>(`!!document.querySelector('#meta-appid')`), 'فتح التكاملات');
+    check(true, 'زر «ربط مزوّد» ينقل إلى صفحة التكاملات');
     await nav('campaigns');
-    check((await ev<string>('document.body.innerText')).includes('لا توجد حملات'), 'صفحة الحملات: لا حملات مختلقة');
+    check((await ev<string>('document.body.innerText')).includes('لا توجد حسابات إعلانية مربوطة عبر Meta'), 'صفحة الحملات: لا حملات مختلقة، وتوجيه للربط');
 
     // ───── نسخ احتياطي واستعادة عبر الواجهة ─────
     await nav('settings');

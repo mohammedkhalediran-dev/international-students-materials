@@ -163,7 +163,7 @@ export class MetaService {
     const token = long.access_token;
     const cl = this.client();
     let me: { id: string; name?: string };
-    let dbg: { data?: { is_valid?: boolean; expires_at?: number; scopes?: string[] } } = {};
+    let dbg: { data?: { is_valid?: boolean; expires_at?: number; scopes?: string[] } };
     try {
       me = await cl.get<{ id: string; name?: string }>('/me', { fields: 'id,name' }, token);
       dbg = await cl.get('/debug_token', { input_token: token }, `${appId}|${secret}`);
@@ -252,7 +252,7 @@ export class MetaService {
   link(externalId: string, businessId: string): AdAccount {
     const m = this.db.prepare('SELECT * FROM meta_ad_accounts WHERE external_id=?').get(externalId) as Row | undefined;
     if (!m) throw new AppError('الحساب الإعلاني غير مكتشف. نفّذ «اكتشاف الحسابات» أولاً.');
-    this.d.svc.getBusiness(businessId) ?? (() => { throw new AppError('النشاط غير موجود.'); })();
+    if (!this.d.svc.getBusiness(businessId)) throw new AppError('النشاط غير موجود.');
     const ex = this.db.prepare("SELECT id, business_id FROM ad_accounts WHERE provider='meta' AND external_id=?").get(externalId) as { id: string; business_id: string } | undefined;
     if (ex && ex.business_id !== businessId) throw new AppError('هذا الحساب الإعلاني مرتبط بنشاط آخر. فُكّ ربطه أولاً.');
     const now = this.now();
