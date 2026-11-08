@@ -3,7 +3,8 @@ import type { Business } from '../../shared/contract';
 import { useApp, useCall, useLoad } from '../ctx';
 import { IconEdit, IconPlus, IconSearch, IconTrash } from '../components/icons';
 import { BusinessFormModal } from '../components/forms';
-import { Badge, Confirm, Empty, PageHeader } from '../components/ui';
+import { Badge, Confirm, Empty, PageHeader, Skeleton } from '../components/ui';
+import { PLATFORM_COLOR, PLATFORM_LABEL } from '../labels';
 
 type Dlg = { t: 'form'; b?: Business } | { t: 'delete'; b: Business } | null;
 
@@ -28,8 +29,14 @@ export function Businesses() {
   const actions = (b: Business) => (
     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
       <button className="icon-btn" aria-label={`تعديل ${b.name}`} title="تعديل" onClick={() => setDlg({ t: 'form', b })}><IconEdit /></button>
-      <button className="btn btn-ghost px-2.5 py-1 text-xs" onClick={() => archive(b)}>{b.status === 'active' ? 'أرشفة' : 'إلغاء الأرشفة'}</button>
-      <button className="icon-btn hover:!text-rose-400" aria-label={`حذف ${b.name}`} title="حذف" onClick={() => setDlg({ t: 'delete', b })}><IconTrash /></button>
+      {b.status === 'active' ? (
+        <button className="btn btn-ghost px-2.5 py-1 text-xs" aria-label={`أرشفة ${b.name}`} onClick={() => archive(b)}>أرشفة</button>
+      ) : (
+        <>
+          <button className="btn btn-ghost px-2.5 py-1 text-xs" aria-label={`إلغاء أرشفة ${b.name}`} onClick={() => archive(b)}>إلغاء الأرشفة</button>
+          <button className="icon-btn hover:!text-rose-400" aria-label={`حذف نهائي ${b.name}`} title="حذف نهائي" onClick={() => setDlg({ t: 'delete', b })}><IconTrash /></button>
+        </>
+      )}
     </div>
   );
 
@@ -55,7 +62,7 @@ export function Businesses() {
           </div>
         </div>
 
-        {!list ? null : list.length === 0 ? (
+        {!list ? <Skeleton rows={6} /> : list.length === 0 ? (
           <Empty title={query || category || status !== 'active' ? 'لا توجد أنشطة مطابقة.' : 'لا توجد أنشطة بعد.'} action={!query && !category ? <button className="btn btn-primary" onClick={() => setDlg({ t: 'form' })}><IconPlus /> أنشئ أول نشاط</button> : undefined} />
         ) : view === 'grid' ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="businesses-grid">
@@ -64,7 +71,8 @@ export function Businesses() {
                 className="cursor-pointer rounded-xl border border-slate-800 bg-slate-900/60 p-5 transition hover:border-indigo-500/50">
                 <div className="flex items-center gap-2"><span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: b.color }} /><span className="truncate font-semibold text-slate-100">{b.name}</span>{b.status === 'archived' && <Badge tone="amber">مؤرشف</Badge>}</div>
                 <div className="mt-1 text-xs text-slate-500">{b.category}</div>
-                <div className="mt-4 flex gap-4 text-xs text-slate-400"><span>{b.socialCount} حساب</span><span>{b.profileCount} ملف متصفح</span><span>{b.adCount} إعلاني</span></div>
+                <div className="mt-3 flex flex-wrap gap-2">{(Object.keys(b.platformCounts) as (keyof typeof b.platformCounts)[]).map((pl) => <span key={pl} title={PLATFORM_LABEL[pl]} className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] ${b.platformCounts[pl] ? "bg-slate-800 text-slate-200" : "bg-slate-900 text-slate-600"}`}><span className="h-2 w-2 rounded-full" style={{ backgroundColor: b.platformCounts[pl] ? PLATFORM_COLOR[pl] : "#334155" }} />{b.platformCounts[pl]}</span>)}</div>
+                <div className="mt-3 flex gap-4 text-xs text-slate-400"><span>{b.socialCount} حساب</span><span>{b.profileCount} ملف متصفح</span><span>{b.adCount} إعلاني</span></div>
                 <div className="mt-4 border-t border-slate-800 pt-3">{actions(b)}</div>
               </div>
             ))}
@@ -90,8 +98,8 @@ export function Businesses() {
 
       {dlg?.t === 'form' && <BusinessFormModal business={dlg.b} onClose={() => setDlg(null)} onDone={() => { setDlg(null); bump(); }} />}
       {dlg?.t === 'delete' && (
-        <Confirm title="حذف النشاط نهائياً" confirmLabel="حذف النشاط وكل بياناته" typeToConfirm={dlg.b.name} onCancel={() => setDlg(null)}
-          message={<div className="space-y-2"><p>سيُحذف «{dlg.b.name}» <b>مع كل ما يتبعه</b>:</p><ul className="list-disc ps-5 text-slate-400"><li>{dlg.b.socialCount} حساب اجتماعي</li><li>{dlg.b.profileCount} ملف متصفح مع كل بيانات جلساتها (كوكيز وتخزين)</li><li>{dlg.b.adCount} حساب إعلاني وحملاتها</li></ul><p className="text-xs text-slate-500">البروكسيات المشتركة وسجل التدقيق لا تُحذف. لا يمكن التراجع؛ الأرشفة بديل آمن.</p></div>}
+        <Confirm title="حذف نهائي (لا رجعة فيه)" confirmLabel="حذف نهائي وكل بياناته" typeToConfirm={dlg.b.name} onCancel={() => setDlg(null)}
+          message={<div className="space-y-2"><p>سيُحذف «{dlg.b.name}» <b>مع كل ما يتبعه</b>:</p><ul className="list-disc ps-5 text-slate-400"><li>{dlg.b.socialCount} حساب اجتماعي</li><li>{dlg.b.profileCount} ملف متصفح مع كل بيانات جلساتها (كوكيز وتخزين)</li><li>{dlg.b.adCount} حساب إعلاني وحملاتها</li></ul><p className="text-xs text-slate-500">البروكسيات المشتركة وسجل التدقيق لا تُحذف. لا يمكن التراجع؛ النشاط مؤرشف الآن؛ يمكنك الاكتفاء بإبقائه مؤرشفاً.</p></div>}
           onConfirm={async (typed) => { const b = dlg.b; setDlg(null); if (await call('businesses:delete', { id: b.id, confirmName: typed })) { toast('ok', 'تم حذف النشاط وما يتبعه.'); bump(); } }} />
       )}
     </>

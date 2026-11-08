@@ -6,6 +6,14 @@ export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?
   return <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ${t}`}>{children}</span>;
 }
 
+export function Skeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-3" role="status" aria-label="جارٍ التحميل">
+      {Array.from({ length: rows }, (_, i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-900" />)}
+    </div>
+  );
+}
+
 export function Empty({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-800 px-6 py-14 text-center">

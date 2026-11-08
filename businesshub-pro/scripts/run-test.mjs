@@ -13,7 +13,7 @@ function exec(extraEnv = {}) {
   const env = { ...process.env, BUSINESSHUB_DATA_DIR: dataDir, ...extraEnv };
   let cmd = electronPath;
   let args = [script];
-  if (name === 'unit') env.ELECTRON_RUN_AS_NODE = '1'; // نفس Node المدمج في Electron (نفس ABI لـ better-sqlite3)
+  if (name === 'unit' || name === 'meta') env.ELECTRON_RUN_AS_NODE = '1'; // نفس Node المدمج في Electron (نفس ABI لـ better-sqlite3)
   else if (process.platform === 'linux') {
     args.unshift('--no-sandbox');
     if (!process.env.DISPLAY) { args = ['-a', electronPath, ...args]; cmd = 'xvfb-run'; }

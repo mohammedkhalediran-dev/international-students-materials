@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { BAR_COMMAND, BAR_READY, CHANNELS, inputs, type BarCommand, type Channel, type Outputs, type Result } from '../shared/contract';
 import type { BrowserManager } from './browser';
 import { AppError } from './errors';
-import { INTEGRATIONS } from './integrations';
+import { listIntegrations, type ProviderService } from './integrations';
+import type { MetaService } from './meta/service';
 import type { SecretBox } from './secrets';
 import { Services } from './services';
 
@@ -11,6 +12,8 @@ export interface IpcDeps {
   svc: Services;
   browser: BrowserManager;
   secrets: SecretBox;
+  meta: MetaService;
+  providers: ProviderService;
   isTrustedSender: (e: IpcMainInvokeEvent) => boolean;
   /** يعيد تحميل واجهة لوحة التحكم بعد الاستعادة */
   reloadUi: () => void;
@@ -29,7 +32,7 @@ function zodMessage(e: z.ZodError): string {
 }
 
 export function buildHandlers(d: IpcDeps): Handlers {
-  const { svc, browser } = d;
+  const { svc, browser, meta, providers } = d;
   return {
     'overview:get': () => svc.overview(),
     'businesses:list': (i) => svc.listBusinesses(i),
@@ -46,7 +49,7 @@ export function buildHandlers(d: IpcDeps): Handlers {
     'social:list': (i) => svc.listSocial(i),
     'social:create': (i) => svc.createSocial(i),
     'social:update': (i) => svc.updateSocial(i.id, i.data),
-    'social:delete': (i) => svc.deleteSocial(i.id) as never as null,
+    'social:delete': (i) => { svc.deleteSocial(i.id); return null; },
     'profiles:list': (i) => svc.listProfiles(i),
     'profiles:create': (i) => svc.createProfile(i),
     'profiles:update': (i) => svc.updateProfile(i.id, i.data),
@@ -73,13 +76,34 @@ export function buildHandlers(d: IpcDeps): Handlers {
     'proxies:list': () => svc.listProxies(),
     'proxies:create': (i) => svc.createProxy(i),
     'proxies:update': (i) => svc.updateProxy(i.id, i.data),
-    'proxies:delete': (i) => svc.deleteProxy(i.id) as never as null,
+    'proxies:delete': (i) => { svc.deleteProxy(i.id); return null; },
     'ads:list': (i) => svc.listAds(i.businessId),
     'ads:create': (i) => svc.createAd(i),
     'ads:update': (i) => svc.updateAd(i.id, i.data),
-    'ads:delete': (i) => svc.deleteAd(i.id) as never as null,
+    'ads:delete': (i) => { svc.deleteAd(i.id); return null; },
     'campaigns:list': (i) => svc.listCampaigns(i.businessId),
-    'integrations:list': () => INTEGRATIONS,
+    'integrations:list': () => listIntegrations(svc.store.db),
+    'meta:status': () => meta.status(),
+    'meta:saveCredentials': (i) => meta.saveCredentials(i.appId, i.appSecret),
+    'meta:clearCredentials': () => { meta.clearCredentials(); return null; },
+    'meta:connect': () => meta.connect(),
+    'meta:cancelConnect': () => { meta.cancelConnect(); return null; },
+    'meta:disconnect': (i) => { meta.disconnect(i.id); return null; },
+    'meta:discover': (i) => meta.discover(i.connectionId),
+    'meta:accounts': () => meta.discovered(),
+    'meta:link': (i) => meta.link(i.externalId, i.businessId),
+    'meta:unlink': (i) => { meta.unlink(i.adAccountId); return null; },
+    'meta:sync': (i) => meta.sync(i.adAccountId, i.since, i.until),
+    'analytics:campaigns': (i) => meta.campaigns(i),
+    'analytics:adsets': (i) => meta.adSets(i.campaignId, i.since, i.until),
+    'analytics:ads': (i) => meta.adsOf(i.adSetId, i.since, i.until),
+    'analytics:syncRuns': (i) => meta.syncRuns(i.adAccountId),
+    'tiktok:status': () => providers.tiktokStatus(),
+    'tiktok:saveConfig': (i) => providers.saveTikTok(i.appId, i.appSecret),
+    'whatsapp:status': () => providers.whatsappStatus(),
+    'whatsapp:saveConfig': (i) => providers.saveWhatsApp(i.wabaId, i.phoneNumberId, i.accessToken),
+    'whatsapp:verify': () => providers.verifyWhatsApp(),
+    'whatsapp:clear': () => { providers.clearWhatsApp(); return null; },
     'reports:summary': () => svc.reports(),
     'settings:info': async () => {
       const enc = await d.secrets.available();

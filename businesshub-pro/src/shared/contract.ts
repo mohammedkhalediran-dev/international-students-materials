@@ -95,6 +95,7 @@ export type AdAccountForm = z.input<typeof AdAccountInput>;
 
 // ───────── مدخلات القنوات ─────────
 const none = z.undefined();
+const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'تاريخ غير صالح (YYYY-MM-DD)').refine((d) => !Number.isNaN(Date.parse(d + 'T00:00:00Z')), 'تاريخ غير صالح');
 const byId = z.object({ id });
 export const inputs = {
   'overview:get': none,
@@ -127,6 +128,30 @@ export const inputs = {
   'ads:delete': byId,
   'campaigns:list': z.object({ businessId: id.optional() }),
   'integrations:list': none,
+  'meta:status': none,
+  'meta:saveCredentials': z.object({ appId: z.string().trim().regex(/^\d{5,25}$/, 'معرّف التطبيق أرقام فقط'), appSecret: z.string().trim().min(8, 'سر التطبيق قصير').max(128).optional() }),
+  'meta:clearCredentials': none,
+  'meta:connect': none,
+  'meta:cancelConnect': none,
+  'meta:disconnect': byId,
+  'meta:discover': z.object({ connectionId: id }),
+  'meta:accounts': none,
+  'meta:link': z.object({ externalId: z.string().regex(/^act_\d+$/), businessId: id }),
+  'meta:unlink': z.object({ adAccountId: id }),
+  'meta:sync': z.object({ adAccountId: id, since: dateStr, until: dateStr }),
+  'analytics:campaigns': z.object({
+    adAccountId: id.optional(), businessId: id.optional(), since: dateStr, until: dateStr, query: z.string().max(100).optional(),
+    status: z.string().max(40).optional(), page: z.number().int().min(1).default(1), pageSize: z.number().int().min(5).max(100).default(25),
+  }),
+  'analytics:adsets': z.object({ campaignId: z.string().min(1).max(100), since: dateStr, until: dateStr }),
+  'analytics:ads': z.object({ adSetId: z.string().min(1).max(100), since: dateStr, until: dateStr }),
+  'analytics:syncRuns': z.object({ adAccountId: id.optional() }),
+  'tiktok:status': none,
+  'tiktok:saveConfig': z.object({ appId: z.string().trim().min(3).max(64), appSecret: z.string().trim().min(8).max(128).optional() }),
+  'whatsapp:status': none,
+  'whatsapp:saveConfig': z.object({ wabaId: z.string().trim().regex(/^\d{5,25}$/, 'WABA ID أرقام فقط'), phoneNumberId: z.string().trim().regex(/^\d{5,25}$/, 'Phone Number ID أرقام فقط'), accessToken: z.string().trim().min(20).max(1024).optional() }),
+  'whatsapp:verify': none,
+  'whatsapp:clear': none,
   'reports:summary': none,
   'settings:info': none,
   'settings:backup': none,
@@ -148,6 +173,7 @@ export interface Business {
   id: string; name: string; category: string; logoPath: string | null; color: string; notes: string | null;
   status: BusinessStatus; createdAt: number; updatedAt: number;
   socialCount: number; profileCount: number; adCount: number;
+  platformCounts: Record<Platform, number>;
 }
 export interface SocialAccount {
   id: string; businessId: string; businessName: string; platform: Platform; displayName: string;
@@ -164,7 +190,7 @@ export interface Proxy {
 }
 export interface AdAccount {
   id: string; businessId: string; businessName: string; provider: AdProvider; externalId: string | null;
-  displayName: string; connectionStatus: ConnectionStatus; createdAt: number; updatedAt: number;
+  displayName: string; connectionStatus: ConnectionStatus; connectionId: string | null; createdAt: number; updatedAt: number;
 }
 /** للقراءة فقط: ستملؤها مزامنة المزوّدين مستقبلاً. لا يوجد في المرحلة 1 أي كود يكتب فيها. */
 export interface Campaign {
@@ -174,9 +200,38 @@ export interface Campaign {
 export interface AuditEvent {
   id: number; eventType: string; entityType: string; entityId: string | null; timestamp: number; metadata: Record<string, unknown>;
 }
+export type IntegrationState = 'not_configured' | 'configured' | 'connected' | 'expired' | 'error';
 export interface Integration {
   id: 'meta_marketing' | 'tiktok_marketing' | 'whatsapp_business';
-  name: string; status: 'not_connected'; description: string; requires: string[];
+  name: string; status: IntegrationState; detail: string; description: string; requires: string[];
+}
+export interface MetaConnection {
+  id: string; fbUserId: string; fbUserName: string | null; status: 'active' | 'expired' | 'revoked' | 'error';
+  scopes: string[]; tokenExpiresAt: number | null; lastError: string | null; rateLimitedUntil: number | null; adAccountCount: number; createdAt: number;
+}
+export interface MetaDiscoveredAccount {
+  externalId: string; connectionId: string; name: string; currency: string | null; accountStatus: number | null; timezone: string | null;
+  metaBusinessName: string | null; linkedAdAccountId: string | null; linkedBusinessId: string | null; linkedBusinessName: string | null;
+}
+export interface MetaStatus {
+  configured: boolean; appId: string | null; hasSecret: boolean; redirectUri: string; apiVersion: string;
+  scopes: string[]; connections: MetaConnection[]; connecting: boolean;
+}
+export interface TikTokStatus { appId: string | null; hasSecret: boolean; redirectUri: string; authUrl: string | null; implemented: false }
+export interface WhatsAppStatus { phoneNumberId: string | null; wabaId: string | null; hasToken: boolean; verifiedName: string | null; displayPhone: string | null; qualityRating: string | null; verifiedAt: number | null }
+
+export interface Metrics { spend: number; impressions: number; clicks: number; reach: number; conversions: number; ctr: number | null; cpc: number | null }
+export interface CampaignRow {
+  id: string; adAccountId: string; adAccountName: string; businessId: string; businessName: string; externalId: string; name: string;
+  status: string; effectiveStatus: string | null; objective: string | null; dailyBudget: number | null; currency: string | null; syncedAt: number; metrics: Metrics;
+}
+export interface AdSetRow { id: string; externalId: string; name: string; status: string; dailyBudget: number | null; optimizationGoal: string | null; metrics: Metrics }
+export interface AdRow { id: string; externalId: string; name: string; status: string; metrics: Metrics }
+export interface CurrencyTotals extends Metrics { currency: string }
+export interface CampaignPage { rows: CampaignRow[]; total: number; page: number; pageSize: number; totals: CurrencyTotals[] }
+export interface SyncRun {
+  id: number; adAccountId: string; adAccountName: string; startedAt: number; finishedAt: number | null; status: 'running' | 'ok' | 'partial' | 'error';
+  since: string; until: string; campaigns: number; adSets: number; ads: number; insightRows: number; truncated: boolean; error: string | null;
 }
 export interface Overview {
   counts: { businesses: number; archivedBusinesses: number; socialAccounts: number; profiles: number; adAccounts: number; campaigns: number; proxies: number };
@@ -231,6 +286,27 @@ export interface Outputs {
   'ads:delete': null;
   'campaigns:list': Campaign[];
   'integrations:list': Integration[];
+  'meta:status': MetaStatus;
+  'meta:saveCredentials': MetaStatus;
+  'meta:clearCredentials': null;
+  'meta:connect': MetaConnection;
+  'meta:cancelConnect': null;
+  'meta:disconnect': null;
+  'meta:discover': MetaDiscoveredAccount[];
+  'meta:accounts': MetaDiscoveredAccount[];
+  'meta:link': AdAccount;
+  'meta:unlink': null;
+  'meta:sync': SyncRun;
+  'analytics:campaigns': CampaignPage;
+  'analytics:adsets': AdSetRow[];
+  'analytics:ads': AdRow[];
+  'analytics:syncRuns': SyncRun[];
+  'tiktok:status': TikTokStatus;
+  'tiktok:saveConfig': TikTokStatus;
+  'whatsapp:status': WhatsAppStatus;
+  'whatsapp:saveConfig': WhatsAppStatus;
+  'whatsapp:verify': WhatsAppStatus;
+  'whatsapp:clear': null;
   'reports:summary': ReportSummary;
   'settings:info': SettingsInfo;
   'settings:backup': BackupResult | null;

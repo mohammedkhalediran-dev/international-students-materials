@@ -6,7 +6,7 @@ import { AdAccountInput, BusinessInput, inputs, ProfileInput, ProxyInput, Social
 import { normalizeUrl } from '../../shared/url';
 import { AuditLog, sanitize } from '../audit';
 import { AppError } from '../errors';
-import { INTEGRATIONS } from '../integrations';
+import { listIntegrations } from '../integrations';
 import { Services } from '../services';
 import { SCHEMA_VERSION, Store } from '../store';
 import { check, run, testSecretBox } from './harness';
@@ -105,16 +105,21 @@ run('طبقة البيانات: المخطط، القيود، السياسات،
   const ad = svc.createAd(AdAccountInput.parse({ businessId: b0.id, provider: 'meta', displayName: 'إعلانات 1', externalId: 'act_123' }));
   check(ad.connectionStatus === 'not_connected', 'الحساب الإعلاني يُنشأ not_connected');
   await rejects(() => svc.createAd(AdAccountInput.parse({ businessId: biz[1].id, provider: 'meta', displayName: 'مكرر', externalId: 'act_123' })), 'منع معرّف إعلاني مكرر لنفس المزوّد');
-  check(INTEGRATIONS.length === 3 && INTEGRATIONS.every((i) => i.status === 'not_connected'), 'التكاملات الثلاثة not_connected');
+  const ints = listIntegrations(store.db);
+  check(ints.length === 3 && ints.every((i) => i.status === 'not_configured'), 'التكاملات الثلاثة not_configured بلا إعدادات (لا ادّعاء اتصال)');
 
   // ───── سياسة حذف النشاط ─────
+  await rejects(() => svc.deleteBusiness(b0.id, b0.name), 'الحذف النهائي مرفوض لنشاط غير مؤرشف', /مؤرشفة/);
+  check(svc.getBusiness(b0.id) !== null, 'النشاط النشط لم يُحذف');
+  svc.setBusinessStatus(b0.id, 'archived');
+  check(svc.getBusiness(b0.id)!.platformCounts.instagram === 1 && svc.getBusiness(b0.id)!.platformCounts.tiktok === 1, 'عدّادات المنصات لكل نشاط');
   await rejects(() => svc.deleteBusiness(b0.id, 'اسم خاطئ'), 'الحذف يتطلب اسم التأكيد الصحيح', /لا يطابق/);
   check(svc.getBusiness(b0.id) !== null, 'لم يُحذف النشاط عند التأكيد الخاطئ');
   const before = svc.overview().counts;
   const res = svc.deleteBusiness(b0.id, b0.name);
   const after = svc.overview().counts;
   check(res.removedSocial === 4 && res.removedProfiles === 2 && res.removedAds === 1, 'تقرير الحذف المتسلسل');
-  check(after.businesses === before.businesses - 1 && after.socialAccounts === 116 && after.profiles === 0 && after.adAccounts === 0, 'الحذف تسلسلي: الحسابات والملفات والإعلانية');
+  check(after.businesses === before.businesses && after.socialAccounts === 116 && after.profiles === 0 && after.adAccounts === 0, 'الحذف تسلسلي: الحسابات والملفات والإعلانية');
   check(svc.listProxies().length === 1, 'البروكسيات المشتركة لا تُحذف مع النشاط');
   svc.setBusinessStatus(biz[1].id, 'archived');
   check(svc.listBusinesses({ status: 'archived' }).length === 1 && svc.listBusinesses({ status: 'active' }).length === 28 && svc.listBusinesses({ status: 'all' }).length === 29, 'الأرشفة والتصفية حسب الحالة');

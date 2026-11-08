@@ -17,9 +17,10 @@
     "rebuild:native": "electron-rebuild -f -w better-sqlite3",
     "start": "npm run build && electron .",
     "test:unit": "node scripts/run-test.mjs unit",
+    "test:meta": "node scripts/run-test.mjs meta",
     "test:isolation": "node scripts/run-test.mjs isolation",
     "test:smoke": "node scripts/run-test.mjs smoke",
-    "test": "npm run build:electron && npm run test:unit && npm run test:isolation && npm run test:smoke",
+    "test": "npm run build:electron && npm run test:unit && npm run test:meta && npm run test:isolation && npm run test:smoke",
     "dist": "npm run build && electron-builder --win nsis && node scripts/native.mjs"
   },
   "dependencies": {

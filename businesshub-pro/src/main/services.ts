@@ -6,7 +6,7 @@ import type {
 import { PLATFORMS } from '../shared/contract';
 import { AuditLog } from './audit';
 import { AppError } from './errors';
-import { INTEGRATIONS } from './integrations';
+import { listIntegrations } from './integrations';
 import type { SecretBox } from './secrets';
 import type { Store } from './store';
 
@@ -53,7 +53,18 @@ export class Services {
     color: r.color as string, notes: (r.notes as string | null) ?? null, status: r.status as BusinessStatus,
     createdAt: r.created_at as number, updatedAt: r.updated_at as number,
     socialCount: r.social_count as number, profileCount: r.profile_count as number, adCount: r.ad_count as number,
+    platformCounts: { instagram: 0, facebook: 0, whatsapp: 0, tiktok: 0 },
   });
+
+  private withPlatforms(list: Business[]): Business[] {
+    const rows = this.db.prepare('SELECT business_id, platform, COUNT(*) c FROM social_accounts GROUP BY business_id, platform').all() as { business_id: string; platform: Platform; c: number }[];
+    const byId = new Map(list.map((b) => [b.id, b]));
+    for (const r of rows) {
+      const b = byId.get(r.business_id);
+      if (b) b.platformCounts[r.platform] = r.c;
+    }
+    return list;
+  }
 
   private readonly businessSelect = `SELECT b.*,
     (SELECT COUNT(*) FROM social_accounts s WHERE s.business_id=b.id) AS social_count,
@@ -71,12 +82,12 @@ export class Services {
       p.push(l, l, l);
     }
     const sql = `${this.businessSelect} ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY b.created_at DESC, b.rowid DESC`;
-    return (this.db.prepare(sql).all(...p) as Row[]).map(this.mapBusiness);
+    return this.withPlatforms((this.db.prepare(sql).all(...p) as Row[]).map(this.mapBusiness));
   }
 
   getBusiness(id: string): Business | null {
     const r = this.db.prepare(`${this.businessSelect} WHERE b.id = ?`).get(id) as Row | undefined;
-    return r ? this.mapBusiness(r) : null;
+    return r ? this.withPlatforms([this.mapBusiness(r)])[0] : null;
   }
 
   private mustBusiness(id: string): Business {
@@ -114,11 +125,12 @@ export class Services {
   }
 
   /**
-   * سياسة الحذف: حذف نشاط يحذف تبعاً له (CASCADE) حساباته الاجتماعية وحساباته الإعلانية وحملاتها وملفات المتصفح.
-   * البروكسيات المشتركة لا تُحذف. سجل التدقيق يبقى. يتطلب تأكيداً بكتابة اسم النشاط. الأرشفة هي البديل الآمن.
+   * سياسة الحذف: الأرشفة هي الإجراء الافتراضي. الحذف النهائي لا يُسمح به إلا لنشاط مؤرشف، ويتطلب كتابة اسمه.
+   * يحذف تبعاً له (CASCADE) حساباته الاجتماعية وحساباته الإعلانية وحملاتها وملفات المتصفح. البروكسيات المشتركة وسجل التدقيق تبقى.
    */
   deleteBusiness(id: string, confirmName: string): { removedSocial: number; removedProfiles: number; removedAds: number } {
     const b = this.mustBusiness(id);
+    if (b.status !== 'archived') throw new AppError('الحذف النهائي متاح للأنشطة المؤرشفة فقط. أرشف النشاط أولاً.');
     if (confirmName.trim() !== b.name) throw new AppError('اسم التأكيد لا يطابق اسم النشاط.');
     this.tx(() => this.db.prepare('DELETE FROM businesses WHERE id=?').run(id));
     this.audit.log('business.delete', 'business', id, { name: b.name, social: b.socialCount, profiles: b.profileCount, ads: b.adCount });
@@ -329,7 +341,7 @@ export class Services {
   private mapAd = (r: Row): AdAccount => ({
     id: r.id as string, businessId: r.business_id as string, businessName: r.business_name as string, provider: r.provider as AdAccount['provider'],
     externalId: (r.external_id as string | null) ?? null, displayName: r.display_name as string,
-    connectionStatus: r.connection_status as AdAccount['connectionStatus'], createdAt: r.created_at as number, updatedAt: r.updated_at as number,
+    connectionStatus: r.connection_status as AdAccount['connectionStatus'], connectionId: (r.connection_id as string | null) ?? null, createdAt: r.created_at as number, updatedAt: r.updated_at as number,
   });
   private readonly adSelect = 'SELECT a.*, b.name AS business_name FROM ad_accounts a JOIN businesses b ON b.id=a.business_id';
 
@@ -353,7 +365,10 @@ export class Services {
     return this.mustAd(id);
   }
   updateAd(id: string, d: AdAccountInputT): AdAccount {
-    this.mustAd(id);
+    const cur = this.mustAd(id);
+    if (cur.connectionId && (cur.provider !== d.provider || (cur.externalId ?? null) !== (d.externalId ?? null) || cur.businessId !== d.businessId)) {
+      throw new AppError('حساب مربوط عبر Meta: لا يمكن تغيير المزوّد أو المعرّف أو النشاط. فُكّ الربط من صفحة التكاملات.');
+    }
     this.mustBusiness(d.businessId);
     this.tx(() => this.db.prepare('UPDATE ad_accounts SET business_id=?, provider=?, external_id=?, display_name=?, updated_at=? WHERE id=?').run(d.businessId, d.provider, d.externalId, d.displayName, Date.now(), id));
     this.audit.log('ad.update', 'ad_account', id);
@@ -393,7 +408,7 @@ export class Services {
       },
       businesses: this.listBusinesses({ status: 'active' }).slice(0, 8),
       recentProfiles: (this.db.prepare(`${this.profileSelect} WHERE p.last_opened_at IS NOT NULL ORDER BY p.last_opened_at DESC LIMIT 6`).all() as Row[]).map(this.mapProfile),
-      integrations: INTEGRATIONS,
+      integrations: listIntegrations(this.db),
     };
   }
 

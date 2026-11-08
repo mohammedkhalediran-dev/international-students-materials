@@ -105,10 +105,96 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX idx_audit_ts ON audit_events(timestamp DESC);
   `,
+  `
+  -- v2: تكامل Meta (قراءة فقط) + بنية TikTok/WhatsApp
+  CREATE TABLE integration_credentials (
+    provider TEXT PRIMARY KEY CHECK (provider IN ('meta','tiktok','whatsapp')),
+    app_id TEXT,
+    secret_enc TEXT,
+    extra_json TEXT NOT NULL DEFAULT '{}',
+    updated_at INTEGER NOT NULL
+  );
+  CREATE TABLE meta_connections (
+    id TEXT PRIMARY KEY,
+    fb_user_id TEXT NOT NULL UNIQUE,
+    fb_user_name TEXT,
+    token_enc TEXT,
+    token_expires_at INTEGER,
+    scopes TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','expired','revoked','error')),
+    last_error TEXT,
+    rate_limited_until INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE TABLE meta_ad_accounts (
+    external_id TEXT PRIMARY KEY,
+    connection_id TEXT NOT NULL REFERENCES meta_connections(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    currency TEXT,
+    account_status INTEGER,
+    timezone TEXT,
+    meta_business_name TEXT,
+    discovered_at INTEGER NOT NULL
+  );
+  ALTER TABLE ad_accounts ADD COLUMN connection_id TEXT REFERENCES meta_connections(id) ON DELETE SET NULL;
+  ALTER TABLE campaigns ADD COLUMN effective_status TEXT;
+  CREATE TABLE ad_sets (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    external_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    daily_budget REAL,
+    optimization_goal TEXT,
+    synced_at INTEGER NOT NULL,
+    UNIQUE (campaign_id, external_id)
+  );
+  CREATE TABLE ads (
+    id TEXT PRIMARY KEY,
+    ad_set_id TEXT NOT NULL REFERENCES ad_sets(id) ON DELETE CASCADE,
+    external_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    synced_at INTEGER NOT NULL,
+    UNIQUE (ad_set_id, external_id)
+  );
+  CREATE TABLE insights_daily (
+    ad_account_id TEXT NOT NULL REFERENCES ad_accounts(id) ON DELETE CASCADE,
+    level TEXT NOT NULL CHECK (level IN ('campaign','adset','ad')),
+    entity_external_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    spend REAL NOT NULL DEFAULT 0,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    reach INTEGER NOT NULL DEFAULT 0,
+    conversions REAL NOT NULL DEFAULT 0,
+    currency TEXT,
+    actions_json TEXT,
+    synced_at INTEGER NOT NULL,
+    PRIMARY KEY (ad_account_id, level, entity_external_id, date)
+  );
+  CREATE INDEX idx_insights_date ON insights_daily(ad_account_id, level, date);
+  CREATE TABLE sync_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ad_account_id TEXT NOT NULL REFERENCES ad_accounts(id) ON DELETE CASCADE,
+    started_at INTEGER NOT NULL,
+    finished_at INTEGER,
+    status TEXT NOT NULL CHECK (status IN ('running','ok','partial','error')),
+    since TEXT NOT NULL,
+    until TEXT NOT NULL,
+    campaigns INTEGER NOT NULL DEFAULT 0,
+    ad_sets INTEGER NOT NULL DEFAULT 0,
+    ads INTEGER NOT NULL DEFAULT 0,
+    insight_rows INTEGER NOT NULL DEFAULT 0,
+    truncated INTEGER NOT NULL DEFAULT 0,
+    error TEXT
+  );
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
-const REQUIRED_TABLES = ['businesses', 'social_accounts', 'proxies', 'proxy_secrets', 'browser_profiles', 'ad_accounts', 'campaigns', 'audit_events'];
+const REQUIRED_TABLES = ['businesses', 'social_accounts', 'proxies', 'proxy_secrets', 'browser_profiles', 'ad_accounts', 'campaigns', 'audit_events', 'meta_connections', 'insights_daily'];
 
 const stamp = () => new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
 

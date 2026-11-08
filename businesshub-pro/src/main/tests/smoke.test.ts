@@ -52,7 +52,7 @@ app.whenReady().then(() =>
 
     // ───── نظرة عامة فارغة: لا أرقام وهمية ─────
     check((await text('[data-testid=count-businesses]')) === '0' && (await text('[data-testid=count-social]')) === '0' && (await text('[data-testid=count-campaigns]')) === '0', 'القاعدة الفارغة تعرض أصفاراً حقيقية');
-    check((await ev<number>(`document.querySelectorAll('[data-testid=integrations] li').length`)) === 3 && (await text('[data-testid=integrations]')).split('غير متصل').length === 4, 'ثلاثة تكاملات كلها «غير متصل»');
+    check((await ev<number>(`document.querySelectorAll('[data-testid=integrations] li').length`)) === 3 && (await text('[data-testid=integrations]')).split('غير مُعدّ').length === 4, 'ثلاثة تكاملات كلها «غير مُعدّ» (لا اتصال مدّعى)');
 
     // ───── بيانات تجريبية (اختيارية) عبر الإعدادات ─────
     await nav('settings');
@@ -117,7 +117,12 @@ app.whenReady().then(() =>
 
     // ───── حذف مدمّر بتأكيد كتابي ─────
     await until(async () => (await ev<number>(`document.querySelectorAll('[data-business]').length`)) === 1, 'بطاقة المتجر');
-    await click('button[aria-label="حذف متجر القهوة"]');
+    check(!(await click('button[aria-label="حذف نهائي متجر القهوة"]')), 'لا زر حذف نهائي لنشاط نشط (الأرشفة هي الافتراضي)');
+    await click('button[aria-label="أرشفة متجر القهوة"]');
+    await until(async () => ctx.svc.listBusinesses({ status: 'archived' }).length === 1, 'أرشفة قبل الحذف');
+    await type('select[aria-label="الحالة"]', 'archived');
+    await until(() => ev<boolean>(`!!document.querySelector('button[aria-label="حذف نهائي متجر القهوة"]')`), 'ظهور زر الحذف النهائي في المؤرشفة');
+    await click('button[aria-label="حذف نهائي متجر القهوة"]');
     await until(() => ev<boolean>(`!!document.querySelector('#confirm-typed')`), 'حوار تأكيد الحذف');
     check(await ev<boolean>(`document.querySelector('[data-testid=confirm-yes]').disabled`), 'زر الحذف معطّل قبل كتابة الاسم');
     await type('#confirm-typed', 'خطأ');
@@ -126,6 +131,7 @@ app.whenReady().then(() =>
     await click('[data-testid=confirm-yes]');
     await until(async () => ctx.svc.listBusinesses({ status: 'all', query: 'متجر القهوة' }).length === 0, 'حذف النشاط');
     check(true, 'الحذف يتطلب كتابة اسم النشاط حرفياً');
+    await type('select[aria-label="الحالة"]', 'active');
 
     // ───── تفاصيل النشاط: تبويبات المنصات + ملف متصفح + تشغيل/إغلاق ─────
     await type('input[aria-label="بحث"]', 'نشاط 1');
@@ -136,7 +142,7 @@ app.whenReady().then(() =>
     await clickText('فيسبوك', '[role=tab]');
     await until(async () => (await text('[data-testid=platform-accounts]')).includes('facebook'), 'حسابات فيسبوك');
     check((await ev<number>(`document.querySelectorAll('[data-testid=platform-accounts] li').length`)) === 1, 'تبويب فيسبوك يعرض حسابه فقط');
-    check((await ev<string>(`document.body.innerText`)).includes('غير متصل: لا توجد حملات'), 'الحملات موسومة بوضوح: غير متصل');
+    check((await ev<string>(`document.body.innerText`)).includes('لا توجد حملات'), 'قسم الحملات يوضح عدم وجود حملات/اتصال');
     await shot('business-detail.png');
 
     const biz = ctx.svc.listBusinesses({ status: 'active', query: 'نشاط 1' }).find((b) => b.name === '[تجريبي] نشاط 1')!;

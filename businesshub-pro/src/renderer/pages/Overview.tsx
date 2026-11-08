@@ -1,6 +1,6 @@
 import { useApp, useLoad } from '../ctx';
 import { Badge, Empty, PageHeader } from '../components/ui';
-import { formatDate } from '../labels';
+import { formatDate, INTEGRATION_LABEL, INTEGRATION_TONE } from '../labels';
 
 function Stat({ label, value, testId }: { label: string; value: number; testId: string }) {
   return (
@@ -68,8 +68,8 @@ export function Overview() {
             <ul className="space-y-2" data-testid="integrations">
               {data.integrations.map((i) => (
                 <li key={i.id} className="rounded-xl border border-slate-800 p-4">
-                  <div className="flex items-center justify-between"><span className="font-medium text-slate-200">{i.name}</span><Badge tone="amber">غير متصل</Badge></div>
-                  <p className="mt-1 text-xs text-slate-500">{i.description}</p>
+                  <div className="flex items-center justify-between"><span className="font-medium text-slate-200">{i.name}</span><Badge tone={INTEGRATION_TONE[i.status]}>{INTEGRATION_LABEL[i.status]}</Badge></div>
+                  <p className="mt-1 text-xs text-slate-500">{i.detail}</p>
                 </li>
               ))}
             </ul>

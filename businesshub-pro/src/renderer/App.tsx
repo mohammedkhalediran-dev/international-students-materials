@@ -29,6 +29,7 @@ export function App() {
   const [running, setRunning] = useState<Set<string>>(new Set());
   const [version, setVersion] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [navOpen, setNavOpen] = useState(false);
   const tid = useRef(0);
 
   const toast = useCallback((kind: 'ok' | 'err', text: string) => {
@@ -46,26 +47,32 @@ export function App() {
     });
   }, []);
 
-  const value = useMemo(() => ({ toast, go: setPage, running, version, bump }), [toast, running, version, bump]);
+  const go = useCallback((p: Page) => { setPage(p); setNavOpen(false); }, []);
+  const value = useMemo(() => ({ toast, go, running, version, bump }), [toast, go, running, version, bump]);
   const active = page.name === 'business' ? 'businesses' : page.name;
 
   return (
     <Ctx.Provider value={value}>
       <div className="flex h-full">
-        <aside className="flex w-64 shrink-0 flex-col border-e border-slate-800 bg-slate-900/60">
+        {navOpen && <div className="fixed inset-0 z-20 bg-black/50 lg:hidden" onClick={() => setNavOpen(false)} aria-hidden="true" />}
+        <aside className={`fixed inset-y-0 start-0 z-30 flex w-64 shrink-0 flex-col border-e border-slate-800 bg-slate-900 transition-transform lg:static lg:z-auto lg:translate-x-0 lg:bg-slate-900/60 ${navOpen ? 'translate-x-0' : 'max-lg:translate-x-full'}`}>
           <div className="flex items-center gap-2.5 px-5 py-5 text-indigo-300">
             <IconShield />
             <div><div className="text-base font-bold leading-tight text-slate-100">BusinessHub Pro</div><div className="text-[11px] text-slate-500">المرحلة 1 · محلي بالكامل</div></div>
           </div>
           <nav className="flex-1 space-y-1 px-3" aria-label="القائمة الرئيسية">
             {NAV.map((n) => (
-              <button key={n.name} onClick={() => setPage({ name: n.name })} aria-current={active === n.name ? 'page' : undefined} data-nav={n.name}
+              <button key={n.name} onClick={() => go({ name: n.name })} aria-current={active === n.name ? 'page' : undefined} data-nav={n.name}
                 className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition ${active === n.name ? 'bg-indigo-600/20 text-indigo-200' : 'text-slate-300 hover:bg-slate-800'}`}>{n.label}</button>
             ))}
           </nav>
           <div className="border-t border-slate-800 px-5 py-3 text-[11px] text-slate-500">{running.size > 0 ? `${running.size} ملف قيد التشغيل` : 'لا ملفات قيد التشغيل'}</div>
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="flex items-center gap-3 border-b border-slate-800 bg-slate-900 px-4 py-2.5 lg:hidden">
+            <button className="icon-btn" aria-label="فتح القائمة" aria-expanded={navOpen} onClick={() => setNavOpen(true)}><span className="text-lg leading-none">☰</span></button>
+            <span className="text-sm font-semibold text-slate-200">BusinessHub Pro</span>
+          </div>
           <ErrorBoundary key={page.name + (page.name === 'business' ? page.id : '')} scope={page.name}>
             {page.name === 'overview' && <Overview />}
             {page.name === 'businesses' && <Businesses />}

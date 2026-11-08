@@ -10,6 +10,7 @@ await build({
     'preload-bar': 'src/preload/bar.ts',
     'test-unit': 'src/main/tests/unit.test.ts',
     'test-isolation': 'src/main/tests/isolation.test.ts',
+    'test-meta': 'src/main/tests/meta.test.ts',
     'test-smoke': 'src/main/tests/smoke.test.ts',
   },
   outdir: 'dist-electron',
