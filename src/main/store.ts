@@ -210,7 +210,13 @@ export const MIGRATIONS: string[] = [
 export const SCHEMA_VERSION = MIGRATIONS.length;
 const REQUIRED_TABLES = ['businesses', 'social_accounts', 'proxies', 'proxy_secrets', 'browser_profiles', 'ad_accounts', 'campaigns', 'audit_events', 'meta_connections', 'insights_daily'];
 
-const stamp = () => new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
+// يتضمن أجزاء الثانية كي لا تكتب نسختان متتاليتان في الثانية نفسها فوق بعضهما
+const stamp = () => new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').replace('.', '-').replace('Z', '');
+
+/** يحذف ملف النسخة مع أي ملفات -wal/-shm مرافقة له كي لا تبقى ملفات يتيمة. */
+function removeBackupFiles(path: string): void {
+  for (const ext of ['', '-wal', '-shm']) rmSync(path + ext, { force: true });
+}
 
 function userVersion(db: DB): number {
   return db.pragma('user_version', { simple: true }) as number;
@@ -278,9 +284,11 @@ export class Store {
     await this.db.backup(dest);
     const v = Store.validate(dest);
     if (!v.ok) {
-      rmSync(dest, { force: true });
+      removeBackupFiles(dest);
       throw new AppError(`فشل التحقق من النسخة الاحتياطية: ${v.reason}`);
     }
+    // فتح النسخة للتحقق قد يترك ملفي -wal/-shm بجانبها؛ النسخة مغلقة الآن فلا حاجة لهما
+    for (const ext of ['-wal', '-shm']) rmSync(dest + ext, { force: true });
     return statSync(dest).size;
   }
 
@@ -295,7 +303,7 @@ export class Store {
     const dest = this.defaultBackupPath('auto');
     await this.backupTo(dest);
     const all = [{ f: basename(dest), t: now }, ...autos].sort((a, b) => b.t - a.t);
-    for (const old of all.slice(keep)) rmSync(join(this.backupsDir, old.f), { force: true });
+    for (const old of all.slice(keep)) removeBackupFiles(join(this.backupsDir, old.f));
     return dest;
   }
 

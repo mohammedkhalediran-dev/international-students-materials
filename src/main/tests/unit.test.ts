@@ -161,7 +161,8 @@ run('طبقة البيانات: المخطط، القيود، السياسات،
   check(a1 !== null && Store.validate(a1).ok, 'نسخة تلقائية أولى سليمة');
   check((await store.autoBackup(86_400_000, 3, t0 + 1000)) === null, 'لا نسخة تلقائية جديدة خلال 24 ساعة');
   for (let i = 1; i <= 4; i++) { await new Promise((r) => setTimeout(r, 15)); await store.autoBackup(0, 3, t0 + i * 2 * 86_400_000); }
-  check(readdirSync(join(dir, 'backups')).filter((f) => f.startsWith('auto-')).length === 3, 'الاحتفاظ بآخر 3 نسخ تلقائية فقط');
+  check(readdirSync(join(dir, 'backups')).filter((f) => f.startsWith('auto-') && f.endsWith('.sqlite')).length === 3, 'الاحتفاظ بآخر 3 نسخ تلقائية فقط');
+  check(!readdirSync(join(dir, 'backups')).some((f) => /\.sqlite-(wal|shm)$/.test(f)), 'لا ملفات -wal/-shm يتيمة بجوار النسخ الاحتياطية');
 
   // ───── استعادة نسخة بمخطط قديم (v1) ← هجرة تلقائية مع نسخة احتياطية ─────
   const v1 = join(dir, 'v1.sqlite');
