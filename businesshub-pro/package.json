@@ -1,0 +1,84 @@
+{
+  "name": "businesshub-pro",
+  "productName": "BusinessHub Pro",
+  "version": "0.1.0",
+  "description": "BusinessHub Pro — Phase 1: local-first business, social account and isolated browser profile manager",
+  "main": "dist-electron/main.cjs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/native.mjs",
+    "dev": "node scripts/dev.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src scripts",
+    "build:renderer": "vite build",
+    "build:electron": "node scripts/build-electron.mjs",
+    "build": "npm run typecheck && npm run build:renderer && npm run build:electron",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
+    "start": "npm run build && electron .",
+    "test:unit": "node scripts/run-test.mjs unit",
+    "test:isolation": "node scripts/run-test.mjs isolation",
+    "test:smoke": "node scripts/run-test.mjs smoke",
+    "test": "npm run build:electron && npm run test:unit && npm run test:isolation && npm run test:smoke",
+    "dist": "npm run build && electron-builder --win nsis && node scripts/native.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.1",
+    "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "autoprefixer": "^10.6.2",
+    "electron": "^42.11.18",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.6"
+  },
+  "build": {
+    "appId": "com.businesshub.pro",
+    "productName": "BusinessHub Pro",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist-electron/main.cjs",
+      "dist-electron/preload-*.cjs",
+      "dist-renderer/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "npmRebuild": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "author": "BusinessHub"
+}
