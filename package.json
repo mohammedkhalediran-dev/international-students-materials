@@ -21,7 +21,7 @@
     "test:isolation": "node scripts/run-test.mjs isolation",
     "test:metaui": "node scripts/run-test.mjs metaui",
     "test:smoke": "node scripts/run-test.mjs smoke",
-    "test": "npm run build:electron && npm run test:unit && npm run test:meta && npm run test:isolation && npm run test:smoke && npm run test:metaui",
+    "test": "npm run build:renderer && npm run build:electron && npm run test:unit && npm run test:meta && npm run test:isolation && npm run test:smoke && npm run test:metaui",
     "dist": "npm run build && electron-builder --win nsis && node scripts/native.mjs",
     "dist:linux-check": "npm run build && electron-builder --win nsis -c.win.signAndEditExecutable=false && node scripts/native.mjs"
   },
