@@ -1,0 +1,17 @@
+export const CH = {
+  profilesList: 'profiles:list',
+  profilesCreate: 'profiles:create',
+  profilesUpdate: 'profiles:update',
+  profilesDelete: 'profiles:delete',
+  profilesLaunch: 'profiles:launch',
+  profilesClose: 'profiles:close',
+  profilesRunning: 'profiles:running',
+  profilesRunningChanged: 'profiles:running-changed',
+  groupsList: 'groups:list',
+  groupsCreate: 'groups:create',
+  groupsUpdate: 'groups:update',
+  groupsDelete: 'groups:delete',
+  barCommand: 'bar:command',
+  barState: 'bar:state',
+  barReady: 'bar:ready',
+} as const;
