@@ -9,6 +9,7 @@ const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n
 const nf = new Intl.NumberFormat('ar-u-nu-latn');
 const money = (v: number, cur: string | null) => { try { return new Intl.NumberFormat('en-US', cur && cur.length === 3 ? { style: 'currency', currency: cur } : { maximumFractionDigits: 2 }).format(v); } catch { return `${v.toFixed(2)} ${cur ?? ''}`; } };
 const pct = (v: number | null) => (v === null ? '—' : `${v.toFixed(2)}%`);
+const PLATFORM_NAME: Record<string, string> = { facebook: 'فيسبوك', instagram: 'إنستغرام', audience_network: 'Audience Network', messenger: 'ماسنجر', whatsapp: 'واتساب', unknown: 'غير محدد' };
 const STATUS_TONE = (s: string) => (s === 'ACTIVE' ? 'green' : s === 'PAUSED' ? 'amber' : 'slate') as 'green' | 'amber' | 'slate';
 
 function MetricCells({ m, cur }: { m: Metrics; cur: string | null }) {
@@ -79,6 +80,7 @@ export function Campaigns() {
   const metaAds = useMemo(() => (ads ?? []).filter((a) => a.provider === 'meta' && a.connectionId), [ads]);
   const args = { since, until, adAccountId: adAccountId || undefined, query: query || undefined, status: status || undefined, page, pageSize };
   const { data: result, loading } = useLoad('analytics:campaigns', [args], [rangeOk]);
+  const { data: split } = useLoad('analytics:platforms', [{ adAccountId: adAccountId || undefined, since, until }], [rangeOk]);
   const { data: runs } = useLoad('analytics:syncRuns', [{ adAccountId: adAccountId || undefined }]);
   const last = runs?.[0];
 
@@ -143,6 +145,21 @@ export function Campaigns() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {split && split.length > 0 && (
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4" data-testid="platform-split">
+                <div className="mb-2 text-xs text-slate-400">الإنفاق حسب منصة النشر (من Meta)</div>
+                <div className="flex flex-wrap gap-3">
+                  {split.map((x) => (
+                    <div key={x.platform + x.currency} className="min-w-40 rounded-lg bg-slate-950/60 px-3 py-2 text-sm">
+                      <div className="text-xs text-slate-400">{PLATFORM_NAME[x.platform] ?? x.platform}</div>
+                      <div className="font-semibold tabular-nums">{money(x.spend, x.currency)}</div>
+                      <div className="text-[11px] text-slate-500">{nf.format(x.impressions)} ظهور · {nf.format(x.clicks)} نقرة · CTR {pct(x.ctr)}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

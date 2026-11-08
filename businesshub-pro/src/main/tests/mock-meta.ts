@@ -69,6 +69,12 @@ export const server = createServer((req: IncomingMessage, res: ServerResponse) =
     const level = u.searchParams.get('level')!;
     const range = JSON.parse(u.searchParams.get('time_range')!) as { since: string; until: string };
     const idField = level === 'campaign' ? 'campaign_id' : level === 'adset' ? 'adset_id' : 'ad_id';
+    if (u.searchParams.get('breakdowns') === 'publisher_platform') {
+      const split = [['facebook', 0.6], ['instagram', 0.4]] as const;
+      const base = [['c1', 10.5, 1000, 50], ['c2', 4, 400, 10]] as const;
+      const rowsBp = base.flatMap(([cid, sp, im, cl]) => days(range.since, range.until).flatMap((d) => split.map(([pf, ratio]) => ({ campaign_id: cid, publisher_platform: pf, date_start: d, date_stop: d, spend: (sp * ratio).toFixed(2), impressions: String(Math.round(im * ratio)), clicks: String(Math.round(cl * ratio)) }))));
+      return send(200, paged(rowsBp, u.searchParams, 15), hdr);
+    }
     const ents = level === 'campaign' ? ['c1', 'c2'] : level === 'adset' ? ['s1', 's3'] : ['a1', 'a3'];
     const rows = ents.flatMap((e, ei) => days(range.since, range.until).map((d) => ({
       [idField]: e, date_start: d, date_stop: d, spend: ei === 0 ? '10.50' : '4.00', impressions: ei === 0 ? '1000' : '400', clicks: ei === 0 ? '50' : '10', reach: '900',

@@ -84,6 +84,8 @@ app.whenReady().then(() =>
     const tot = await ev<string>(`document.querySelector('[data-testid=totals]').innerText`);
     check(tot.includes('USD') && tot.includes('30'), 'الإجماليات حسب العملة (USD) مع 30 تحويلاً');
     check((await text('[data-testid=last-sync]')).includes('ناجحة'), 'آخر مزامنة: ناجحة');
+    const split = await text('[data-testid=platform-split]');
+    check(split.includes('فيسبوك') && split.includes('إنستغرام') && split.includes('87.00') && split.includes('58.00'), 'بطاقة الإنفاق حسب المنصة: فيسبوك 87 وإنستغرام 58');
     await ev(`document.querySelector('[data-campaign="حملة المبيعات"] button').click()`);
     await until(async () => (await body()).includes('مجموعة 1'), 'مجموعات الحملة');
     await clickText('مجموعة 1');

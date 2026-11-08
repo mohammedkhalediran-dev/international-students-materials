@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type {
-  AdAccount, AdRow, AdSetRow, CampaignPage, CampaignRow, CurrencyTotals, MetaConnection, MetaDiscoveredAccount, MetaStatus, Metrics, SyncRun,
+  AdAccount, AdRow, AdSetRow, CampaignPage, CampaignRow, CurrencyTotals, MetaConnection, MetaDiscoveredAccount, MetaStatus, Metrics, PlatformSplit, SyncRun,
 } from '../../shared/contract';
 import type { AuditLog } from '../audit';
 import { AppError } from '../errors';
@@ -331,6 +331,17 @@ export class MetaService {
             fields: `${idField},date_start,spend,impressions,clicks,reach,actions`,
           }, token, 100);
           counts.truncated ||= ins.truncated;
+          if (level === 'campaign') {
+            // تفصيل حسب منصة النشر (فيسبوك/إنستغرام/...) — حملات Meta مشتركة بين المنصات
+            const bp = await cl.paginate<Row>(`/${act}/insights`, {
+              level, time_increment: 1, time_range: JSON.stringify({ since: ymd(from), until: ymd(to) }), limit: 500, breakdowns: 'publisher_platform',
+              fields: 'campaign_id,date_start,spend,impressions,clicks',
+            }, token, 100);
+            counts.truncated ||= bp.truncated;
+            const upP = this.db.prepare(`INSERT INTO insights_platform_daily (ad_account_id, campaign_external_id, platform, date, spend, impressions, clicks, synced_at) VALUES (?,?,?,?,?,?,?,?)
+              ON CONFLICT(ad_account_id, campaign_external_id, platform, date) DO UPDATE SET spend=excluded.spend, impressions=excluded.impressions, clicks=excluded.clicks, synced_at=excluded.synced_at`);
+            this.db.transaction(() => { for (const r of bp.data) upP.run(adAccountId, String(r.campaign_id), String(r.publisher_platform ?? 'unknown'), String(r.date_start), num(r.spend), Math.round(num(r.impressions)), Math.round(num(r.clicks)), this.now()); })();
+          }
           this.db.transaction(() => {
             for (const r of ins.data) {
               const actions = Array.isArray(r.actions) ? (r.actions as { action_type: string; value: string }[]) : [];
@@ -396,6 +407,17 @@ export class MetaService {
       })),
       totals: totRows.map((r): CurrencyTotals => ({ currency: r.currency as string, ...this.metrics(r) })),
     };
+  }
+
+  platforms(f: { adAccountId?: string; businessId?: string; since: string; until: string }): PlatformSplit[] {
+    const where = ['p.date BETWEEN ? AND ?'];
+    const p: string[] = [f.since, f.until];
+    if (f.adAccountId) { where.push('p.ad_account_id=?'); p.push(f.adAccountId); }
+    if (f.businessId) { where.push('a.business_id=?'); p.push(f.businessId); }
+    const rows = this.db.prepare(`SELECT p.platform, COALESCE(m.currency, 'غير محددة') AS currency, SUM(p.spend) spend, SUM(p.impressions) impressions, SUM(p.clicks) clicks
+      FROM insights_platform_daily p JOIN ad_accounts a ON a.id=p.ad_account_id LEFT JOIN meta_ad_accounts m ON m.external_id=a.external_id
+      WHERE ${where.join(' AND ')} GROUP BY p.platform, COALESCE(m.currency, 'غير محددة') ORDER BY spend DESC`).all(...p) as Row[];
+    return rows.map((r) => ({ platform: r.platform as string, currency: r.currency as string, spend: num(r.spend), impressions: num(r.impressions), clicks: num(r.clicks), ctr: num(r.impressions) > 0 ? (num(r.clicks) / num(r.impressions)) * 100 : null }));
   }
 
   adSets(campaignId: string, since: string, until: string): AdSetRow[] {

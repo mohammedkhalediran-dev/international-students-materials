@@ -191,6 +191,20 @@ export const MIGRATIONS: string[] = [
     error TEXT
   );
   `,
+  `
+  -- v3: تفصيل الإنفاق حسب منصة النشر (فيسبوك/إنستغرام/...) من Meta
+  CREATE TABLE insights_platform_daily (
+    ad_account_id TEXT NOT NULL REFERENCES ad_accounts(id) ON DELETE CASCADE,
+    campaign_external_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    date TEXT NOT NULL,
+    spend REAL NOT NULL DEFAULT 0,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    synced_at INTEGER NOT NULL,
+    PRIMARY KEY (ad_account_id, campaign_external_id, platform, date)
+  );
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

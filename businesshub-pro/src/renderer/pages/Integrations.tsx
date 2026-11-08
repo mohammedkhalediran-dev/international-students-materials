@@ -131,6 +131,7 @@ export function Integrations() {
                     <span className="font-medium text-slate-100">{c.fbUserName ?? c.fbUserId}</span>
                     <Badge tone={connTone[c.status]}>{connLabel[c.status]}</Badge>
                     <span className="text-xs text-slate-500">ينتهي الرمز: {formatDate(c.tokenExpiresAt)}</span>
+                    {c.status === 'active' && c.tokenExpiresAt && c.tokenExpiresAt - Date.now() < 7 * 86_400_000 && <Badge tone="amber">ينتهي خلال {Math.max(1, Math.ceil((c.tokenExpiresAt - Date.now()) / 86_400_000))} يوم — أعد الربط قريباً</Badge>}
                     <span className="text-xs text-slate-500">{c.adAccountCount} حساب إعلاني</span>
                     <div className="ms-auto flex gap-1">
                       <button className="btn btn-ghost px-3 py-1 text-xs" disabled={c.status !== 'active' || busy === `d-${c.id}`} onClick={() => void guard(`d-${c.id}`, async () => { const r = await rawCall('meta:discover', { connectionId: c.id }); if (!r.ok) return r.error; toast('ok', `تم اكتشاف ${r.data.length} حساباً إعلانياً.`); return null; })}>اكتشاف الحسابات الإعلانية</button>

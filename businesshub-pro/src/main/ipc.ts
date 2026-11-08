@@ -98,6 +98,7 @@ export function buildHandlers(d: IpcDeps): Handlers {
     'analytics:adsets': (i) => meta.adSets(i.campaignId, i.since, i.until),
     'analytics:ads': (i) => meta.adsOf(i.adSetId, i.since, i.until),
     'analytics:syncRuns': (i) => meta.syncRuns(i.adAccountId),
+    'analytics:platforms': (i) => meta.platforms(i),
     'tiktok:status': () => providers.tiktokStatus(),
     'tiktok:saveConfig': (i) => providers.saveTikTok(i.appId, i.appSecret),
     'whatsapp:status': () => providers.whatsappStatus(),

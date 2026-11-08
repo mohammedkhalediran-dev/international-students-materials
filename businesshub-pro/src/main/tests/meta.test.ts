@@ -121,6 +121,11 @@ run('Meta: OAuth، الاكتشاف، المزامنة، الأخطاء، الق
   check(narrow.rows.find((r) => r.externalId === 'c1')!.metrics.spend === 31.5, 'فلتر التاريخ يحدّد المجموع (3 أيام × 10.5)');
   check(meta.campaigns({ since: '2026-10-01', until: '2026-10-10', page: 2, pageSize: 5 }).rows.length === 0 && meta.campaigns({ since: '2026-10-01', until: '2026-10-10', page: 1, pageSize: 5, query: 'الوعي' }).total === 1 && meta.campaigns({ since: '2026-10-01', until: '2026-10-10', page: 1, pageSize: 5, status: 'PAUSED' }).total === 1, 'ترقيم الواجهة والبحث والتصفية بالحالة');
   check(meta.campaigns({ businessId: biz2.id, since: '2026-10-01', until: '2026-10-10', page: 1, pageSize: 5 }).total === 0, 'تصفية بالنشاط: نشاط آخر بلا حملات');
+  const pf = meta.platforms({ since: '2026-10-01', until: '2026-10-10' });
+  const fb = pf.find((x) => x.platform === 'facebook');
+  const ig = pf.find((x) => x.platform === 'instagram');
+  check(pf.length === 2 && Math.abs(fb!.spend - 87) < 1e-6 && Math.abs(ig!.spend - 58) < 1e-6 && fb!.currency === 'USD' && fb!.impressions === 8400 && ig!.clicks === 240, 'تفصيل الإنفاق حسب المنصة: فيسبوك 87 وإنستغرام 58 (مجموعهما 145)');
+  check(meta.platforms({ since: '2026-10-05', until: '2026-10-07' }).find((x) => x.platform === 'instagram')!.spend === 4.2 * 3 + 1.6 * 3 && meta.platforms({ businessId: biz2.id, since: '2026-10-01', until: '2026-10-10' }).length === 0, 'تفصيل المنصة يحترم فلتر التاريخ والنشاط');
   const sets = meta.adSets('meta:c1', '2026-10-01', '2026-10-10');
   check(sets.length === 2 && sets[0].externalId === 's1' && sets[0].metrics.spend === 105 && sets[0].dailyBudget === 50 && sets[0].optimizationGoal === 'OFFSITE_CONVERSIONS', 'مجموعات الحملة مع مقاييسها');
   const ads = meta.adsOf('meta:s1', '2026-10-01', '2026-10-10');
@@ -169,7 +174,7 @@ run('Meta: OAuth، الاكتشاف، المزامنة، الأخطاء، الق
   await rejects(() => meta.sync(linked.id, '2026-10-01', '2026-10-02'), 'لا مزامنة بعد الفصل', /مفصول/);
   check(meta.campaigns({ since: '2026-10-01', until: '2026-10-10', page: 1, pageSize: 25 }).total === 3, 'البيانات المخزّنة تبقى للاطلاع بعد الفصل');
   meta.unlink(linked.id);
-  check((store.db.prepare('SELECT COUNT(*) c FROM campaigns').get() as { c: number }).c === 0 && (store.db.prepare('SELECT COUNT(*) c FROM insights_daily').get() as { c: number }).c === 0, 'فكّ الربط يحذف البيانات المخزّنة محلياً');
+  check((store.db.prepare('SELECT COUNT(*) c FROM campaigns').get() as { c: number }).c === 0 && (store.db.prepare('SELECT COUNT(*) c FROM insights_daily').get() as { c: number }).c === 0 && (store.db.prepare('SELECT COUNT(*) c FROM insights_platform_daily').get() as { c: number }).c === 0, 'فكّ الربط يحذف البيانات المخزّنة محلياً (بما فيها تفصيل المنصات)');
 
   // ───── التدقيق ─────
   const ev = JSON.stringify(audit.list(500));

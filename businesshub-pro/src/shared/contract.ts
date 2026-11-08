@@ -146,6 +146,7 @@ export const inputs = {
   'analytics:adsets': z.object({ campaignId: z.string().min(1).max(100), since: dateStr, until: dateStr }),
   'analytics:ads': z.object({ adSetId: z.string().min(1).max(100), since: dateStr, until: dateStr }),
   'analytics:syncRuns': z.object({ adAccountId: id.optional() }),
+  'analytics:platforms': z.object({ adAccountId: id.optional(), businessId: id.optional(), since: dateStr, until: dateStr }),
   'tiktok:status': none,
   'tiktok:saveConfig': z.object({ appId: z.string().trim().min(3).max(64), appSecret: z.string().trim().min(8).max(128).optional() }),
   'whatsapp:status': none,
@@ -229,6 +230,7 @@ export interface AdSetRow { id: string; externalId: string; name: string; status
 export interface AdRow { id: string; externalId: string; name: string; status: string; metrics: Metrics }
 export interface CurrencyTotals extends Metrics { currency: string }
 export interface CampaignPage { rows: CampaignRow[]; total: number; page: number; pageSize: number; totals: CurrencyTotals[] }
+export interface PlatformSplit { platform: string; currency: string; spend: number; impressions: number; clicks: number; ctr: number | null }
 export interface SyncRun {
   id: number; adAccountId: string; adAccountName: string; startedAt: number; finishedAt: number | null; status: 'running' | 'ok' | 'partial' | 'error';
   since: string; until: string; campaigns: number; adSets: number; ads: number; insightRows: number; truncated: boolean; error: string | null;
@@ -301,6 +303,7 @@ export interface Outputs {
   'analytics:adsets': AdSetRow[];
   'analytics:ads': AdRow[];
   'analytics:syncRuns': SyncRun[];
+  'analytics:platforms': PlatformSplit[];
   'tiktok:status': TikTokStatus;
   'tiktok:saveConfig': TikTokStatus;
   'whatsapp:status': WhatsAppStatus;
