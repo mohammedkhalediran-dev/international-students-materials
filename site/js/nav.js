@@ -31,6 +31,9 @@
       { id: "qbank", label: "بنك الأسئلة", icon: "help", href: "workspace.html?view=questions", enabled: true },      // «قريباً»
       { id: "results", label: "نتائج التدريب", icon: "chart", href: "workspace.html?view=results", enabled: true }
     ] },
+    { title: "التواصل", items: [
+      { id: "chat", label: "الدردشة", icon: "users", href: "chat.html", enabled: true }
+    ] },
     { title: "حسابي", items: [
       { id: "grades", label: "درجاتي الجامعية", icon: "cap", href: "grades.html", enabled: true },  // Step 57: الخادم يتحقق من الحساب ويعطي كل طالب درجاته فقط
       { id: "profile", label: "الملف الشخصي", icon: "user", href: "profile.html", enabled: true }  // Step 61: الاسم كما في الجامعة + ربط الجواز

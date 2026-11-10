@@ -9,6 +9,8 @@ import { handleExams } from "../_lib/exams.js";
 import { handleGrades } from "../_lib/grades.js";
 import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
+import { handleAssistant } from "../_lib/assistant.js";
+import { handleChat } from "../_lib/chat.js";
 
 export async function onRequest({ request, env, waitUntil }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "", waitUntil });
@@ -23,6 +25,10 @@ export async function onRequest({ request, env, waitUntil }) {
   if (pnRes) return pnRes;
   const aiRes = await handleAi(request, env, { currentUser }); // ترجمة/شرح النص المحدد في قارئ PDF (Workers AI، للمسجّل دخوله فقط)
   if (aiRes) return aiRes;
+  const asRes = await handleAssistant(request, env); // المساعد الذكي (سؤال وجواب عن المحاضرة، حصة يومية)
+  if (asRes) return asRes;
+  const chatRes = await handleChat(request, env); // الدردشة: غرف الكورسات (CHAT_ENABLED=1)
+  if (chatRes) return chatRes;
   const pushRes = await handlePush(request, env, { currentUser });
   if (pushRes) return pushRes;
   if (!env.LECTURES) {

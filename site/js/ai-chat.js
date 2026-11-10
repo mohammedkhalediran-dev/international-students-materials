@@ -1,19 +1,11 @@
 /* js/ai-chat.js — صندوق "اسأل عن هذه المحاضرة".
-   يرسل السؤال إلى الـ Worker (SITE.aiEndpoint) ويعرض الجواب. لا يحفظ شيئاً غير عدّاد الأسئلة اليومي على هذا الجهاز.
-   الاستخدام: AIChat.mount(عنصر, { endpoint: "https://...", lectureId: "medical-immunology-1" }) */
+   يرسل السؤال إلى /api/assistant/ask (يتطلب تسجيل الدخول؛ الحصة اليومية يفرضها الخادم) ويعرض الجواب.
+   الاستخدام: AIChat.mount(عنصر, { courseName, lectureTitle, context }) — context نص المحاضرة (حتى 6000 حرف). */
 (function () {
   "use strict";
-  var DAILY_LIMIT = 15;     // حد الأسئلة لكل جهاز في اليوم (حماية بسيطة للحصة المجانية)
-  var KEY = "ms.ai";
+  var history = [];         // آخر رسائل المحادثة تُرسل مع كل سؤال (الخادم يقصّها إلى 6)
   var LATIN = /([A-Za-z][A-Za-z0-9'’\-\/ ]*[A-Za-z0-9])/;
 
-  function today() { return new Date().toISOString().slice(0, 10); }
-  function used() {
-    try { var v = JSON.parse(localStorage.getItem(KEY) || "{}"); return v.d === today() ? v.n : 0; } catch (e) { return 0; }
-  }
-  function bump() {
-    try { localStorage.setItem(KEY, JSON.stringify({ d: today(), n: used() + 1 })); } catch (e) {}
-  }
   var el = function (tag, cls, text) { return MS.el(tag, cls, text); };
 
   /* نص عادي ← عقد DOM: المصطلحات اللاتينية في عناصر مستقلة حتى لا يختلط الاتجاه */
@@ -60,7 +52,8 @@
     root.hidden = false;
     var card = el("div", "ai-card");
     card.appendChild(el("h2", "ai-title", "اسأل عن هذه المحاضرة"));
-    card.appendChild(el("p", "ai-note", "الإجابات من نص المحاضرة، وقد تخطئ. راجع الملف للتأكد."));
+    var note = el("p", "ai-note", "الإجابات من نص المحاضرة، وقد تخطئ. راجع الملف للتأكد.");
+    card.appendChild(note);
     var log = el("div", "ai-log");
     log.setAttribute("aria-live", "polite");
     var form = el("form", "ai-form");
@@ -92,20 +85,27 @@
       e.preventDefault();
       var q = input.value.trim();
       if (!q) return;
-      if (used() >= DAILY_LIMIT) { add("ai-err", "وصلت للحد اليومي من الأسئلة، عد غداً."); return; }
       add("ai-user").appendChild(document.createTextNode(q));
       input.value = "";
       send.disabled = true;
       var wait = add("ai-bot", "جارٍ التفكير…");
-      fetch(opts.endpoint, {
-        method: "POST",
+      fetch("api/assistant/ask", {
+        method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, lectureId: opts.lectureId })
+        body: JSON.stringify({ question: q, courseName: opts.courseName, lectureTitle: opts.lectureTitle, context: opts.context, history: history })
       })
-        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
         .then(function (res) {
-          if (res.ok && res.j.answer) { render(wait, String(res.j.answer)); bump(); }
-          else fail(wait, res.j.error || "حدث خطأ، حاول مرة أخرى.");
+          if (res.ok && res.j.answer) {
+            render(wait, String(res.j.answer));
+            history.push({ role: "user", content: q }, { role: "assistant", content: String(res.j.answer) });
+            history = history.slice(-6);
+            if (res.j.quota) note.textContent = "المتبقي اليوم: " + res.j.quota.remaining + " من " + res.j.quota.limit + " أسئلة.";
+          } else if (res.status === 401) {
+            wait.className = "ai-msg ai-err"; wait.textContent = "";
+            var a = el("a", "", "سجّل الدخول لتستخدم المساعد الذكي"); a.href = "login.html?next=" + encodeURIComponent(location.pathname.split("/").pop() + location.search);
+            wait.appendChild(a);
+          } else fail(wait, res.j.message || "حدث خطأ، حاول مرة أخرى.");
         })
         .catch(function () { fail(wait, "تعذر الاتصال، تحقق من الإنترنت."); })
         .then(function () { send.disabled = false; log.scrollTop = log.scrollHeight; });

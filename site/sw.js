@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-adm100";
+var V = "medixa-adm101";
 var SHELL = [
   "js/offline-auto.js?v=off97",
   "./assets/logo.png",
@@ -95,6 +95,7 @@ var SHELL = [
   "profile.html",
   "semester.html",
   "study.html",
+  "chat.html",
   "timetable-admin.html",
   "timetable.html",
   "upload.html",
