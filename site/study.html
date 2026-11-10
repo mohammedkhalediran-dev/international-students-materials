@@ -132,7 +132,6 @@
       }
 
       MS.setLast(course.id);
-      if (lecture.ai && SITE.aiEndpoint) AIChat.mount($("aiPanel"), { endpoint: SITE.aiEndpoint, lectureId: course.id + "-" + lecture.number });
       var courseHref = "course.html?id=" + encodeURIComponent(course.id);
       var semester = SEMESTERS.filter(function (s) { return s.id === course.semester; })[0];
       if (semester) { $("crumbSem").textContent = semester.name; $("crumbSem").href = "semester.html?id=" + semester.id; }
@@ -164,6 +163,9 @@
         root.removeChild(loading);
         if (!data || !data.topics || !data.topics.length) { failLoad(); return; }
         start(data.topics);
+        /* المساعد الذكي: سياق المحاضرة من محتوى الدراسة نفسه (الإنجليزي من الملف) */
+        var ctx = data.topics.map(function (t) { return t.term + ": " + (t.facts || []).map(function (f) { return f.en; }).join(" "); }).join("\n").slice(0, 6000);
+        AIChat.mount($("aiPanel"), { courseName: course.name, lectureTitle: lecture.title, context: ctx });
       };
       loader.onerror = function () { if (loading.parentNode) root.removeChild(loading); failLoad(); };
       document.head.appendChild(loader);

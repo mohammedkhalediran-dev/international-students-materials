@@ -31,6 +31,9 @@
       { id: "qbank", label: "بنك الأسئلة", icon: "help", soon: true },      // «قريباً»
       { id: "results", label: "نتائج التدريب", icon: "chart", soon: true }
     ] },
+    { title: "التواصل", items: [
+      { id: "chat", label: "الدردشة", icon: "users", href: "chat.html", enabled: true }
+    ] },
     { title: "حسابي", items: [
       { id: "grades", label: "درجاتي الجامعية", icon: "cap", soon: true },  // يحتاج تحقق هوية من الخادم قبل أي عرض
       { id: "profile", label: "الملف الشخصي", icon: "user", soon: true }
