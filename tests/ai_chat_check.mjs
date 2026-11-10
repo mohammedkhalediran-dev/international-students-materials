@@ -50,7 +50,7 @@ ok((await call(handleAssistant, 2, "/api/assistant/ask", { question: "x" }, cap)
 ok((await call(handleAssistant, 1, "/api/assistant/ask", { question: "x" }, { DB })).s === 503, "بلا AI يعيد 503");
 
 // ---- الدردشة
-ok((await call(handleChat, 1, "/api/chat/rooms", undefined, { DB })).s === 404, "الدردشة مغلقة بلا CHAT_ENABLED");
+ok((await call(handleChat, 1, "/api/chat/rooms", undefined, { DB, CHAT_ENABLED: "0" })).s === 404, "الدردشة مغلقة عند CHAT_ENABLED=0");
 const rooms = await call(handleChat, 1, "/api/chat/rooms", undefined, env);
 ok(rooms.j.items.length === 4 && rooms.j.items[0].slug === "general", "أربع غرف");
 t += 5000;

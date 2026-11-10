@@ -1,6 +1,6 @@
 // functions/_lib/chat.js — الدردشة: غرف حسب الكورس + غرفة عامة. كل من سجّل الدخول يقرأ ويكتب.
 // المسارات (/api/chat/...): rooms (GET) · messages?room=ID&after=ID (GET) · send · report · delete · mute (POST).
-// الإشراف: rep وadmin يحذفان ويكتمان. الدردشة مفتاحها CHAT_ENABLED=1 (غير ذلك تعيد 404).
+// الإشراف: rep وadmin يحذفان ويكتمان. الدردشة مفعّلة افتراضياً؛ CHAT_ENABLED=0 يغلقها (404).
 import { currentUser } from "./auth.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -17,7 +17,7 @@ export async function handleChat(req, env, opts = {}) {
   const url = new URL(req.url);
   const m = /^\/api\/chat\/(rooms|messages|send|report|delete|mute)$/.exec(url.pathname.replace(/\/+$/, ""));
   if (!m) return null;
-  if (env.CHAT_ENABLED !== "1") return fail("not_found", 404);
+  if (env.CHAT_ENABLED === "0") return fail("not_found", 404);
   if (!env.DB) return fail("not_configured", 503);
   const op = m[1];
   const now = (opts.now || Date.now)();

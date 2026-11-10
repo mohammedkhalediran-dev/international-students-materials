@@ -51,8 +51,8 @@
   function mount(root, opts) {
     root.hidden = false;
     var card = el("div", "ai-card");
-    card.appendChild(el("h2", "ai-title", "اسأل عن هذه المحاضرة"));
-    var note = el("p", "ai-note", "الإجابات من نص المحاضرة، وقد تخطئ. راجع الملف للتأكد.");
+    card.appendChild(el("h2", "ai-title", opts.title || "اسأل عن هذه المحاضرة"));
+    var note = el("p", "ai-note", opts.note || "الإجابات من نص المحاضرة، وقد تخطئ. راجع الملف للتأكد.");
     card.appendChild(note);
     var log = el("div", "ai-log");
     log.setAttribute("aria-live", "polite");
@@ -63,6 +63,7 @@
     input.maxLength = 500;
     input.id = "aiQuestion";
     label.htmlFor = "aiQuestion";
+    if (opts.placeholder) input.placeholder = opts.placeholder;
     var send = el("button", "btn btn-primary", "إرسال");
     send.type = "submit";
     form.appendChild(label);
