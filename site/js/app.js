@@ -471,7 +471,7 @@
     menuBtn.appendChild(MS.icon("menu", 22));
     if (!document.querySelector(".mobile-dock")) {
       var dock = MS.el("nav", "mobile-dock"); dock.setAttribute("aria-label", I18N.t("التنقل الرئيسي"));
-      [["home","الرئيسية","index.html"],["book","الكورسات","index.html#semesters"],["search","بحث","workspace.html?view=search"],["star","المفضلة","workspace.html?view=favorites"],["tools","أدوات الدراسة","workspace.html?view=planner"]].forEach(function(it){
+      [["home","الرئيسية","index.html"],["book","الكورسات","index.html#semesters"],["search","بحث","workspace.html?view=search"],["chat","الدردشة","chat.html"],["tools","أدوات الدراسة","workspace.html?view=planner"]].forEach(function(it){
         var a=MS.el("a");a.href=it[2];a.appendChild(MS.icon(it[0],22));a.appendChild(MS.el("span","",it[1]));
         if(location.pathname.endsWith(it[2].split("?")[0]) && (it[2].includes("?") ? location.search===it[2].slice(it[2].indexOf("?")) : !it[2].includes("#"))) a.setAttribute("aria-current","page");
         dock.appendChild(a);

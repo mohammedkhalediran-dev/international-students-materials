@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
   <link rel="stylesheet" href="css/style.css?v=off98">
-  <link rel="stylesheet" href="css/chat.css?v=chat103">
+  <link rel="stylesheet" href="css/chat.css?v=chat104">
   <link rel="stylesheet" href="css/motion.css?v=side66c">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
@@ -23,7 +23,7 @@
     try { if (!localStorage.getItem("ms.authed") && !localStorage.getItem("ms.guest")) location.replace("login.html?gate=1&next=" + encodeURIComponent((location.pathname.split("/").pop() || "index.html") + location.search + location.hash)); } catch (e) {}
   </script>
 </head>
-<body>
+<body class="chat-page">
   <noscript>
     <p class="load-error">هذا الموقع يحتاج إلى تفعيل JavaScript لعرض المواد. <span lang="fa">برای نمایش دروس، JavaScript را فعال کنید.</span> <span lang="en" dir="ltr">Please enable JavaScript to see the subjects.</span></p>
   </noscript>
@@ -67,6 +67,7 @@
   <main class="container chat" id="content">
     <p class="chat-note" id="chatNote" role="status" hidden></p>
     <div class="chat-shell">
+      <div class="chat-top"><a class="chat-back" href="index.html" aria-label="الرئيسية"></a><span class="chat-top-av" id="roomAv" aria-hidden="true"></span><div class="chat-top-txt"><strong id="roomTitle">الدردشة</strong><small>مجموعة الدردشة</small></div></div>
       <div class="chat-rooms" id="rooms" role="tablist" aria-label="الغرف"></div>
       <div class="chat-log" id="log" aria-live="polite"></div>
       <form class="chat-form" id="form" autocomplete="off" hidden>
@@ -104,6 +105,6 @@
   <script src="js/i18n.js?v=home102"></script>
   <script src="js/app.js?v=side66"></script><script src="js/auth.js?v=adm100"></script>
   <script src="js/nav.js?v=off98"></script><script src="js/motion.js?v=mv82"></script><script src="js/my-course.js?v=step58"></script>
-  <script src="js/chat.js?v=chat103"></script>
+  <script src="js/chat.js?v=chat104"></script>
 </body>
 </html>
