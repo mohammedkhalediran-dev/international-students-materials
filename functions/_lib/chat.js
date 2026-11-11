@@ -10,6 +10,15 @@ const fail = (error, status) => json({ ok: false, error }, status);
 const MOD = ["rep", "admin"];
 const MAX_BODY = 1000;
 const clean = (s, n) => String(s == null ? "" : s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f‎‏‪-‮]/g, "").trim().slice(0, n);
+const ATT = "[[att]]";
+const ATT_TYPES = ["lecture", "announcement", "tomorrow", "week"];
+/* مرفق منظّم (ملف محاضرة، تبليغ، جدول): نوع من قائمة ثابتة ورابط داخلي فقط */
+function cleanAttach(a) {
+  if (!a || typeof a !== "object" || !ATT_TYPES.includes(a.type)) return null;
+  const href = clean(a.href, 200), title = clean(a.title, 120);
+  if (!title || !/^(?!\/\/)[\w\-./?=&#%]+$/.test(href)) return null;
+  return { type: a.type, title, sub: clean(a.sub, 300), href };
+}
 const idOf = (v) => (Number.isSafeInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
 const shortName = (n) => String(n || "طالب").trim().split(/\s+/).slice(0, 2).join(" ");
 
@@ -33,10 +42,14 @@ export async function handleChat(req, env, opts = {}) {
     const room = idOf(url.searchParams.get("room"));
     if (!room) return fail("bad_request", 400);
     const after = Number(url.searchParams.get("after")) || 0;
+    const since = Number(url.searchParams.get("since")) || 0;
     const rows = (await env.DB.prepare(
-      "SELECT id, user_id, user_name, CASE WHEN deleted_at IS NULL THEN body ELSE '' END AS body, created_at, deleted_at FROM chat_messages WHERE room_id=? AND id>? ORDER BY id DESC LIMIT 60"
+      "SELECT id, user_id, user_name, body, created_at FROM chat_messages WHERE room_id=? AND id>? AND deleted_at IS NULL ORDER BY id DESC LIMIT 60"
     ).bind(room, after).all()).results || [];
-    return json({ ok: true, items: rows.reverse() });
+    /* المحذوفة منذ آخر استعلام: يزيلها العميل من الشاشة كأنها لم تكن */
+    const gone = since ? ((await env.DB.prepare("SELECT id FROM chat_messages WHERE room_id=? AND id>? AND deleted_at>?  LIMIT 100")
+      .bind(room, Math.max(after - 1000, 0), since).all()).results || []).map((x) => x.id) : [];
+    return json({ ok: true, items: rows.reverse(), gone, now: Date.now() });
   }
   if (req.method !== "POST") return fail("not_found", 404);
   const origin = req.headers.get("origin");
@@ -47,7 +60,11 @@ export async function handleChat(req, env, opts = {}) {
 
   try {
     if (op === "send") {
-      const room = idOf(b.room), body = clean(b.body, MAX_BODY);
+      const room = idOf(b.room);
+      let body = clean(b.body, MAX_BODY);
+      const att = b.attach ? cleanAttach(b.attach) : null;
+      if (b.attach && !att) return fail("bad_request", 400);
+      if (att) body = ATT + JSON.stringify(att) + (body ? "\n" + body : "");
       if (!room || !body) return fail("bad_request", 400);
       if (!(await env.DB.prepare("SELECT 1 AS x FROM chat_rooms WHERE id=? AND slug='general'").bind(room).first())) return fail("not_found", 404);
       const mute = await env.DB.prepare("SELECT until_at FROM chat_mutes WHERE user_id=?").bind(user.id).first();

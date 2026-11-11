@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
   <link rel="stylesheet" href="css/style.css?v=off98">
-  <link rel="stylesheet" href="css/chat.css?v=chat105">
+  <link rel="stylesheet" href="css/chat.css?v=chat108">
   <link rel="stylesheet" href="css/motion.css?v=side66c">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
@@ -70,7 +70,9 @@
       <div class="chat-top"><a class="chat-back" href="index.html" aria-label="الرئيسية"></a><span class="chat-top-av" id="roomAv" aria-hidden="true"></span><div class="chat-top-txt"><strong id="roomTitle">الدردشة</strong><small>مجموعة الدردشة</small></div></div>
       <div class="chat-rooms" id="rooms" role="tablist" aria-label="الغرف"></div>
       <div class="chat-log" id="log" aria-live="polite"></div>
+      <div class="chat-pending" id="pending" hidden></div>
       <form class="chat-form" id="form" autocomplete="off" hidden>
+        <button class="chat-attach" type="button" id="attachBtn" aria-label="إرفاق" aria-haspopup="dialog"></button>
         <label class="visually-hidden" for="msg">اكتب رسالتك</label>
         <textarea class="field chat-input" id="msg" rows="1" maxlength="1000" placeholder="اكتب رسالتك"></textarea>
         <button class="chat-send" type="submit" id="send" aria-label="إرسال"></button>
@@ -99,12 +101,14 @@
     <div class="container footer-bottom" id="footBottom"></div>
   </footer>
 
+  <div class="chat-sheet" id="sheet" hidden><div class="chat-sheet-box" role="dialog" aria-modal="true" aria-label="إرفاق"><div class="chat-sheet-head"><button class="chat-sheet-back" id="sheetBack" type="button" aria-label="رجوع" hidden></button><strong id="sheetTitle">إرفاق</strong><button class="chat-sheet-x" id="sheetX" type="button" aria-label="إغلاق">✕</button></div><div class="chat-sheet-list" id="sheetList"></div></div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="data/courses.js?v=step67"></script>
+  <script src="api/uploads.js"></script>
   <script src="js/i18n.js?v=home102"></script>
   <script src="js/app.js?v=side66"></script><script src="js/auth.js?v=adm100"></script>
   <script src="js/nav.js?v=off98"></script><script src="js/motion.js?v=mv82"></script><script src="js/my-course.js?v=step58"></script>
-  <script src="js/chat.js?v=chat105"></script>
+  <script src="js/chat.js?v=chat108"></script>
 </body>
 </html>
