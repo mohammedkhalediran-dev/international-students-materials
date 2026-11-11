@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-av110";
+var V = "medixa-dm111";
 var SHELL = [
   "js/offline-auto.js?v=off97",
   "./assets/logo.png",
@@ -61,6 +61,8 @@ var SHELL = [
   "css/style.css?v=av110",
   "css/ai-modal.css?v=home103",
   "css/chat.css?v=chat110",
+  "css/dm.css?v=dm111",
+  "js/dm.js?v=dm111",
   "css/timetable.css?v=tt87",
   "css/workspace.css?v=step58",
   "data/courses.js?v=step67",
@@ -99,6 +101,7 @@ var SHELL = [
   "semester.html",
   "study.html",
   "chat.html",
+  "dm.html",
   "timetable-admin.html",
   "timetable.html",
   "upload.html",

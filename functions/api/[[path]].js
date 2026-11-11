@@ -12,6 +12,7 @@ import { handleAi } from "../_lib/ai.js";
 import { handleAssistant } from "../_lib/assistant.js";
 import { handleChat } from "../_lib/chat.js";
 import { handleAvatar } from "../_lib/avatar.js";
+import { handleDm } from "../_lib/dm.js";
 
 export async function onRequest({ request, env, waitUntil }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "", waitUntil });
@@ -30,6 +31,8 @@ export async function onRequest({ request, env, waitUntil }) {
   if (asRes) return asRes;
   const avRes = await handleAvatar(request, env, { currentUser }); // صورة الطالب واسمه الظاهر
   if (avRes) return avRes;
+  const dmRes = await handleDm(request, env, { currentUser }); // الرسائل الخاصة بين الحسابات
+  if (dmRes) return dmRes;
   const chatRes = await handleChat(request, env); // الدردشة: غرف الكورسات (CHAT_ENABLED=1)
   if (chatRes) return chatRes;
   const pushRes = await handlePush(request, env, { currentUser });

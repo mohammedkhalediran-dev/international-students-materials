@@ -68,6 +68,7 @@
     bub.appendChild(body);
     var acts = el("div", "chat-acts");
     acts.appendChild(button("رد", function () { startReply({ id: m.id, n: m.user_name, t: replyText(parsed) }); bub.classList.remove("show-acts"); }));
+    if (!mine) acts.appendChild(button("رسالة خاصة", function () { location.href = "dm.html?u=" + m.user_id; }));
     if (!mine) acts.appendChild(button("إبلاغ", function () {
       var why = window.prompt(I18N && I18N.t ? I18N.t("اكتب سبب البلاغ") : "اكتب سبب البلاغ");
       if (why) api("POST", "report", { message_id: m.id, reason: why }).then(function (r) { r.status === 200 ? note("تم إرسال البلاغ.") : fail(r); });
