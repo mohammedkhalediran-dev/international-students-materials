@@ -47,8 +47,14 @@
     var mine = me && m.user_id === me.id;
     var box = el("div", "chat-msg hue-" + hue(m.user_id) + (mine ? " is-mine" : "") + (cont ? " is-cont" : ""));
     box.dataset.id = m.id;
-    var av = el("span", "chat-avatar", (String(m.user_name || "?").trim().charAt(0) || "?").toUpperCase());
+    var initial = (String(m.user_name || "?").trim().charAt(0) || "?").toUpperCase();
+    var av = el("span", "chat-avatar", initial);
     av.setAttribute("aria-hidden", "true");
+    if (m.av) {
+      var im = el("img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async";
+      im.src = "api/avatar/" + m.user_id + "?v=" + m.av;
+      im.addEventListener("load", function () { av.textContent = ""; av.appendChild(im); av.classList.add("has-img"); });
+    }
     box.appendChild(av);
     var bub = el("div", "chat-bubble");
     if (!mine && !cont) bub.appendChild(el("strong", "chat-name", m.user_name));

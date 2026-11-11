@@ -117,6 +117,24 @@
   }
 
   /* ---------- القائمة الجانبية (nav.js يرسم «زائر»؛ نحدّثها بعد معرفة الجلسة) ---------- */
+  /* الصورة والاسم الظاهر: من ms.pub (يُجدَّد كل ساعة أو عند حفظهما من صفحة الملف الشخصي) */
+  function paintPublic(box, strong) {
+    function apply(pub) {
+      if (!pub || !user) return;
+      if (pub.n) strong.textContent = pub.n;
+      var av = box.querySelector(".sb-avatar");
+      if (av && pub.a) { av.textContent = ""; var im = document.createElement("img"); im.alt = ""; im.src = "api/avatar/" + user.id + "?v=" + pub.a; av.appendChild(im); av.classList.add("has-img"); }
+    }
+    var c = null; try { c = JSON.parse(localStorage.getItem("ms.pub") || "null"); } catch (e) { c = null; }
+    if (c && c.id === user.id) apply(c);
+    if (c && c.id === user.id && Date.now() - c.at < 3600000) return;
+    fetch("api/profile/public", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d) return;
+      var pub = { n: d.display_name || "", a: d.has_avatar ? d.updated_at : 0, id: user.id, at: Date.now() };
+      try { localStorage.setItem("ms.pub", JSON.stringify(pub)); } catch (e) {}
+      apply(pub);
+    }).catch(function () { /* اختياري */ });
+  }
   function paintSidebar() {
     var box = document.querySelector(".sb-user");
     if (!box || box.getAttribute("data-auth")) return;
@@ -127,6 +145,7 @@
     if (user) {
       strong.textContent = user.name || user.email;
       strong.setAttribute("data-i18n-skip", "");
+      paintPublic(box, strong);
       // سطر مستقل (سطر الكورس يملؤه js/my-course.js)
       var note = document.createElement("small"); note.className = "sb-acct-note"; note.textContent = "تقدّمك محفوظ في حسابك";
       text.appendChild(note);
@@ -163,7 +182,7 @@
     afterLogin: function (u) { user = u; },
     logout: function () {
       return flush().then(function () { return api("POST", "auth/logout"); }).then(function () {
-        SYNC.concat([TKEY, "ms.authed", "ms.guest", "ms.userCache"]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
+        SYNC.concat([TKEY, "ms.authed", "ms.guest", "ms.userCache", "ms.pub"]).forEach(lsDel); // البيانات صارت في الحساب؛ لا نتركها لمن يستعمل الجهاز بعدك
         user = null;
       });
     }

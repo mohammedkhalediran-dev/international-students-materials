@@ -2,9 +2,10 @@
 import assert from "node:assert/strict";
 import { createMockD1 } from "./mock_d1.mjs";
 import { readFileSync } from "node:fs";
-const mk = () => { const d = createMockD1(); d._db.exec(readFileSync(new URL("../migrations/0013_ai_chat.sql", import.meta.url), "utf8")); return d; };
+const mk = () => { const d = createMockD1(); d._db.exec(readFileSync(new URL("../migrations/0013_ai_chat.sql", import.meta.url), "utf8")); d._db.exec(readFileSync(new URL("../migrations/0014_avatar.sql", import.meta.url), "utf8")); return d; };
 import { handleAssistant } from "../functions/_lib/assistant.js";
 import { handleChat } from "../functions/_lib/chat.js";
+import { handleAvatar } from "../functions/_lib/avatar.js";
 import { MIGRATIONS } from "../functions/_lib/migrations.generated.js";
 import { ensureSchema, resetSchemaState } from "../functions/_lib/migrate.js";
 
@@ -94,4 +95,27 @@ ok((await call(handleChat, 2, "/api/chat/send", { room: 1, body: "x" }, env)).s 
 ok((await call(handleChat, 3, "/api/chat/mute", { user_id: 2, minutes: 0 }, env)).s === 200, "رفع الكتم");
 ok((await call(handleChat, 2, "/api/chat/report", { message_id: 2, reason: "سبب" }, env)).s === 200, "بلاغ");
 ok((await call(handleChat, 0, "/api/chat/messages?room=1", undefined, env)).s === 401, "بلا دخول 401");
+// ---- الصورة والاسم الظاهر
+const jpeg = "data:image/jpeg;base64," + Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 1)]).toString("base64");
+t += 5000;
+ok((await call(handleAvatar, 2, "/api/profile/public", { image: "data:image/png;base64,AAAA" + "A".repeat(200) }, env)).s === 400, "غير JPEG مرفوض");
+ok((await call(handleAvatar, 2, "/api/profile/public", { image: "data:image/jpeg;base64," + Buffer.alloc(200, 7).toString("base64") }, env)).s === 400, "JPEG بلا ترويسة صحيحة مرفوض");
+ok((await call(handleAvatar, 2, "/api/profile/public", { image: jpeg }, env)).s === 200, "رفع صورة");
+t += 5000;
+ok((await call(handleAvatar, 2, "/api/profile/public", { name: "  د. علي  " }, env)).j.display_name === "د. علي", "اسم ظاهر");
+t += 5000;
+ok((await call(handleAvatar, 2, "/api/profile/public", { name: "ا" }, env)).s === 400, "اسم حرف واحد مرفوض");
+const meP = await call(handleAvatar, 2, "/api/profile/public", undefined, env);
+ok(meP.j.has_avatar === true && meP.j.display_name === "د. علي", "قراءة الملف العام");
+const imgRes = await handleAvatar(new Request("https://m.test/api/avatar/2"), env, { currentUser: async () => users[1], now: () => t });
+ok(imgRes.status === 200 && imgRes.headers.get("content-type") === "image/jpeg" && (await imgRes.arrayBuffer()).byteLength > 100, "تقديم الصورة");
+ok((await handleAvatar(new Request("https://m.test/api/avatar/1"), env, { currentUser: async () => users[1], now: () => t })).status === 404, "لا صورة = 404");
+ok((await handleAvatar(new Request("https://m.test/api/avatar/2"), env, { currentUser: async () => null, now: () => t })).status === 401, "الصورة لمن سجّل الدخول فقط");
+t += 5000;
+await call(handleChat, 2, "/api/chat/send", { room: 1, body: "بعد الصورة" }, env);
+const withAv = await call(handleChat, 2, "/api/chat/messages?room=1", undefined, env);
+const last = withAv.j.items[withAv.j.items.length - 1];
+ok(last.user_name === "د. علي" && last.av > 0, "الدردشة تعرض الاسم الظاهر والصورة");
+t += 5000;
+ok((await call(handleAvatar, 2, "/api/profile/public", { remove: true }, env)).s === 200, "حذف الصورة");
 console.log("AI+CHAT OK: " + n + " checks");

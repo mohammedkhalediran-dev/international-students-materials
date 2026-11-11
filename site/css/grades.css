@@ -73,3 +73,14 @@
 .gr-profile { margin-top: var(--space-5); }
 .gr-done { margin: 0; color: var(--tt-green-ico); font-weight: 600; }
 .gr-edit { display: inline-block; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--tt-accent); }
+
+/* الصورة والاسم الظاهر في الملف الشخصي */
+.pf-public { margin: var(--space-4) 0 0; padding: var(--space-4); border: 1px solid var(--tt-day-line); border-radius: var(--radius-lg); display: grid; gap: var(--space-3); }
+.pf-pub-title { margin: 0; font-size: var(--text-md); color: var(--tt-ink); }
+.pf-pub-row { display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap; }
+.pf-avatar { flex: none; width: 96px; height: 96px; border-radius: var(--radius-pill); overflow: hidden; display: grid; place-items: center; background: var(--hue-2-bg); color: var(--hue-2-ink); font-size: var(--text-xl); font-weight: 700; }
+.pf-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pf-pub-side { display: grid; gap: var(--space-2); flex: 1; min-width: 220px; }
+.pf-pub-btns { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.pf-pub-label { font-size: var(--text-sm); color: var(--tt-muted); }
+.pf-pub-status { margin: 0; min-height: 1.4em; font-size: var(--text-sm); color: var(--tt-muted); }

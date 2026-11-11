@@ -57,7 +57,7 @@ export async function handleChat(req, env, opts = {}) {
     const after = Number(url.searchParams.get("after")) || 0;
     const since = Number(url.searchParams.get("since")) || 0;
     const rows = (await env.DB.prepare(
-      "SELECT id, user_id, user_name, body, created_at FROM chat_messages WHERE room_id=? AND id>? AND deleted_at IS NULL ORDER BY id DESC LIMIT 60"
+      "SELECT m.id, m.user_id, COALESCE(NULLIF(a.display_name, ''), m.user_name) AS user_name, m.body, m.created_at, CASE WHEN a.avatar IS NULL THEN 0 ELSE a.updated_at END AS av FROM chat_messages m LEFT JOIN user_avatars a ON a.user_id=m.user_id WHERE m.room_id=? AND m.id>? AND m.deleted_at IS NULL ORDER BY m.id DESC LIMIT 60"
     ).bind(room, after).all()).results || [];
     /* المحذوفة منذ آخر استعلام: يزيلها العميل من الشاشة كأنها لم تكن */
     const gone = since ? ((await env.DB.prepare("SELECT id FROM chat_messages WHERE room_id=? AND id>? AND deleted_at>?  LIMIT 100")

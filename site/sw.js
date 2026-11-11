@@ -1,5 +1,5 @@
 /* يحفظ صفحات الموقع والملفات التي تفتحها لتعمل بلا إنترنت */
-var V = "medixa-chat105";
+var V = "medixa-av110";
 var SHELL = [
   "js/offline-auto.js?v=off97",
   "./assets/logo.png",
@@ -54,13 +54,13 @@ var SHELL = [
   "assets/medical-thorax.webp",
   "course.html",
   "css/exams.css?v=ex91",
-  "css/grades.css?v=step66",
+  "css/grades.css?v=av110",
   "css/medical-banner.css?v=step58",
   "css/motion.css?v=side66c",
   "css/semester.css?v=step58",
-  "css/style.css?v=off98",
+  "css/style.css?v=av110",
   "css/ai-modal.css?v=home103",
-  "css/chat.css?v=chat105",
+  "css/chat.css?v=chat110",
   "css/timetable.css?v=tt87",
   "css/workspace.css?v=step58",
   "data/courses.js?v=step67",
@@ -72,8 +72,9 @@ var SHELL = [
   "grades.html",
   "index.html",
   "js/ai-chat.js?v=home103",
+  "js/chat.js?v=chat110",
   "js/app.js?v=side66",
-  "js/auth.js?v=adm100",
+  "js/auth.js?v=av110",
   "js/exams-home.js?v=ex91",
   "js/exams.js?v=ex91",
   "js/grades.js?v=step66",
@@ -86,7 +87,7 @@ var SHELL = [
   "js/pdf-viewer.js?v=step68",
   "js/planner.js?v=step58",
   "js/profile-form.js?v=step63",
-  "js/profile.js?v=step62",
+  "js/profile.js?v=av110",
   "js/questions.js?v=step58",
   "js/study-summary.js?v=step58",
   "js/timetable.js?v=tt87",

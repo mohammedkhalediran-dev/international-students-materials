@@ -11,6 +11,7 @@ import { handlePdfNotes } from "../_lib/pdfnotes.js";
 import { handleAi } from "../_lib/ai.js";
 import { handleAssistant } from "../_lib/assistant.js";
 import { handleChat } from "../_lib/chat.js";
+import { handleAvatar } from "../_lib/avatar.js";
 
 export async function onRequest({ request, env, waitUntil }) {
   const authRes = await handleAuth(request, env, { ip: request.headers.get("CF-Connecting-IP") || "", waitUntil });
@@ -27,6 +28,8 @@ export async function onRequest({ request, env, waitUntil }) {
   if (aiRes) return aiRes;
   const asRes = await handleAssistant(request, env); // المساعد الذكي (سؤال وجواب عن المحاضرة، حصة يومية)
   if (asRes) return asRes;
+  const avRes = await handleAvatar(request, env, { currentUser }); // صورة الطالب واسمه الظاهر
+  if (avRes) return avRes;
   const chatRes = await handleChat(request, env); // الدردشة: غرف الكورسات (CHAT_ENABLED=1)
   if (chatRes) return chatRes;
   const pushRes = await handlePush(request, env, { currentUser });
