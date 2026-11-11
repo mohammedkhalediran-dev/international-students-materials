@@ -19,6 +19,19 @@ function cleanAttach(a) {
   if (!title || !/^(?!\/\/)[\w\-./?=&#%]+$/.test(href)) return null;
   return { type: a.type, title, sub: clean(a.sub, 300), href };
 }
+const RE = "[[re]]";
+/* نص الرسالة للاقتباس: بلا الأسطر الخاصة؛ وإن كانت مرفقاً فعنوانه */
+function plainOf(body) {
+  let t = String(body || ""), title = "";
+  for (;;) {
+    const m = t.startsWith(ATT) ? ATT : t.startsWith(RE) ? RE : null;
+    if (!m) break;
+    const nl = t.indexOf("\n"), line = nl < 0 ? t.slice(m.length) : t.slice(m.length, nl);
+    if (m === ATT) { try { title = String(JSON.parse(line).title || ""); } catch { /* تالف */ } }
+    t = nl < 0 ? "" : t.slice(nl + 1);
+  }
+  return clean(t || title, 80);
+}
 const idOf = (v) => (Number.isSafeInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
 const shortName = (n) => String(n || "طالب").trim().split(/\s+/).slice(0, 2).join(" ");
 
@@ -65,7 +78,13 @@ export async function handleChat(req, env, opts = {}) {
       const att = b.attach ? cleanAttach(b.attach) : null;
       if (b.attach && !att) return fail("bad_request", 400);
       if (att) body = ATT + JSON.stringify(att) + (body ? "\n" + body : "");
-      if (!room || !body) return fail("bad_request", 400);
+      if (b.reply_to) {
+        const rid = idOf(b.reply_to);
+        const src = rid && await env.DB.prepare("SELECT id, user_name, body FROM chat_messages WHERE id=? AND room_id=? AND deleted_at IS NULL").bind(rid, room).first();
+        if (!src) return fail("bad_request", 400);
+        body = RE + JSON.stringify({ id: src.id, n: src.user_name, t: plainOf(src.body) }) + "\n" + body;
+      }
+      if (!room || !body || (b.reply_to && !clean(b.body, 1) && !att)) return fail("bad_request", 400);
       if (!(await env.DB.prepare("SELECT 1 AS x FROM chat_rooms WHERE id=? AND slug='general'").bind(room).first())) return fail("not_found", 404);
       const mute = await env.DB.prepare("SELECT until_at FROM chat_mutes WHERE user_id=?").bind(user.id).first();
       if (mute && mute.until_at > now) return fail("muted", 403);

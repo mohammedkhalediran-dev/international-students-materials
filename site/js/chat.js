@@ -55,11 +55,13 @@
     box.appendChild(bub);
     var time = el("span", "chat-time", new Date(m.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
     var parsed = parseAtt(m.body);
+    if (parsed.re) bub.appendChild(quoteBox(parsed.re));
     if (parsed.att) bub.appendChild(attCard(parsed.att));
     var body = el("p", "chat-body"); body.setAttribute("dir", "auto");
     body.appendChild(document.createTextNode(parsed.text)); body.appendChild(time);
     bub.appendChild(body);
     var acts = el("div", "chat-acts");
+    acts.appendChild(button("رد", function () { startReply({ id: m.id, n: m.user_name, t: replyText(parsed) }); bub.classList.remove("show-acts"); }));
     if (!mine) acts.appendChild(button("إبلاغ", function () {
       var why = window.prompt(I18N && I18N.t ? I18N.t("اكتب سبب البلاغ") : "اكتب سبب البلاغ");
       if (why) api("POST", "report", { message_id: m.id, reason: why }).then(function (r) { r.status === 200 ? note("تم إرسال البلاغ.") : fail(r); });
@@ -70,20 +72,29 @@
     if (me && me.mod && !mine) acts.appendChild(button("كتم 10 دقائق", function () {
       api("POST", "mute", { user_id: m.user_id, minutes: 10 }).then(function (r) { r.status === 200 ? note("تم الكتم.") : fail(r); });
     }));
-    if (acts.children.length) { bub.appendChild(acts); bub.addEventListener("click", function () { bub.classList.toggle("show-acts"); }); }
+    bub.appendChild(acts);
+    bub.addEventListener("click", function (e) { if (e.target.closest("a, button")) return; bub.classList.toggle("show-acts"); });
     return box;
   }
   /* ---------- المرفقات ---------- */
   var ATT = "[[att]]";
+  var RE = "[[re]]";
+  var HREF_OK = /^(?!\/\/)[\w\-.\/?=&#%]+$/;
   function parseAtt(body) {
-    body = String(body || "");
-    if (body.indexOf(ATT) !== 0) return { text: body };
-    var rest = body.slice(ATT.length), nl = rest.indexOf("\n"), js = nl < 0 ? rest : rest.slice(0, nl);
-    try {
-      var a = JSON.parse(js);
-      if (a && /^(?!\/\/)[\w\-.\/?=&#%]+$/.test(a.href || "")) return { att: a, text: nl < 0 ? "" : rest.slice(nl + 1) };
-    } catch (e) { /* مرفق تالف: يُعرض النص فقط */ }
-    return { text: nl < 0 ? "" : rest.slice(nl + 1) };
+    var t = String(body || ""), out = { text: "" };
+    for (;;) {
+      var key = t.indexOf(ATT) === 0 ? ATT : t.indexOf(RE) === 0 ? RE : null;
+      if (!key) break;
+      var nl = t.indexOf("\n"), line = nl < 0 ? t.slice(key.length) : t.slice(key.length, nl);
+      try {
+        var o = JSON.parse(line);
+        if (key === ATT && o && HREF_OK.test(o.href || "")) out.att = o;
+        if (key === RE && o && o.id) out.re = o;
+      } catch (e) { /* سطر تالف: يُتجاهل */ }
+      t = nl < 0 ? "" : t.slice(nl + 1);
+    }
+    out.text = t;
+    return out;
   }
   var ATT_ICO = { lecture: "book", announcement: "bell", tomorrow: "calendar", week: "calendar" };
   var ATT_LBL = { lecture: "ملف محاضرة", announcement: "تبليغ", tomorrow: "محاضرات غداً", week: "الجدول الأسبوعي" };
@@ -98,13 +109,37 @@
     c.appendChild(t);
     return c;
   }
+  var replyTo = null;
+  function replyText(p) { return String(p.text || (p.att && p.att.title) || "").replace(/\s+/g, " ").slice(0, 80); }
+  function quoteBox(r) {
+    var q = el("button", "chat-quote"); q.type = "button";
+    q.appendChild(el("strong", "", r.n || ""));
+    q.appendChild(el("span", "", r.t || ""));
+    q.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var n = seen[r.id]; if (!n) return;
+      n.scrollIntoView({ block: "center", behavior: "smooth" });
+      n.classList.add("flash"); setTimeout(function () { n.classList.remove("flash"); }, 1200);
+    });
+    return q;
+  }
+  function startReply(r) { replyTo = r; paintPending(); $("msg").focus(); }
   function paintPending() {
-    var box = $("pending"); box.textContent = ""; box.hidden = !pend;
-    if (!pend) return;
-    box.appendChild(attCard(pend));
-    var x = el("button", "chat-pending-x", "✕"); x.type = "button"; x.setAttribute("aria-label", "إزالة المرفق");
-    x.addEventListener("click", function () { pend = null; paintPending(); });
-    box.appendChild(x);
+    var box = $("pending"); box.textContent = ""; box.hidden = !pend && !replyTo;
+    if (replyTo) {
+      var rb = el("div", "chat-pending-row chat-replying");
+      var q = el("span", "chat-quote is-static"); q.appendChild(el("strong", "", replyTo.n || "")); q.appendChild(el("span", "", replyTo.t || ""));
+      rb.appendChild(q);
+      var rx = el("button", "chat-pending-x", "✕"); rx.type = "button"; rx.setAttribute("aria-label", "إلغاء الرد");
+      rx.addEventListener("click", function () { replyTo = null; paintPending(); });
+      rb.appendChild(rx); box.appendChild(rb);
+    }
+    if (pend) {
+      var ab = el("div", "chat-pending-row"); ab.appendChild(attCard(pend));
+      var x = el("button", "chat-pending-x", "✕"); x.type = "button"; x.setAttribute("aria-label", "إزالة المرفق");
+      x.addEventListener("click", function () { pend = null; paintPending(); });
+      ab.appendChild(x); box.appendChild(ab);
+    }
   }
   function pick(a) { pend = a; paintPending(); closeSheet(); $("msg").focus(); }
 
@@ -131,23 +166,51 @@
   function two(n) { return ("0" + n).slice(-2); }
   function isoDay(d) { return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()); }
 
-  function courseRows() {
-    return (window.COURSES || []).filter(function (c) { return c.lectures.some(function (l) { return !l.draft && l.files.length; }) || (c.extras || []).length; }).map(function (c) {
-      return { icon: "book", title: c.nameAr || c.name, sub: c.name, go: function () { push(c.nameAr || c.name, lectureRows(c)); } };
+  /* كل الملفات المرفوعة على المنصة (محاضرات وملازم واختبارات)، الأحدث أولاً، مع بحث */
+  function allFiles() {
+    var rows = [];
+    (typeof COURSES !== "undefined" ? COURSES : []).forEach(function (c) {
+      var cn = c.nameAr || c.name;
+      c.lectures.forEach(function (l) {
+        if (l.draft) return;
+        l.files.forEach(function (f) {
+          if (f.draft) return;
+          rows.push({ added: f.added || "", title: f.label || l.title, sub: cn + " · " + I18N_t("المحاضرة") + " " + l.number, hay: [f.label, l.title, cn, c.name].join(" "),
+            att: { type: "lecture", title: f.label || l.title, sub: cn + " · " + I18N_t("المحاضرة") + " " + l.number, href: "course.html?id=" + encodeURIComponent(c.id) + "#lec-" + l.number } });
+        });
+      });
+      (c.extras || []).forEach(function (f) {
+        rows.push({ added: f.added || "", title: f.label, sub: cn, hay: [f.label, cn, c.name].join(" "),
+          att: { type: "lecture", title: f.label, sub: cn, href: "course.html?id=" + encodeURIComponent(c.id) } });
+      });
     });
-  }
-  function lectureRows(c) {
-    var rows = c.lectures.filter(function (l) { return !l.draft && l.files.length; }).sort(function (a, b) { return b.number - a.number; }).map(function (l) {
-      return { icon: "book", title: "المحاضرة " + l.number + "، " + l.title, sub: l.files.length + " ملف", go: function () {
-        pick({ type: "lecture", title: l.title, sub: (c.nameAr || c.name) + " · " + I18N_t("المحاضرة") + " " + l.number, href: "course.html?id=" + encodeURIComponent(c.id) + "#lec-" + l.number });
-      } };
-    });
-    (c.extras || []).forEach(function (f) {
-      rows.push({ icon: "help", title: f.label, sub: "اختبارات وأسئلة", go: function () {
-        pick({ type: "lecture", title: f.label, sub: c.nameAr || c.name, href: "course.html?id=" + encodeURIComponent(c.id) });
-      } });
-    });
+    rows.sort(function (a, b) { return a.added < b.added ? 1 : a.added > b.added ? -1 : 0; });
     return rows;
+  }
+  function filesSheet() {
+    var all = allFiles();
+    stack.push({ title: "اختر ملفاً", rows: [] });
+    $("sheet").hidden = false;
+    $("sheetTitle").textContent = I18N_t("اختر ملفاً");
+    $("sheetBack").hidden = false;
+    var list = $("sheetList"); list.textContent = "";
+    var q = el("input", "field chat-sheet-search"); q.type = "search"; q.placeholder = I18N_t("ابحث عن ملف أو مادة");
+    list.appendChild(q);
+    var holder = el("div", "chat-sheet-files"); list.appendChild(holder);
+    function paint() {
+      var key = MS.norm ? MS.norm(q.value) : q.value.toLowerCase();
+      holder.textContent = "";
+      var shown = all.filter(function (r) { return !key || (MS.norm ? MS.norm(r.hay) : r.hay.toLowerCase()).indexOf(key) >= 0; }).slice(0, 80);
+      if (!shown.length) holder.appendChild(el("p", "chat-sheet-empty", "لا يوجد شيء للاختيار."));
+      shown.forEach(function (r) {
+        var b = el("button", "chat-sheet-row"); b.type = "button";
+        var i = el("span", "chat-sheet-ico"); i.appendChild(MS.icon("book", 20)); b.appendChild(i);
+        var t = el("span", "chat-sheet-txt"); t.appendChild(el("strong", "", r.title)); t.appendChild(el("small", "", r.sub)); b.appendChild(t);
+        b.addEventListener("click", function () { pick(r.att); });
+        holder.appendChild(b);
+      });
+    }
+    q.addEventListener("input", paint); paint();
   }
   function I18N_t(x) { return window.I18N && I18N.t ? I18N.t(x) : x; }
   function announcementRows() {
@@ -176,7 +239,7 @@
   function openSheet() {
     stack = [];
     push("إرفاق", [
-      { icon: "book", title: "ملف المحاضرة أو الملزمة", sub: "اختر مادة ثم محاضرة", go: function () { push("اختر المادة", courseRows()); } },
+      { icon: "book", title: "ملفات المنصة", sub: "كل الملفات المرفوعة: اختر ملفاً", go: filesSheet },
       { icon: "bell", title: "تبليغ", sub: "من تبليغات الدفعة", go: announcementRows },
       { icon: "calendar", title: "جدول محاضرات غداً", sub: "محاضرات الغد ومواعيدها", go: tomorrowAttach },
       { icon: "calendar", title: "الجدول الأسبوعي كامل", sub: "رابط الجدول الجامعي", go: function () { pick({ type: "week", title: I18N_t("الجدول الأسبوعي كامل"), sub: "", href: "timetable.html" }); } }
@@ -211,11 +274,13 @@
     e.preventDefault();
     var body = $("msg").value.trim();
     if ((!body && !pend) || !room) return;
+    var rt = replyTo;
     $("send").disabled = true;
     var payload = { room: room, body: body };
     if (pend) payload.attach = pend;
+    if (rt) payload.reply_to = rt.id;
     api("POST", "send", payload).then(function (r) {
-      if (r.status === 201) { pend = null; paintPending(); $("msg").value = ""; $("msg").style.height = ""; note(""); poll(); } else fail(r);
+      if (r.status === 201) { pend = null; replyTo = null; paintPending(); $("msg").value = ""; $("msg").style.height = ""; note(""); poll(); } else fail(r);
     }).then(function () { $("send").disabled = false; });
   });
   $("msg").addEventListener("input", function () { this.style.height = "auto"; this.style.height = Math.min(this.scrollHeight, 120) + "px"; });
