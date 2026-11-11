@@ -7,6 +7,7 @@
 //   POST /api/dm/send {peer, body} · read {peer} · delete {message_id} · block/unblock {peer} · report {message_id, reason}
 // الخصوصية: لا يقرأ أحد محادثة غير محادثته. المشرف يرى نص الرسالة فقط إن أبلغ عنها أحد طرفيها.
 import { currentUser } from "./auth.js";
+import { notifyUser } from "./push.js";
 
 const json = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra }
@@ -116,6 +117,9 @@ export async function handleDm(req, env, opts = {}) {
       await db.prepare("INSERT INTO dm_threads(a_id,b_id,last_id,last_at,last_sender,last_body) VALUES(?,?,?,?,?,?) ON CONFLICT(a_id,b_id) DO UPDATE SET last_id=excluded.last_id,last_at=excluded.last_at,last_sender=excluded.last_sender,last_body=excluded.last_body")
         .bind(a, c, id, now, me.id, body.slice(0, 80)).run();
       await db.prepare("INSERT INTO dm_reads(user_id,peer_id,last_read) VALUES(?,?,?) ON CONFLICT(user_id,peer_id) DO UPDATE SET last_read=excluded.last_read").bind(me.id, peer, id).run();
+      // إشعار للمستلم وحده (لا يؤخّر الرد؛ الوسم لكل مرسل فيحلّ الجديد محل القديم)
+      const task = notifyUser(env, peer, { title: "رسالة خاصة · " + short(me.name), body: body.slice(0, 120), url: "dm.html?u=" + me.id, tag: "dm-" + me.id }).catch(() => null);
+      if (opts.waitUntil) opts.waitUntil(task); else await task;
       return json({ ok: true, item: { id, sender_id: me.id, body, created_at: now } }, 201);
     }
     if (op === "read") {

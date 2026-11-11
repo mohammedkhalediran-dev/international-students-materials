@@ -31,9 +31,9 @@ export async function onRequest({ request, env, waitUntil }) {
   if (asRes) return asRes;
   const avRes = await handleAvatar(request, env, { currentUser }); // صورة الطالب واسمه الظاهر
   if (avRes) return avRes;
-  const dmRes = await handleDm(request, env, { currentUser }); // الرسائل الخاصة بين الحسابات
+  const dmRes = await handleDm(request, env, { currentUser, waitUntil }); // الرسائل الخاصة بين الحسابات
   if (dmRes) return dmRes;
-  const chatRes = await handleChat(request, env); // الدردشة: غرف الكورسات (CHAT_ENABLED=1)
+  const chatRes = await handleChat(request, env, { waitUntil }); // الدردشة: غرف الكورسات (CHAT_ENABLED=1)
   if (chatRes) return chatRes;
   const pushRes = await handlePush(request, env, { currentUser });
   if (pushRes) return pushRes;

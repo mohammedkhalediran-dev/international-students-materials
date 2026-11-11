@@ -2,6 +2,7 @@
 // المسارات (/api/chat/...): rooms (GET) · messages?room=ID&after=ID (GET) · send · report · delete · mute (POST).
 // الإشراف: rep وadmin يحذفان ويكتمان. الدردشة مفعّلة افتراضياً؛ CHAT_ENABLED=0 يغلقها (404).
 import { currentUser } from "./auth.js";
+import { notifyUser } from "./push.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" }
@@ -78,10 +79,12 @@ export async function handleChat(req, env, opts = {}) {
       const att = b.attach ? cleanAttach(b.attach) : null;
       if (b.attach && !att) return fail("bad_request", 400);
       if (att) body = ATT + JSON.stringify(att) + (body ? "\n" + body : "");
+      let replyTo = null;
       if (b.reply_to) {
         const rid = idOf(b.reply_to);
-        const src = rid && await env.DB.prepare("SELECT id, user_name, body FROM chat_messages WHERE id=? AND room_id=? AND deleted_at IS NULL").bind(rid, room).first();
+        const src = rid && await env.DB.prepare("SELECT id, user_id, user_name, body FROM chat_messages WHERE id=? AND room_id=? AND deleted_at IS NULL").bind(rid, room).first();
         if (!src) return fail("bad_request", 400);
+        replyTo = src.user_id;
         body = RE + JSON.stringify({ id: src.id, n: src.user_name, t: plainOf(src.body) }) + "\n" + body;
       }
       if (!room || !body || (b.reply_to && !clean(b.body, 1) && !att)) return fail("bad_request", 400);
@@ -94,6 +97,10 @@ export async function handleChat(req, env, opts = {}) {
       if (hourly && hourly.n >= 120) return fail("slow_down", 429);
       const r = await env.DB.prepare("INSERT INTO chat_messages(room_id,user_id,user_name,body,created_at) VALUES(?,?,?,?,?)")
         .bind(room, user.id, shortName(user.name), body, now).run();
+      if (replyTo && replyTo !== user.id) { // إشعار لصاحب الرسالة المردود عليها فقط
+        const task = notifyUser(env, replyTo, { title: "رد على رسالتك · " + shortName(user.name), body: plainOf(body).slice(0, 120), url: "chat.html", tag: "chat-reply" }).catch(() => null);
+        if (opts.waitUntil) opts.waitUntil(task); else await task;
+      }
       return json({ ok: true, item: { id: Number(r.meta.last_row_id), user_id: user.id, user_name: shortName(user.name), body, created_at: now, deleted_at: null } }, 201);
     }
     if (op === "report") {
