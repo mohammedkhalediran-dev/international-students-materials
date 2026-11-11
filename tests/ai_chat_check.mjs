@@ -52,7 +52,7 @@ ok((await call(handleAssistant, 1, "/api/assistant/ask", { question: "x" }, { DB
 // ---- الدردشة
 ok((await call(handleChat, 1, "/api/chat/rooms", undefined, { DB, CHAT_ENABLED: "0" })).s === 404, "الدردشة مغلقة عند CHAT_ENABLED=0");
 const rooms = await call(handleChat, 1, "/api/chat/rooms", undefined, env);
-ok(rooms.j.items.length === 4 && rooms.j.items[0].slug === "general", "أربع غرف");
+ok(rooms.j.items.length === 1 && rooms.j.items[0].slug === "general", "غرفة عامة واحدة");
 t += 5000;
 const s1 = await call(handleChat, 1, "/api/chat/send", { room: 1, body: "  مرحبا  " }, env);
 ok(s1.s === 201 && s1.j.item.body === "مرحبا" && s1.j.item.user_name === "طالب رقم", "إرسال (اسم مختصر)");

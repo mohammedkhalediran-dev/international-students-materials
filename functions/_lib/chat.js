@@ -26,7 +26,7 @@ export async function handleChat(req, env, opts = {}) {
   const isMod = MOD.includes(user.role);
 
   if (op === "rooms" && req.method === "GET") {
-    const rows = (await env.DB.prepare("SELECT id, slug, name FROM chat_rooms ORDER BY sort, id").all()).results || [];
+    const rows = (await env.DB.prepare("SELECT id, slug, name FROM chat_rooms WHERE slug='general' ORDER BY sort, id").all()).results || [];
     return json({ ok: true, items: rows, me: { id: user.id, mod: isMod } });
   }
   if (op === "messages" && req.method === "GET") {
@@ -49,7 +49,7 @@ export async function handleChat(req, env, opts = {}) {
     if (op === "send") {
       const room = idOf(b.room), body = clean(b.body, MAX_BODY);
       if (!room || !body) return fail("bad_request", 400);
-      if (!(await env.DB.prepare("SELECT 1 AS x FROM chat_rooms WHERE id=?").bind(room).first())) return fail("not_found", 404);
+      if (!(await env.DB.prepare("SELECT 1 AS x FROM chat_rooms WHERE id=? AND slug='general'").bind(room).first())) return fail("not_found", 404);
       const mute = await env.DB.prepare("SELECT until_at FROM chat_mutes WHERE user_id=?").bind(user.id).first();
       if (mute && mute.until_at > now) return fail("muted", 403);
       const recent = await env.DB.prepare("SELECT created_at FROM chat_messages WHERE user_id=? ORDER BY id DESC LIMIT 1").bind(user.id).first();

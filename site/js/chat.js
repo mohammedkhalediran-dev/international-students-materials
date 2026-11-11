@@ -83,7 +83,7 @@
     room = id; last = 0; seen = {}; prev = null; $("log").textContent = "";
     Array.prototype.forEach.call($("rooms").children, function (b) { b.setAttribute("aria-selected", String(Number(b.dataset.id) === id)); });
     var cur = $("rooms").querySelector("[data-id=\"" + id + "\"]");
-    if (cur) { $("roomTitle").textContent = cur.textContent; $("roomAv").textContent = cur.textContent.trim().charAt(0).toUpperCase(); }
+    if (cur) { $("roomTitle").textContent = $("rooms").hidden ? "الدردشة العامة" : cur.textContent; $("roomAv").textContent = cur.textContent.trim().charAt(0).toUpperCase(); }
     poll();
   }
 
@@ -111,6 +111,7 @@
       b.addEventListener("click", function () { open(rm.id); });
       $("rooms").appendChild(b);
     });
+    if (r.j.items.length < 2) $("rooms").hidden = true; // غرفة عامة واحدة
     $("form").hidden = false;
     var sem = MS.load ? MS.load("ms.sem", null) : null;
     var pick = r.j.items.filter(function (x) { return x.slug === "s" + sem; })[0] || r.j.items[0];
