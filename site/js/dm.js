@@ -25,7 +25,7 @@
     var a = el("span", cls + " hue-" + hue(p.id), (String(p.name || "?").trim().charAt(0) || "?").toUpperCase());
     a.setAttribute("aria-hidden", "true");
     if (p.av) {
-      var im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = "api/avatar/" + p.id + "?v=" + p.av;
+      var im = el("img"); im.alt = ""; im.src = "api/avatar/" + p.id + "?v=" + p.av;
       im.addEventListener("load", function () { a.textContent = ""; a.appendChild(im); });
     }
     return a;

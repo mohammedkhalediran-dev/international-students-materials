@@ -51,7 +51,7 @@
     var av = el("span", "chat-avatar", initial);
     av.setAttribute("aria-hidden", "true");
     if (m.av) {
-      var im = el("img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async";
+      var im = el("img"); im.alt = ""; im.decoding = "async";
       im.src = "api/avatar/" + m.user_id + "?v=" + m.av;
       im.addEventListener("load", function () { av.textContent = ""; av.appendChild(im); av.classList.add("has-img"); });
     }
