@@ -35,13 +35,18 @@
     var mine = me && m.user_id === me.id;
     var box = el("div", "chat-msg" + (mine ? " is-mine" : ""));
     box.dataset.id = m.id;
+    var av = el("span", "chat-avatar", (String(m.user_name || "?").trim().charAt(0) || "?").toUpperCase());
+    av.setAttribute("aria-hidden", "true");
+    box.appendChild(av);
+    var bub = el("div", "chat-bubble");
     var meta = el("div", "chat-meta");
     meta.appendChild(el("strong", "", m.user_name));
     meta.appendChild(el("span", "", new Date(m.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })));
-    box.appendChild(meta);
-    if (m.deleted_at) { box.dataset.gone = "1"; box.appendChild(el("p", "chat-body chat-gone", "تم حذف هذه الرسالة.")); return box; }
+    bub.appendChild(meta);
+    box.appendChild(bub);
+    if (m.deleted_at) { box.dataset.gone = "1"; bub.appendChild(el("p", "chat-body chat-gone", "تم حذف هذه الرسالة.")); return box; }
     var body = el("p", "chat-body"); body.textContent = m.body; body.setAttribute("dir", "auto");
-    box.appendChild(body);
+    bub.appendChild(body);
     var acts = el("div", "chat-acts");
     if (!mine) acts.appendChild(button("إبلاغ", function () {
       var why = window.prompt(I18N && I18N.t ? I18N.t("اكتب سبب البلاغ") : "اكتب سبب البلاغ");
@@ -53,7 +58,7 @@
     if (me && me.mod && !mine) acts.appendChild(button("كتم 10 دقائق", function () {
       api("POST", "mute", { user_id: m.user_id, minutes: 10 }).then(function (r) { r.status === 200 ? note("تم الكتم.") : fail(r); });
     }));
-    if (acts.children.length) box.appendChild(acts);
+    if (acts.children.length) bub.appendChild(acts);
     return box;
   }
   function button(label, fn) { var b = el("button", "chat-act", label); b.type = "button"; b.addEventListener("click", fn); return b; }
@@ -77,9 +82,10 @@
     if (!body || !room) return;
     $("send").disabled = true;
     api("POST", "send", { room: room, body: body }).then(function (r) {
-      if (r.status === 201) { $("msg").value = ""; note(""); poll(); } else fail(r);
+      if (r.status === 201) { $("msg").value = ""; $("msg").style.height = ""; note(""); poll(); } else fail(r);
     }).then(function () { $("send").disabled = false; });
   });
+  $("msg").addEventListener("input", function () { this.style.height = "auto"; this.style.height = Math.min(this.scrollHeight, 120) + "px"; });
   $("msg").addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (this.value.trim()) $("form").requestSubmit(); }
   });

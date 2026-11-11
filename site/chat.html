@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Medixa">
   <link rel="stylesheet" href="css/style.css?v=off98">
-  <link rel="stylesheet" href="css/chat.css?v=step58">
+  <link rel="stylesheet" href="css/chat.css?v=chat103">
   <link rel="stylesheet" href="css/motion.css?v=side66c">
   <script>
     try { var t = localStorage.getItem("ms.theme"); if (t) document.documentElement.setAttribute("data-theme", JSON.parse(t)); } catch (e) {}
@@ -66,13 +66,15 @@
 
   <main class="container chat" id="content">
     <p class="chat-note" id="chatNote" role="status" hidden></p>
-    <div class="chat-rooms" id="rooms" role="tablist" aria-label="الغرف"></div>
-    <div class="chat-log" id="log" aria-live="polite"></div>
-    <form class="chat-form" id="form" autocomplete="off" hidden>
-      <label class="chat-label" for="msg">اكتب رسالتك</label>
-      <textarea class="field" id="msg" rows="2" maxlength="1000"></textarea>
-      <button class="btn btn-primary" type="submit" id="send">إرسال</button>
-    </form>
+    <div class="chat-shell">
+      <div class="chat-rooms" id="rooms" role="tablist" aria-label="الغرف"></div>
+      <div class="chat-log" id="log" aria-live="polite"></div>
+      <form class="chat-form" id="form" autocomplete="off" hidden>
+        <label class="visually-hidden" for="msg">اكتب رسالتك</label>
+        <textarea class="field chat-input" id="msg" rows="1" maxlength="1000" placeholder="اكتب رسالتك"></textarea>
+        <button class="chat-send" type="submit" id="send" aria-label="إرسال"></button>
+      </form>
+    </div>
   </main>
 
   <footer class="footer">
@@ -99,9 +101,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="data/courses.js?v=step67"></script>
-  <script src="js/i18n.js?v=off95"></script>
+  <script src="js/i18n.js?v=home102"></script>
   <script src="js/app.js?v=side66"></script><script src="js/auth.js?v=adm100"></script>
   <script src="js/nav.js?v=off98"></script><script src="js/motion.js?v=mv82"></script><script src="js/my-course.js?v=step58"></script>
-  <script src="js/chat.js?v=step58"></script>
+  <script src="js/chat.js?v=chat103"></script>
 </body>
 </html>

@@ -113,5 +113,32 @@
     });
   }
 
-  window.AIChat = { mount: mount };
+  /* نافذة منبثقة صغيرة: الزر trigger يفتحها، والصندوق يُبنى عند أول فتح */
+  function popup(trigger, opts) {
+    if (!trigger) return;
+    var overlay = null, close = null;
+    function build() {
+      overlay = el("div", "ai-modal"); overlay.hidden = true;
+      var dlg = el("div", "ai-dialog");
+      dlg.setAttribute("role", "dialog"); dlg.setAttribute("aria-modal", "true");
+      dlg.setAttribute("aria-label", opts.title || "المساعد الذكي");
+      close = el("button", "ai-close", "✕"); close.type = "button"; close.setAttribute("aria-label", "إغلاق");
+      var host = el("div", "ai-host");
+      dlg.appendChild(close); dlg.appendChild(host); overlay.appendChild(dlg);
+      document.body.appendChild(overlay);
+      mount(host, opts);
+      close.addEventListener("click", hide);
+      overlay.addEventListener("click", function (e) { if (e.target === overlay) hide(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) hide(); });
+    }
+    function show() {
+      if (!overlay) build();
+      overlay.hidden = false; document.body.classList.add("ai-modal-open");
+      var t = overlay.querySelector("textarea"); if (t) setTimeout(function () { t.focus(); }, 60);
+    }
+    function hide() { overlay.hidden = true; document.body.classList.remove("ai-modal-open"); trigger.focus(); }
+    trigger.addEventListener("click", show);
+  }
+
+  window.AIChat = { mount: mount, popup: popup };
 })();

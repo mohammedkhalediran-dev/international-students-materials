@@ -1,0 +1,19 @@
+/* css/ai-modal.css — بطاقة المساعد الذكي في الرئيسية ونافذته المنبثقة. القيم من متغيرات style.css فقط. */
+.ai-launch { display: flex; align-items: center; gap: var(--space-3); width: 100%; max-width: 360px; padding: var(--space-3) var(--space-4); text-align: start; font: inherit; color: inherit; cursor: pointer; }
+.ai-launch .tile { flex: none; background: var(--hue-2-bg); color: var(--hue-2-ink); }
+.ai-launch-txt { display: grid; gap: var(--space-1); flex: 1; min-width: 0; }
+.ai-launch-txt strong { font-family: var(--font-display); color: var(--color-heading); }
+.ai-launch-txt small { color: var(--color-muted); font-size: var(--text-xs); }
+.ai-launch-go { color: var(--color-secondary-ink); }
+body.ai-modal-open { overflow: hidden; }
+.ai-modal { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: var(--space-4); background: rgba(16, 40, 63, 0.45); animation: ai-fade .2s ease-out; }
+.ai-modal[hidden] { display: none; }
+.ai-dialog { position: relative; width: min(520px, 100%); max-height: min(86vh, 640px); overflow: auto; background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--space-2); animation: ai-pop .25s cubic-bezier(.32, .72, 0, 1); }
+.ai-dialog .ai-card { border: 0; box-shadow: none; max-width: none; padding: var(--space-4); }
+.ai-dialog .ai-log { max-height: 42vh; }
+.ai-close { position: absolute; inset-block-start: var(--space-3); inset-inline-end: var(--space-3); z-index: 1; width: 36px; height: 36px; border: 0; border-radius: var(--radius-pill); background: var(--color-surface-alt); color: var(--color-text); cursor: pointer; font: inherit; }
+.ai-close:hover { background: var(--color-border); }
+@keyframes ai-fade { from { opacity: 0; } }
+@keyframes ai-pop { from { opacity: 0; transform: translateY(16px) scale(.97); } }
+@media (max-width: 640px) { .ai-modal { align-items: end; padding: 0; } .ai-dialog { width: 100%; max-height: 88vh; border-end-start-radius: 0; border-end-end-radius: 0; } }
+@media (prefers-reduced-motion: reduce) { .ai-modal, .ai-dialog { animation: none; } }
